@@ -14,6 +14,18 @@ export async function fetchCategories() {
     return response.json();
 }
 
+export async function addActivity(activityData) {
+    const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activityData)
+    });
+    if (!response.ok) {
+        throw new Error('Failed to create activity');
+    }
+    return response.json();
+}
+
 export async function addCategory(categoryData) {
     const response = await fetch('/api/categories', {
         method: 'POST',

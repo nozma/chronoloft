@@ -21,7 +21,7 @@ function ActivityList() {
       <ul>
         {activities.map(activity => (
           <li key={activity.id}>
-            {activity.name} - Unit: {activity.unit} - Category ID: {activity.category_id}
+            {activity.name} - Unit: {activity.unit} - Category: {activity.category_name}
           </li>
         ))}
       </ul>

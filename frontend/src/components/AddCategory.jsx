@@ -1,10 +1,9 @@
-// frontend/src/components/AddCategory.jsx
 import React, { useState } from 'react';
 import { addCategory } from '../services/api';
 
 function AddCategory({ onCategoryAdded }) {
   const [name, setName] = useState('');
-  const [group, setGroup] = useState('study');  // デフォルト値を "study" に設定
+  const [group, setGroup] = useState('study');
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {

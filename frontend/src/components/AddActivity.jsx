@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { addActivity } from '../services/api'
+import { fetchCategories } from '../services/api';
 
 function AddActivity({ onActivityAdded }) {
   const [name, setName] = useState('');
@@ -6,20 +8,25 @@ function AddActivity({ onActivityAdded }) {
   const [unit, setUnit] = useState('count');
   const [assetKey, setAssetKey] = useState('');
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
+
+  // カテゴリ一覧の取得
+  useEffect(() => {
+    fetchCategories()
+      .then(data => setCategories(data))
+      .catch(err => console.error("Failed to fetch categories:", err));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/activities', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, category_id: parseInt(categoryId), unit, asset_key: assetKey })
+      const response = await addActivity({ 
+        name, 
+        category_id: parseInt(categoryId), // セレクトで得られる値は文字列なので数値に変換
+        unit, 
+        asset_key: assetKey 
       });
-      if (!response.ok) {
-        throw new Error('Failed to create activity');
-      }
-      const data = await response.json();
-      onActivityAdded(data);
+      onActivityAdded(response);
       setName('');
       setCategoryId('');
       setAssetKey('');
@@ -39,8 +46,15 @@ function AddActivity({ onActivityAdded }) {
           <input type="text" value={name} onChange={e => setName(e.target.value)} required />
         </div>
         <div>
-          <label>Category ID:</label>
-          <input type="number" value={categoryId} onChange={e => setCategoryId(e.target.value)} required />
+          <label>Category:</label>
+          <select value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+            <option value="">--Select Category--</option>
+                {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                </option>
+                ))}
+          </select>
         </div>
         <div>
           <label>Unit:</label>
