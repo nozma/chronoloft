@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { fetchActivities } from '../services/api';
+import { fetchActivities, addActivity, fetchCategories } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
+import CustomToolbar from './CustomToolbar';
+import AddActivityDialog from './AddActivityDialog';
 
 function ActivityList() {
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     useEffect(() => {
         fetchActivities()
@@ -12,9 +16,35 @@ function ActivityList() {
             .catch(err => setError(err.message));
     }, []);
 
+    useEffect(() => {
+        fetchCategories()
+            .then(data => setCategories(data))
+            .catch(err => console.error(err));
+    }, []);
+
     if (error) {
         return <div>Error: {error}</div>;
     }
+
+    const handleAddClick = () => {
+        setDialogOpen(true);
+    };
+
+    const handleDialogClose = () => {
+        setDialogOpen(false);
+    };
+
+    const handleActivityAdded = async (activityData) => {
+        try {
+            await addActivity(activityData);
+            // 新規登録後、再度アクティビティ一覧を取得する
+            fetchActivities()
+                .then(data => setActivities(data))
+                .catch(err => setError(err.message));
+        } catch (err) {
+            console.error("Failed to add activity:", err);
+        }
+    };
 
     const columns = [
         { field: 'id', headerName: 'ID', width: 70 },
@@ -57,13 +87,27 @@ function ActivityList() {
     ];
 
     return (
-        <div style={{ height: 400, width: '100%' }}>
-            <DataGrid
-                rows={activities}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5]}
-                disableSelectionOnClick
+        <div>
+            <div style={{ height: 400, width: '100%' }}>
+                <DataGrid
+                    rows={activities}
+                    columns={columns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5]}
+                    disableSelectionOnClick
+                    slots={{
+                        toolbar: CustomToolbar,
+                    }}
+                    slotProps={{
+                        toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick },
+                    }}
+                />
+            </div>
+            <AddActivityDialog
+                open={dialogOpen}
+                onClose={handleDialogClose}
+                onSubmit={handleActivityAdded}
+                categories={categories}
             />
         </div>
     );

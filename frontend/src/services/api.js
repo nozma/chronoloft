@@ -15,7 +15,7 @@ export async function fetchCategories() {
 }
 
 export async function addActivity(activityData) {
-    const response = await fetch('/api/categories', {
+    const response = await fetch('/api/activities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(activityData)
