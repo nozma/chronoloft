@@ -30,8 +30,8 @@ def create_app():
     # 設定の読み込み
     #app.config.from_pyfile('../instance/config.py', silent=True)
     
-    # ルーティングの登録
-    from . import routes
-    app.register_blueprint(routes.bp)
+    # Blueprintの登録
+    from .routes import register_routes
+    register_routes(app)
     
     return app

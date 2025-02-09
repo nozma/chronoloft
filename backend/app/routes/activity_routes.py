@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
-from . import db
-from .models import Activity, Record, Category, ActivityUnitType, ActivityGroup
+from ..models import Activity, ActivityUnitType
+from .. import db
 
-bp = Blueprint('main', __name__)
+activity_bp = Blueprint('activity', __name__)
 
-@bp.route('/api/activities', methods=['GET'])
+@activity_bp.route('/api/activities', methods=['GET'])
 def get_activities():
     activities = Activity.query.all()
     result = []
@@ -12,7 +12,7 @@ def get_activities():
         result.append({
             'id': act.id,
             'name': act.name,
-            'unit': act.unit.value if act.unit is not None else None,
+            'unit': act.unit.value if act.unit else None,
             'category_id': act.category_id,
             'asset_key': act.asset_key,
             'created_at': act.created_at.isoformat(),
@@ -20,12 +20,11 @@ def get_activities():
         })
     return jsonify(result)
 
-@bp.route('/api/activities', methods=['POST'])
+@activity_bp.route('/api/activities', methods=['POST'])
 def add_activity():
     data = request.get_json()
     if not data or 'name' not in data or 'category_id' not in data:
         return jsonify({'error': '必要な情報が不足しています'}), 400
-
     unit = data.get('unit')
     if unit:
         try:
@@ -34,7 +33,6 @@ def add_activity():
             return jsonify({'error': 'unit の値が不正です'}), 400
     else:
         unit = None
-
     new_activity = Activity(
         name=data['name'],
         category_id=data['category_id'],
