@@ -18,21 +18,34 @@ export async function addActivity(activityData) {
     return response.json();
 }
 
-export async function deleteActivity(activityId) {
+export async function updateActivity(activityId, updateData) {
     const response = await fetch(`/api/activities/${activityId}`, {
-      method: 'DELETE',
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
     });
     if (!response.ok) {
-      throw new Error('Failed to delete activity');
+        throw new Error('Failed to update activity');
     }
     return response.json();
-  }
+}
+
+export async function deleteActivity(activityId) {
+    const response = await fetch(`/api/activities/${activityId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete activity');
+    }
+    return response.json();
+}
 
 
 export async function fetchCategories() {
     const response = await fetch('/api/categories');
     if (!response.ok) {
-      throw new Error('Network response was not ok');
+        throw new Error('Network response was not ok');
     }
     return response.json();
 }

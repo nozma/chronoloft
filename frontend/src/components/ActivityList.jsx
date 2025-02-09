@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { fetchActivities, addActivity, deleteActivity, fetchCategories } from '../services/api';
+import { fetchActivities, addActivity, deleteActivity, fetchCategories, updateActivity } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
 import ConfirmDialog from './ConfirmDialog';
 import Button from '@mui/material/Button';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 
 function ActivityList() {
     const [activities, setActivities] = useState([]);
@@ -13,6 +15,8 @@ function ActivityList() {
     const [categories, setCategories] = useState([]);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarMessage, setSnackbarMessage] = useState('');
 
     useEffect(() => {
         fetchActivities()
@@ -65,6 +69,8 @@ function ActivityList() {
                 .catch(err => setError(err.message));
         } catch (err) {
             console.error("Failed to delete activity:", err);
+            setSnackbarMessage(err.message);
+            setSnackbarOpen(true);
         }
         setConfirmDialogOpen(false);
         setSelectedActivityId(null);
@@ -74,6 +80,24 @@ function ActivityList() {
     const handleCancelDelete = () => {
         setConfirmDialogOpen(false);
         setSelectedActivityId(null);
+    };
+
+    const handleSnackbarClose = () => {
+        setSnackbarOpen(false);
+    };
+
+    const processRowUpdate = async (newRow, oldRow) => {
+        try {
+            // newRow は編集後の行全体のデータです。
+            // updateActivity は、activity の更新を行う API 関数です。
+            await updateActivity(newRow.id, newRow);
+            // 更新が成功したら newRow を返す（これが DataGrid の内部状態に反映される）
+            return newRow;
+        } catch (error) {
+            console.error("Failed to update activity:", error);
+            // エラーが発生した場合は例外を投げることで、変更が取り消される
+            throw error;
+        }
     };
 
     const columns = [
@@ -90,7 +114,7 @@ function ActivityList() {
             }
         },
         { field: 'category_name', headerName: 'カテゴリ', width: 150 },
-        { field: 'name', headerName: '項目名', width: 150 },
+        { field: 'name', headerName: '項目名', width: 150, editable: true },
         {
             field: 'unit',
             headerName: '記録単位',
@@ -101,7 +125,7 @@ function ActivityList() {
                 else return params;
             }
         },
-        { field: 'asset_key', headerName: 'Asset Key', width: 150 },
+        { field: 'asset_key', headerName: 'Asset Key', width: 150, editable: true },
         {
             field: 'created_at',
             headerName: '登録日',
@@ -143,6 +167,7 @@ function ActivityList() {
                     pageSize={5}
                     rowsPerPageOptions={[5]}
                     disableSelectionOnClick
+                    processRowUpdate={processRowUpdate}
                     slots={{
                         toolbar: CustomToolbar,
                     }}
@@ -164,6 +189,15 @@ function ActivityList() {
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={handleSnackbarClose}
+            >
+                <Alert onClose={handleSnackbarClose} severity="error" sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </div>
     );
 }
