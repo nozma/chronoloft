@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import './App.css'
-import ActivityList from './components/ActivityList';
 import CategoryList from './components/CategoryList';
+import ActivityList from './components/ActivityList';
+import RecordList from './components/RecordList';
 import AddCategory from './components/AddCategory';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -40,6 +41,8 @@ function App() {
         <CategoryList key={refreshCategory} />
         <h2>Activities</h2>
         <ActivityList key={refreshActivity} />
+        <h2>Records</h2>
+        <RecordList />
       </div>
     </ThemeProvider>
     );
