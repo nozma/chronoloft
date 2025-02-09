@@ -21,6 +21,7 @@ function ActivityList() {
     { field: 'name', headerName: 'Name', width: 150 },
     { field: 'unit', headerName: 'Unit', width: 100 },
     { field: 'category_name', headerName: 'Category', width: 150 },
+    { field: 'category_group', headerName: 'Group', width: 150},
     { field: 'asset_key', headerName: 'Asset Key', width: 150 },
     { field: 'created_at', headerName: 'Created At', width: 200 }
   ];

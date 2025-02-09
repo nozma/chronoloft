@@ -15,6 +15,7 @@ def get_activities():
             'unit': act.unit.value if act.unit else None,
             'category_id': act.category_id,
             'category_name': act.category.name if act.category else None,
+            'category_group': act.category.group.value if act.category.group else None,
             'asset_key': act.asset_key,
             'created_at': act.created_at.isoformat(),
             'is_active': act.is_active
