@@ -2,14 +2,14 @@
     "name": "activity-tracker",
     "private": true,
     "workspaces": [
-      "frontend"
+        "frontend"
     ],
     "scripts": {
-      "dev:frontend": "cd frontend && npm run dev",
-      "dev:backend": "cd backend && venv/bin/python run.py",
-      "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend && venv/bin/python run.py",
+        "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
     },
     "devDependencies": {
-      "concurrently": "^7.0.0"
+        "concurrently": "^7.0.0"
     }
 }

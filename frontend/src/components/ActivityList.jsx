@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchActivities } from '../services/api';
+import { DataGrid } from '@mui/x-data-grid';
 
 function ActivityList() {
   const [activities, setActivities] = useState([]);
@@ -15,17 +16,25 @@ function ActivityList() {
     return <div>Error: {error}</div>;
   }
 
+  const columns = [
+    { field: 'id', headerName: 'ID', width: 70 },
+    { field: 'name', headerName: 'Name', width: 150 },
+    { field: 'unit', headerName: 'Unit', width: 100 },
+    { field: 'category_name', headerName: 'Category', width: 150 },
+    { field: 'asset_key', headerName: 'Asset Key', width: 150 },
+    { field: 'created_at', headerName: 'Created At', width: 200 }
+  ];
+
   return (
-    <div>
-      <h2>Activities</h2>
-      <ul>
-        {activities.map(activity => (
-          <li key={activity.id}>
-            {activity.name} - Unit: {activity.unit} - Category: {activity.category_name}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <div style={{ height: 400, width: '100%' }}>
+    <DataGrid
+      rows={activities}
+      columns={columns}
+      pageSize={5}
+      rowsPerPageOptions={[5]}
+      disableSelectionOnClick
+    />
+  </div>
   );
 }
 
