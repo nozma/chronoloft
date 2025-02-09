@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { fetchActivities, addActivity, fetchCategories } from '../services/api';
+import { fetchActivities, addActivity, deleteActivity, fetchCategories } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
+import ConfirmDialog from './ConfirmDialog';
+import Button from '@mui/material/Button';
 
 function ActivityList() {
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [categories, setCategories] = useState([]);
+    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+    const [selectedActivityId, setSelectedActivityId] = useState(null);
 
     useEffect(() => {
         fetchActivities()
@@ -44,6 +48,32 @@ function ActivityList() {
         } catch (err) {
             console.error("Failed to add activity:", err);
         }
+    };
+
+    // 直接の削除ではなく、確認ダイアログを表示するためのハンドラー
+    const handleDeleteButtonClick = (activityId) => {
+        setSelectedActivityId(activityId);
+        setConfirmDialogOpen(true);
+    };
+
+    // 確認ダイアログで「Confirm」が押された場合の削除処理
+    const handleConfirmDelete = async () => {
+        try {
+            await deleteActivity(selectedActivityId);
+            fetchActivities()
+                .then(data => setActivities(data))
+                .catch(err => setError(err.message));
+        } catch (err) {
+            console.error("Failed to delete activity:", err);
+        }
+        setConfirmDialogOpen(false);
+        setSelectedActivityId(null);
+    };
+
+    // ダイアログで「Cancel」が押された場合の処理
+    const handleCancelDelete = () => {
+        setConfirmDialogOpen(false);
+        setSelectedActivityId(null);
     };
 
     const columns = [
@@ -83,6 +113,24 @@ function ActivityList() {
                 const day = ("0" + date.getDate()).slice(-2);
                 return `${year}年${month}月${day}日`;
             }
+        },
+        {
+            field: 'actions',
+            headerName: 'Actions',
+            width: 120,
+            sortable: false,
+            filterable: false,
+            renderCell: (params) => {
+                return (
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleDeleteButtonClick(params.row.id)}
+                    >
+                        Delete
+                    </Button>
+                );
+            }
         }
     ];
 
@@ -108,6 +156,13 @@ function ActivityList() {
                 onClose={handleDialogClose}
                 onSubmit={handleActivityAdded}
                 categories={categories}
+            />
+            <ConfirmDialog
+                open={confirmDialogOpen}
+                title="Confirm Deletion"
+                content="Are you sure you want to delete this activity?"
+                onConfirm={handleConfirmDelete}
+                onCancel={handleCancelDelete}
             />
         </div>
     );

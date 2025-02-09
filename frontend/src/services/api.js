@@ -6,14 +6,6 @@ export async function fetchActivities() {
     return response.json();
 }
 
-export async function fetchCategories() {
-    const response = await fetch('/api/categories');
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-    return response.json();
-}
-
 export async function addActivity(activityData) {
     const response = await fetch('/api/activities', {
         method: 'POST',
@@ -22,6 +14,25 @@ export async function addActivity(activityData) {
     });
     if (!response.ok) {
         throw new Error('Failed to create activity');
+    }
+    return response.json();
+}
+
+export async function deleteActivity(activityId) {
+    const response = await fetch(`/api/activities/${activityId}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete activity');
+    }
+    return response.json();
+  }
+
+
+export async function fetchCategories() {
+    const response = await fetch('/api/categories');
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
     }
     return response.json();
 }

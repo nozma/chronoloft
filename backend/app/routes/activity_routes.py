@@ -44,3 +44,12 @@ def add_activity():
     db.session.add(new_activity)
     db.session.commit()
     return jsonify({'message': 'Activity created', 'id': new_activity.id}), 201
+
+@activity_bp.route('/api/activities/<int:activity_id>', methods=['DELETE'])
+def delete_activity(activity_id):
+    activity = Activity.query.get(activity_id)
+    if activity is None:
+        return jsonify({'error': 'Activity not found'}), 404
+    db.session.delete(activity)
+    db.session.commit()
+    return jsonify({'message': 'Activity deleted'})
