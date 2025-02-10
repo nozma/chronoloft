@@ -130,3 +130,33 @@ export async function deleteRecord(recordId) {
     }
     return response.json();
 }
+
+export async function startDiscordPresence(data) {
+    // data はオブジェクトで、以下のキーを含むことを想定：
+    // { group, activity_name, details, asset_key }
+    const response = await fetch('/api/discord_presence/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to start Discord presence');
+    }
+    return response.json();
+}
+
+export async function stopDiscordPresence(data) {
+    // data は、最低限 { group } などを含む想定
+    const response = await fetch('/api/discord_presence/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to stop Discord presence');
+    }
+    return response.json();
+}
+

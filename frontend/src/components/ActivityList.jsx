@@ -30,6 +30,8 @@ function ActivityList() {
     const [stopwatchVisible, setStopwatchVisible] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [preFilledValue, setPreFilledValue] = useState(null);
+    const [discordData, setDiscordData] = useState(null);
+    const [allRecords, setAllRecords] = useState([]);
 
     useEffect(() => {
         fetchActivities()
@@ -67,7 +69,7 @@ function ActivityList() {
         }
     };
 
-    // 直接の削除ではなく、確認ダイアログを表示するためのハンドラー
+    // 削除確認ダイアログ
     const handleDeleteButtonClick = (activityId) => {
         setSelectedActivityId(activityId);
         setConfirmDialogOpen(true);
@@ -111,6 +113,30 @@ function ActivityList() {
             // エラーが発生した場合は例外を投げることで、変更が取り消される
             throw error;
         }
+    };
+
+    // 累計時間を計算する関数
+    const calculateTimeDetails = (activityId, records) => {
+        const now = new Date();
+        const last30Days = new Date();
+        last30Days.setDate(now.getDate() - 30);
+        // activity_idが一致するレコードを抽出
+        const activityRecords = records.filter(rec => rec.activity_id === activityId);
+        const totalOverall = activityRecords.reduce((sum, rec) => sum + rec.value, 0);
+        const totalLast30Days = activityRecords
+            .filter(rec => new Date(rec.created_at) >= last30Days)
+            .reduce((sum, rec) => sum + rec.value, 0);
+        // 時間表示をフォーマット
+        const formatTime30Days = (minutes) => {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.round(minutes % 60);
+            return `${hrs}時間${mins}分`;
+        };
+        const formatTimeTotal = (minutes) => {
+            const hrs = Math.floor(minutes / 60);
+            return `${hrs}時間`;
+        };
+        return `${formatTime30Days(totalLast30Days)}/30日 (合計${formatTimeTotal(totalOverall)})`;
     };
 
     const columns = [
@@ -187,7 +213,15 @@ function ActivityList() {
             // 「回」の場合はダイアログを表示
             setRecordDialogOpen(true);
         } else if (activity.unit === 'minutes') {
-            // 「分」の場合はストップウォッチUIを表示
+            // discordData に必要な情報を組み立てる
+            const details = calculateTimeDetails(activity.id, allRecords);
+            const data = {
+                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
+                activity_name: activity.name,
+                details: details,  // 後ほど計算結果をセットする
+                asset_key: activity.asset_key || "default_image"
+            };
+            setDiscordData(data);
             setStopwatchVisible(true);
         }
     };
@@ -283,6 +317,7 @@ function ActivityList() {
                         setStopwatchVisible(false);
                         setSelectedActivity(null);
                     }}
+                    discordData={discordData}
                 />
             )}
         </div>

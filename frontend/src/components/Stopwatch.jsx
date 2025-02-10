@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box } from '@mui/material';
+import { startDiscordPresence, stopDiscordPresence } from '../services/api';
 
-function Stopwatch({ onComplete, onCancel }) {
+function Stopwatch({ onComplete, onCancel, discordData }) {
     // 計測開始時刻、経過時間、停止状態を管理する
     const [elapsed, setElapsed] = useState(0); // 経過秒数
     const [isRunning, setIsRunning] = useState(false);
@@ -9,9 +10,15 @@ function Stopwatch({ onComplete, onCancel }) {
     const timerRef = useRef(null);
 
     // ストップウォッチの開始
-    const handleStart = () => {
+    const handleStart = async () => {
         setIsRunning(true);
         setIsPaused(false);
+        try {
+            await startDiscordPresence(discordData);
+            console.log('Discord presence started');
+        } catch (error) {
+            console.error('Failed to start Discord presence:', error);
+        }
         // タイマー開始（1秒ごとに更新）
         timerRef.current = setInterval(() => {
             setElapsed((prev) => prev + 1);
@@ -34,18 +41,30 @@ function Stopwatch({ onComplete, onCancel }) {
     };
 
     // 完了：経過時間を分単位に換算して onComplete コールバックに渡す
-    const handleComplete = () => {
+    const handleComplete = async () => {
         clearInterval(timerRef.current);
         setIsRunning(false);
+        try {
+            await stopDiscordPresence({ group: discordData.group });
+            console.log('Discord presence stopped');
+        } catch (error) {
+            console.error('Failed to stop Discord presence:', error);
+        }
         // 経過秒数を分に変換（小数点以下も必要なら調整可能）
         const minutes = elapsed / 60;
         onComplete(minutes);
     };
 
     // キャンセル：タイマー停止し onCancel を呼ぶ
-    const handleCancel = () => {
+    const handleCancel = async () => {
         clearInterval(timerRef.current);
         setIsRunning(false);
+        try {
+            await stopDiscordPresence({ group: discordData.group });
+            console.log('Discord presence stopped on cancel');
+        } catch (error) {
+            console.error('Failed to stop Discord presence:', error);
+        }
         setElapsed(0);
         onCancel();
     };
