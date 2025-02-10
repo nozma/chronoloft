@@ -1,114 +1,129 @@
+// frontend/src/components/Stopwatch.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
 
 function Stopwatch({ onComplete, onCancel, discordData }) {
-    // 計測開始時刻、経過時間、停止状態を管理する
-    const [elapsed, setElapsed] = useState(0); // 経過秒数
-    const [isRunning, setIsRunning] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
-    const timerRef = useRef(null);
+  const [displayTime, setDisplayTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef(null);
 
-    // ストップウォッチの開始
-    const handleStart = async () => {
-        setIsRunning(true);
-        setIsPaused(false);
-        try {
-            await startDiscordPresence(discordData);
-            console.log('Discord presence started');
-        } catch (error) {
-            console.error('Failed to start Discord presence:', error);
-        }
-        // タイマー開始（1秒ごとに更新）
-        timerRef.current = setInterval(() => {
-            setElapsed((prev) => prev + 1);
-        }, 1000);
-    };
+  // startTime と offset を useRef で管理する
+  const startTimeRef = useRef(null);
+  const offsetRef = useRef(0);
 
-    // 一時停止／再開
-    const handleTogglePause = () => {
-        if (isPaused) {
-            // 再開
-            setIsPaused(false);
-            timerRef.current = setInterval(() => {
-                setElapsed((prev) => prev + 1);
-            }, 1000);
-        } else {
-            // 一時停止
-            setIsPaused(true);
-            clearInterval(timerRef.current);
-        }
-    };
+  // 現在時刻と startTime の差分に offset を加えて displayTime を更新
+  const updateDisplayTime = () => {
+    if (startTimeRef.current !== null) {
+      const elapsed = performance.now() - startTimeRef.current + offsetRef.current;
+      setDisplayTime(elapsed);
+    }
+  };
 
-    // 完了：経過時間を分単位に換算して onComplete コールバックに渡す
-    const handleComplete = async () => {
-        clearInterval(timerRef.current);
-        setIsRunning(false);
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
-        }
-        // 経過秒数を分に変換（小数点以下も必要なら調整可能）
-        const minutes = elapsed / 60;
-        onComplete(minutes);
-    };
+  const handleStart = async () => {
+    const now = performance.now();
+    startTimeRef.current = now;
+    offsetRef.current = 0;
+    setIsRunning(true);
+    setIsPaused(false);
+    try {
+      await startDiscordPresence(discordData);
+      console.log('Discord presence started');
+    } catch (error) {
+      console.error('Failed to start Discord presence:', error);
+    }
+    timerRef.current = setInterval(updateDisplayTime, 1000); // 1s ごとに更新
+  };
 
-    // キャンセル：タイマー停止し onCancel を呼ぶ
-    const handleCancel = async () => {
-        clearInterval(timerRef.current);
-        setIsRunning(false);
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped on cancel');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
-        }
-        setElapsed(0);
-        onCancel();
-    };
+  const handleTogglePause = () => {
+    if (isPaused) {
+      // Resume: 再開する際、startTime を更新
+      startTimeRef.current = performance.now();
+      setIsPaused(false);
+      setIsRunning(true);
+      timerRef.current = setInterval(updateDisplayTime, 1000);
+    } else {
+      // Pause: 現在時刻との差分を offset に加算し、タイマーを停止
+      clearInterval(timerRef.current);
+      if (startTimeRef.current !== null) {
+        const elapsed = performance.now() - startTimeRef.current;
+        offsetRef.current += elapsed;
+      }
+      setIsPaused(true);
+      setIsRunning(false);
+    }
+  };
 
-    // コンポーネントがアンマウントされた場合のクリーンアップ
-    useEffect(() => {
-        return () => clearInterval(timerRef.current);
-    }, []);
+  const handleComplete = async () => {
+    clearInterval(timerRef.current);
+    setIsRunning(false);
+    try {
+      await stopDiscordPresence({ group: discordData.group });
+      console.log('Discord presence stopped');
+    } catch (error) {
+      console.error('Failed to stop Discord presence:', error);
+    }
+    // 完了時は offset と (もし動作中なら) 現在時刻との差分の合計を分単位に換算して渡す
+    let totalElapsed = offsetRef.current;
+    if (startTimeRef.current !== null && isRunning) {
+      totalElapsed += performance.now() - startTimeRef.current;
+    }
+    onComplete(totalElapsed / 60000);
+  };
 
-    // 表示用に経過時間を「h時間m分s秒」に変換する例
-    const formatTime = (sec) => {
-        const hours = Math.floor(sec / 3600);
-        const minutes = Math.floor((sec % 3600) / 60);
-        const seconds = sec % 60;
-        return `${hours}時間${minutes}分${seconds}秒`;
-    };
+  const handleCancel = async () => {
+    clearInterval(timerRef.current);
+    setIsRunning(false);
+    try {
+      await stopDiscordPresence({ group: discordData.group });
+      console.log('Discord presence stopped on cancel');
+    } catch (error) {
+      console.error('Failed to stop Discord presence:', error);
+    }
+    offsetRef.current = 0;
+    startTimeRef.current = null;
+    setDisplayTime(0);
+    onCancel();
+  };
 
-    return (
-        <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
-            <Typography variant="h6">ストップウォッチ</Typography>
-            <Typography variant="h4">{formatTime(elapsed)}</Typography>
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                {!isRunning ? (
-                    <Button variant="contained" color="primary" onClick={handleStart}>
-                        Start
-                    </Button>
-                ) : (
-                    <>
-                        <Button variant="contained" onClick={handleTogglePause}>
-                            {isPaused ? 'Resume' : 'Pause'}
-                        </Button>
-                        <Button variant="contained" color="primary" onClick={() => {
-                            console.log("Stopwatch: 完了ボタンがクリックされました"); handleComplete();
-                        }}>
-                            完了
-                        </Button>
-                        <Button variant="outlined" color="error" onClick={handleCancel}>
-                            キャンセル
-                        </Button>
-                    </>
-                )}
-            </Box>
-        </Box>
-    );
+  useEffect(() => {
+    return () => clearInterval(timerRef.current);
+  }, []);
+
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours}時間${minutes}分${seconds}秒`;
+  };
+
+  return (
+    <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
+      <Typography variant="h6">ストップウォッチ</Typography>
+      <Typography variant="h4">{formatTime(displayTime)}</Typography>
+      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
+        {(!isRunning && !isPaused) ? (
+          <Button variant="contained" color="primary" onClick={handleStart}>
+            Start
+          </Button>
+        ) : (
+          <>
+            <Button variant="contained" onClick={handleTogglePause}>
+              {isPaused ? 'Resume' : 'Pause'}
+            </Button>
+            <Button variant="contained" color="primary" onClick={handleComplete}>
+              完了
+            </Button>
+            <Button variant="outlined" color="error" onClick={handleCancel}>
+              キャンセル
+            </Button>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
 }
 
 export default Stopwatch;
