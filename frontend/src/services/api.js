@@ -18,6 +18,29 @@ export async function addCategory(categoryData) {
     return response.json();
 }
 
+export async function updateCategory(categoryId, updateData) {
+    const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+    });
+    if (!response.ok) {
+        throw new Error('Failed to update category');
+    }
+    return response.json();
+}
+
+export async function deleteCategory(categoryId) {
+    const response = await fetch(`/api/categories/${categoryId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete category');
+    }
+    return response.json();
+}
+
 
 export async function fetchActivities() {
     const response = await fetch('/api/activities');
@@ -66,31 +89,44 @@ export async function deleteActivity(activityId) {
 export async function fetchRecords() {
     const response = await fetch('/api/records');
     if (!response.ok) {
-      throw new Error('Failed to fetch records');
+        throw new Error('Failed to fetch records');
     }
     return response.json();
-  }
-  
-  export async function updateRecord(recordId, updateData) {
-    const response = await fetch(`/api/records/${recordId}`, {
-      method: 'PUT',  // または PATCH を使用する場合もあります
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updateData),
+}
+
+export async function createRecord(recordData) {
+    const response = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recordData),
     });
     if (!response.ok) {
-      throw new Error('Failed to update record');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create record');
     }
     return response.json();
-  }
-  
-  export async function deleteRecord(recordId) {
+}
+
+export async function updateRecord(recordId, updateData) {
     const response = await fetch(`/api/records/${recordId}`, {
-      method: 'DELETE',
+        method: 'PUT',  // または PATCH を使用する場合もあります
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
     });
     if (!response.ok) {
-      // エラー内容が JSON で返ってくる場合、エラーメッセージを抽出します
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to delete record');
+        throw new Error('Failed to update record');
     }
     return response.json();
-  }
+}
+
+export async function deleteRecord(recordId) {
+    const response = await fetch(`/api/records/${recordId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        // エラー内容が JSON で返ってくる場合、エラーメッセージを抽出します
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete record');
+    }
+    return response.json();
+}

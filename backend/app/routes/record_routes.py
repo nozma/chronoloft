@@ -28,7 +28,26 @@ def get_records():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# PUT /api/records/<int:record_id>: レコードの更新
+@record_bp.route('/api/records', methods=['POST'])
+def create_record():
+    data = request.get_json()
+    # 必要なフィールドが存在するか確認
+    if not data or 'activity_id' not in data or 'value' not in data:
+        return jsonify({'error': 'activity_id と value は必須です'}), 400
+
+    try:
+        new_record = Record(
+            activity_id=data['activity_id'],
+            value=data['value']
+            # created_at は Record モデル側で default=datetime.datetime.utcnow などになっている前提
+        )
+        db.session.add(new_record)
+        db.session.commit()
+        return jsonify({'message': 'Record created', 'id': new_record.id}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @record_bp.route('/api/records/<int:record_id>', methods=['PUT'])
 def update_record(record_id):
     data = request.get_json()
@@ -40,17 +59,14 @@ def update_record(record_id):
         return jsonify({'error': 'Record not found'}), 404
 
     try:
-        # ここでは value の更新のみを例としています
-        if 'value' in data:
+        if 'value' in data: # valueのみ更新可能
             record.value = data['value']
-        # 必要に応じて他のフィールドも更新可能にする
         db.session.commit()
         return jsonify({'message': 'Record updated'}), 200
     except SQLAlchemyError as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# DELETE /api/records/<int:record_id>: レコードの削除
 @record_bp.route('/api/records/<int:record_id>', methods=['DELETE'])
 def delete_record(record_id):
     record = Record.query.get(record_id)

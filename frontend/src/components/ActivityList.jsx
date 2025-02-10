@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { fetchActivities, addActivity, deleteActivity, fetchCategories, updateActivity } from '../services/api';
+import {
+    fetchActivities,
+    addActivity,
+    updateActivity,
+    deleteActivity,
+    fetchCategories,
+    createRecord
+} from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
@@ -7,6 +14,8 @@ import ConfirmDialog from './ConfirmDialog';
 import Button from '@mui/material/Button';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import AddRecordDialog from './AddRecordDialog';
+import Stopwatch from './Stopwatch';
 
 function ActivityList() {
     const [activities, setActivities] = useState([]);
@@ -17,6 +26,10 @@ function ActivityList() {
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [recordDialogOpen, setRecordDialogOpen] = useState(false);
+    const [stopwatchVisible, setStopwatchVisible] = useState(false);
+    const [selectedActivity, setSelectedActivity] = useState(null);
+    const [preFilledValue, setPreFilledValue] = useState(null);
 
     useEffect(() => {
         fetchActivities()
@@ -141,22 +154,66 @@ function ActivityList() {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 120,
+            width: 240,
             sortable: false,
             filterable: false,
             renderCell: (params) => {
                 return (
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => handleDeleteButtonClick(params.row.id)}
-                    >
-                        Delete
-                    </Button>
+                    <>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => handleDeleteButtonClick(params.row.id)}
+                        >
+                            Delete
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleStartRecord(params.row)}
+                        >
+                            Start
+                        </Button>
+                    </>
                 );
             }
         }
     ];
+
+    // 「Start」ボタン押下時の処理
+    const handleStartRecord = (activity) => {
+        setSelectedActivity(activity);
+        if (activity.unit === 'count') {
+            // 「回」の場合はダイアログを表示
+            setRecordDialogOpen(true);
+        } else if (activity.unit === 'minutes') {
+            // 「分」の場合はストップウォッチUIを表示
+            setStopwatchVisible(true);
+        }
+    };
+
+    // Stopwatch 完了時の処理
+    const handleStopwatchComplete = (minutes) => {
+        console.log("Stopwatch completed. Elapsed minutes:", minutes);
+        // ストップウォッチの計測結果を preFilledValue にセットし、確認用ダイアログを表示する
+        setPreFilledValue(minutes);
+        setStopwatchVisible(false);
+        setRecordDialogOpen(true);
+    };
+
+    // Recordダイアログでレコード作成が完了したときの処理
+    const handleRecordCreated = async (recordData) => {
+        try {
+            const res = await createRecord(recordData);
+            console.log("Record created:", res);
+            setRecordDialogOpen(false);
+            setSelectedActivity(null);
+            setPreFilledValue(null);
+            // 必要なら一覧再取得など
+        } catch (err) {
+            console.error("Failed to create record:", err);
+        }
+    };
 
     return (
         <div>
@@ -198,6 +255,36 @@ function ActivityList() {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+            {/* 「count」用のレコード作成ダイアログ */}
+            {recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
+                <AddRecordDialog
+                    open={recordDialogOpen}
+                    onClose={() => setRecordDialogOpen(false)}
+                    activity={selectedActivity}
+                    onSubmit={handleRecordCreated}
+                    initialValue={null}  // この場合はユーザーが入力するので初期値は不要
+                />
+            )}
+            {/* 「minutes」用のレコード作成ダイアログ、初期値としてストップウォッチ計測結果を渡す */}
+            {recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
+                <AddRecordDialog
+                    open={recordDialogOpen}
+                    onClose={() => setRecordDialogOpen(false)}
+                    activity={selectedActivity}
+                    onSubmit={handleRecordCreated}
+                    initialValue={preFilledValue}  // ここに計測結果（分）が初期値としてセットされる
+                />
+            )}
+            {/* Stopwatch UI */}
+            {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
+                <Stopwatch
+                    onComplete={handleStopwatchComplete}
+                    onCancel={() => {
+                        setStopwatchVisible(false);
+                        setSelectedActivity(null);
+                    }}
+                />
+            )}
         </div>
     );
 }
