@@ -64,7 +64,7 @@ function App() {
                     onClose={handleCloseCategoryDialog}
                 />
                 {/* ActivityList にはレコード作成後に updateRecords() を呼び出すためのコールバックを渡す */}
-                <ActivityList onRecordUpdate={updateRecords} />
+                <ActivityList onRecordUpdate={updateRecords} records={records} />
                 <h2>Records</h2>
                 {/* RecordList には最新のレコード一覧を props として渡す */}
                 <RecordList records={records} onRecordUpdate={updateRecords} />

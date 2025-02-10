@@ -17,7 +17,7 @@ import Alert from '@mui/material/Alert';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 
-function ActivityList({ onRecordUpdate }) {
+function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -31,7 +31,6 @@ function ActivityList({ onRecordUpdate }) {
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [preFilledValue, setPreFilledValue] = useState(null);
     const [discordData, setDiscordData] = useState(null);
-    const [allRecords, setAllRecords] = useState([]);
 
     useEffect(() => {
         fetchActivities()
@@ -113,6 +112,8 @@ function ActivityList({ onRecordUpdate }) {
 
     // 累計時間を計算する関数
     const calculateTimeDetails = (activityId, records) => {
+        console.log("Calculating for activityId:", activityId);
+        console.log("Received records:", records);
         const now = new Date();
         const last30Days = new Date();
         last30Days.setDate(now.getDate() - 30);
@@ -210,7 +211,7 @@ function ActivityList({ onRecordUpdate }) {
             setRecordDialogOpen(true);
         } else if (activity.unit === 'minutes') {
             // discordData に必要な情報を組み立てる
-            const details = calculateTimeDetails(activity.id, allRecords);
+            const details = calculateTimeDetails(activity.id, records);
             const data = {
                 group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
                 activity_name: activity.name,

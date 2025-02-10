@@ -2,6 +2,7 @@ import atexit
 from pypresence import Presence
 import os
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 
@@ -28,7 +29,8 @@ class DiscordRPCManager:
                     state=state,
                     large_text=large_text,
                     details=details,
-                    large_image=large_image
+                    large_image=large_image,
+                    start=time.time(),
                 )
             except Exception as e:
                 print("Failed to update Discord RPC:", e)
