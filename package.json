@@ -7,7 +7,8 @@
     "scripts": {
         "dev:frontend": "cd frontend && npm run dev",
         "dev:backend": "cd backend && venv/bin/python run.py",
-        "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+        "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "build": "pyinstaller main.py --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --windowed -n ActivityTracker --add-data \"backend/.env:backend/\""
     },
     "devDependencies": {
         "concurrently": "^7.0.0"
