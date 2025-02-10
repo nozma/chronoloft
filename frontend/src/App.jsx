@@ -67,7 +67,7 @@ function App() {
                 <ActivityList onRecordUpdate={updateRecords} />
                 <h2>Records</h2>
                 {/* RecordList には最新のレコード一覧を props として渡す */}
-                <RecordList records={records} />
+                <RecordList records={records} onRecordUpdate={updateRecords} />
             </div>
         </ThemeProvider>
     );

@@ -6,7 +6,7 @@ import Button from '@mui/material/Button';
 import RecordFilter from './RecordFilter';
 
 
-function RecordList({ records }) {
+function RecordList({ records, onRecordUpdate }) {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -43,6 +43,7 @@ function RecordList({ records }) {
     const handleConfirmDelete = async () => {
         try {
             await deleteRecord(selectedRecordId);
+            onRecordUpdate();
         } catch (err) {
             console.error("Failed to delete record:", err);
         }
