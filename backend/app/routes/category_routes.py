@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from ..models import Category, ActivityGroup
 from .. import db
+from sqlalchemy.exc import SQLAlchemyError
 
 category_bp = Blueprint('category', __name__)
 
