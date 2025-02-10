@@ -6,8 +6,7 @@ import Button from '@mui/material/Button';
 import RecordFilter from './RecordFilter';
 
 
-function RecordList() {
-    const [records, setRecords] = useState([]);
+function RecordList({ records }) {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -19,26 +18,6 @@ function RecordList() {
         activityName: '',
     });
     const groups = ['study', 'game', 'workout'];
-
-
-    // レコード一覧を取得する
-    useEffect(() => {
-        fetchRecords()
-            .then(data => {
-                setRecords(data);
-                setFilteredRecords(data);
-            })
-            .catch(err => setError(err.message));
-    }, []);
-    
-    // カテゴリ一覧を取得する
-    useEffect(() => {
-        fetchCategories()
-          .then(data => {
-            setCategories(data);
-          })
-          .catch(err => console.error("Error fetching categories:", err));
-      }, []);
 
     useEffect(() => {
         const { group, category, activityName } = filterCriteria;
@@ -64,10 +43,6 @@ function RecordList() {
     const handleConfirmDelete = async () => {
         try {
             await deleteRecord(selectedRecordId);
-            // 削除後、再度レコード一覧を取得
-            fetchRecords()
-                .then(data => setRecords(data))
-                .catch(err => setError(err.message));
         } catch (err) {
             console.error("Failed to delete record:", err);
         }

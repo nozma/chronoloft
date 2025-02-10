@@ -17,7 +17,7 @@ import Alert from '@mui/material/Alert';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 
-function ActivityList() {
+function ActivityList({ onRecordUpdate }) {
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,14 +103,10 @@ function ActivityList() {
 
     const processRowUpdate = async (newRow, oldRow) => {
         try {
-            // newRow は編集後の行全体のデータです。
-            // updateActivity は、activity の更新を行う API 関数です。
             await updateActivity(newRow.id, newRow);
-            // 更新が成功したら newRow を返す（これが DataGrid の内部状態に反映される）
             return newRow;
         } catch (error) {
             console.error("Failed to update activity:", error);
-            // エラーが発生した場合は例外を投げることで、変更が取り消される
             throw error;
         }
     };
@@ -218,7 +214,7 @@ function ActivityList() {
             const data = {
                 group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
                 activity_name: activity.name,
-                details: details,  // 後ほど計算結果をセットする
+                details: details,
                 asset_key: activity.asset_key || "default_image"
             };
             setDiscordData(data);
@@ -243,7 +239,7 @@ function ActivityList() {
             setRecordDialogOpen(false);
             setSelectedActivity(null);
             setPreFilledValue(null);
-            // 必要なら一覧再取得など
+            onRecordUpdate();
         } catch (err) {
             console.error("Failed to create record:", err);
         }
