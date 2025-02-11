@@ -16,6 +16,9 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -149,7 +152,30 @@ function ActivityList({ onRecordUpdate, records }) {
             }
         },
         { field: 'category_name', headerName: 'カテゴリ', width: 150 },
-        { field: 'name', headerName: '項目名', width: 150, editable: true },
+        {
+            field: 'name',
+            headerName: '項目名',
+            width: 200,
+            renderCell: (params) => {
+              // row にグループ名が group_name として含まれている前提
+              let IconComponent = null;
+              const groupName = params.row.category_group; // APIレスポンスのフィールド名に合わせる
+              if (groupName === 'study') {
+                IconComponent = MenuBookIcon;
+              } else if (groupName === 'game') {
+                IconComponent = SportsEsportsIcon;
+              } else if (groupName === 'workout') {
+                IconComponent = FitnessCenterIcon;
+              }
+          
+              return (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  {IconComponent && <IconComponent style={{ marginRight: 8 }} />}
+                  <span>{params.value}</span>
+                </div>
+              );
+            }
+          },
         {
             field: 'unit',
             headerName: '記録単位',
