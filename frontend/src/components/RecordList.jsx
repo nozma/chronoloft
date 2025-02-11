@@ -66,7 +66,6 @@ function RecordList({ records, categories, onRecordUpdate }) {
     };
 
     const columns = [
-        { field: 'id', headerName: 'ID', width: 70 },
         {
             field: 'created_at',
             headerName: '記録日',

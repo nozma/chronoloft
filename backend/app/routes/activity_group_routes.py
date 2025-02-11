@@ -1,15 +1,83 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, request, jsonify
 from app.models import ActivityGroup
+from app import db
+from sqlalchemy.exc import SQLAlchemyError
 
 activity_group_bp = Blueprint('activity_group', __name__, url_prefix='/api/activity_groups')
 
 @activity_group_bp.route('/', methods=['GET'])
 def get_activity_groups():
-    groups = ActivityGroup.query.all()
-    # 例として、各グループの id, name, client_id を返す
-    result = [{
-        'id': group.id,
-        'name': group.name,
-        'client_id': group.client_id
-    } for group in groups]
-    return jsonify(result)
+    """
+    ActivityGroup テーブルの全グループを取得して JSON で返す
+    """
+    try:
+        groups = ActivityGroup.query.all()
+        result = []
+        for group in groups:
+            result.append({
+                'id': group.id,
+                'name': group.name,
+                'client_id': group.client_id
+            })
+        return jsonify(result), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@activity_group_bp.route('/', methods=['POST'])
+def add_activity_group():
+    """
+    新規グループを追加する。リクエスト JSON には 'name'（必須）と 'client_id'（任意）が必要
+    """
+    data = request.get_json()
+    if not data or 'name' not in data:
+        return jsonify({'error': '必要な情報が不足しています。'}), 400
+    try:
+        new_group = ActivityGroup(name=data['name'], client_id=data.get('client_id'))
+        db.session.add(new_group)
+        db.session.commit()
+        return jsonify({'message': 'Activity group created', 'id': new_group.id}), 201
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@activity_group_bp.route('/<int:group_id>', methods=['PUT'])
+def update_activity_group(group_id):
+    """
+    指定したグループの情報を更新する。リクエスト JSON には更新したい 'name' や 'client_id' を含める。
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No input data provided'}), 400
+
+    group = ActivityGroup.query.get(group_id)
+    if group is None:
+        return jsonify({'error': 'Activity group not found'}), 404
+
+    try:
+        if 'name' in data:
+            group.name = data['name']
+        if 'client_id' in data:
+            group.client_id = data['client_id']
+        db.session.commit()
+        return jsonify({'message': 'Activity group updated'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@activity_group_bp.route('/<int:group_id>', methods=['DELETE'])
+def delete_activity_group(group_id):
+    """
+    指定したグループを削除する。削除前に関連するカテゴリなどのデータとの整合性について検討する必要があります。
+    """
+    group = ActivityGroup.query.get(group_id)
+    if group is None:
+        return jsonify({'error': 'Activity group not found'}), 404
+
+    try:
+        db.session.delete(group)
+        db.session.commit()
+        return jsonify({'message': 'Activity group deleted'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

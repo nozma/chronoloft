@@ -12,6 +12,49 @@ export async function fetchActivityGroups() {
     }
 }
 
+export async function addActivityGroup(data) {
+    try {
+        const response = await fetch('/api/activity_groups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+        return response.json();
+    } catch (error) {
+        console.error('Error adding activity group:', error);
+        throw error;
+    }
+}
+
+export async function updateActivityGroup(id, data) {
+    try {
+        const response = await fetch(`/api/activity_groups/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+        return response.json();
+    } catch (error) {
+        console.error('Error updating activity group:', error);
+        throw error;
+    }
+}
+
+export async function deleteActivityGroup(id) {
+    try {
+        const response = await fetch(`/api/activity_groups/${id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+        return response.json();
+    } catch (error) {
+        console.error('Error deleting activity group:', error);
+        throw error;
+    }
+}
+
 
 export async function fetchCategories() {
     const response = await fetch('/api/categories');

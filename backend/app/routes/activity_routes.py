@@ -1,27 +1,42 @@
 from flask import Blueprint, request, jsonify
-from ..models import Activity, ActivityUnitType
+from ..models import Activity, ActivityUnitType, Record
 from .. import db
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import SQLAlchemyError 
+from sqlalchemy import func, desc
 
 activity_bp = Blueprint('activity', __name__)
 
 @activity_bp.route('/api/activities', methods=['GET'])
 def get_activities():
-    activities = Activity.query.all()
-    result = []
-    for act in activities:
-        result.append({
-            'id': act.id,
-            'name': act.name,
-            'unit': act.unit.value if act.unit else None,
-            'category_id': act.category_id,
-            'category_name': act.category.name if act.category else None,
-            'category_group': act.category.group.name if act.category.group else None,
-            'asset_key': act.asset_key,
-            'created_at': act.created_at.isoformat(),
-            'is_active': act.is_active
-        })
-    return jsonify(result)
+    try:
+        # Activity と Record を外部結合して、各 Activity に対して最新の Record.created_at を取得
+        query = db.session.query(
+            Activity,
+            func.max(Record.created_at).label('last_record')
+        ).outerjoin(Record).group_by(Activity.id).order_by(desc('last_record'))
+        
+        activities_with_last = query.all()
+
+        result = []
+        for activity, last_record in activities_with_last:
+            result.append({
+                'id': activity.id,
+                'name': activity.name,
+                'is_active': activity.is_active,
+                'category_id': activity.category_id,
+                'category_name': activity.category.name if activity.category else None,
+                'category_group': activity.category.group.name if activity.category.group else None,
+                'unit': activity.unit.value if activity.unit else None,
+                'asset_key': activity.asset_key,
+                'created_at': activity.created_at.isoformat(),
+                # 追加情報として最新レコードのタイムスタンプも渡す（必要なら）
+                'last_record': last_record.isoformat() if last_record else None,
+            })
+        return jsonify(result), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @activity_bp.route('/api/activities', methods=['POST'])
 def add_activity():

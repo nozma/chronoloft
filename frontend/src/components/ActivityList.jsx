@@ -137,7 +137,6 @@ function ActivityList({ onRecordUpdate, records }) {
     };
 
     const columns = [
-        { field: 'id', headerName: 'ID', width: 70 },
         {
             field: 'category_group',
             headerName: 'グループ',
