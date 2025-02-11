@@ -14,8 +14,8 @@ def get_categories():
             result.append({
                 'id': cat.id,
                 'name': cat.name,
-                # group は Enum で定義しているので、value を返す
-                'group': cat.group.value if cat.group else None
+                'group_id': cat.group_id,
+                'group_name': cat.group.name if cat.group else None
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -29,11 +29,10 @@ def add_category():
         return jsonify({'error': '必要な情報が不足しています'}), 400
 
     try:
-        # ActivityGroup の Enum にキャストする
-        try:
-            group_value = ActivityGroup(data['group'])
-        except ValueError:
-            return jsonify({'error': 'group の値が不正です'}), 400
+        # 既存の ActivityGroup を、グループ名で検索する
+        group_value = ActivityGroup.query.filter_by(name=data['group']).first()
+        if not group_value:
+            return jsonify({'error': '指定されたグループが存在しません'}), 400
 
         new_category = Category(name=data['name'], group=group_value)
         db.session.add(new_category)
@@ -57,10 +56,11 @@ def update_category(category_id):
         if 'name' in data:
             category.name = data['name']
         if 'group' in data:
-            try:
-                category.group = ActivityGroup(data['group'])
-            except ValueError:
-                return jsonify({'error': 'group の値が不正です'}), 400
+            # 既存の ActivityGroup をグループ名で検索する
+            group_value = ActivityGroup.query.filter_by(name=data['group']).first()
+            if not group_value:
+                return jsonify({'error': '指定されたグループが存在しません'}), 400
+            category.group = group_value
         db.session.commit()
         return jsonify({'message': 'Category updated'}), 200
     except SQLAlchemyError as e:

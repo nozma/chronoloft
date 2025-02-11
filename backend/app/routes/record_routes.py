@@ -21,7 +21,7 @@ def get_records():
                 'activity_category': rec.activity.category.name if rec.activity and rec.activity.category else None,
                 'activity_category_id': rec.activity.category.id if rec.activity and rec.activity.category else None,
                 'activity_name': rec.activity.name if rec.activity else None,
-                'activity_group': rec.activity.category.group.value if rec.activity and rec.activity.category and rec.activity.category.group else None,
+                'activity_group': rec.activity.category.group.name if rec.activity.category.group else None,
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:

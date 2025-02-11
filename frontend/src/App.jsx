@@ -7,7 +7,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Button from '@mui/material/Button';
-import { fetchRecords } from './services/api';
+import { fetchRecords, fetchCategories } from './services/api';
 
 function App() {
     // カラーテーマ対応
@@ -23,8 +23,9 @@ function App() {
     );
 
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    // 共通で管理するレコード一覧の状態
     const [records, setRecords] = useState([]);
+    const [categories, setCategories] = useState([]);
+
 
     // 初回または更新時に最新のレコード一覧を取得する関数
     const updateRecords = async () => {
@@ -37,9 +38,20 @@ function App() {
         }
     };
 
+    // カテゴリ一覧を取得する関数
+    const updateCategories = async () => {
+        try {
+            const data = await fetchCategories();
+            setCategories([...data]);
+        } catch (error) {
+            console.error("Failed to fetch categories:", error);
+        }
+    };
+
     // 初回取得
     useEffect(() => {
         updateRecords();
+        updateCategories();
     }, []);
 
     const handleOpenCategoryDialog = () => {
@@ -62,11 +74,9 @@ function App() {
                     open={categoryDialogOpen}
                     onClose={handleCloseCategoryDialog}
                 />
-                {/* ActivityList にはレコード作成後に updateRecords() を呼び出すためのコールバックを渡す */}
                 <ActivityList onRecordUpdate={updateRecords} records={records} />
                 <h2>Records</h2>
-                {/* RecordList には最新のレコード一覧を props として渡す */}
-                <RecordList records={records} onRecordUpdate={updateRecords} />
+                <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
             </div>
         </ThemeProvider>
     );

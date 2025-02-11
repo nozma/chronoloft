@@ -1,3 +1,4 @@
+// frontend/src/components/CategoryManagementDialog.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
@@ -6,17 +7,21 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { fetchCategories, addCategory, updateCategory, deleteCategory } from '../services/api';
+import MenuItem from '@mui/material/MenuItem';
+import { fetchCategories, addCategory, updateCategory, deleteCategory, fetchActivityGroups } from '../services/api';
 
 function CategoryManagementDialog({ open, onClose }) {
   const [categories, setCategories] = useState([]);
+  // 追加: グループ一覧を管理する state
+  const [groups, setGroups] = useState([]);
+  
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryGroup, setNewCategoryGroup] = useState('');
   const [editCategoryId, setEditCategoryId] = useState(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategoryGroup, setEditCategoryGroup] = useState('');
 
-  // カテゴリ一覧を取得する
+  // カテゴリ一覧を取得する（ダイアログが開いているとき）
   useEffect(() => {
     if (open) {
       fetchCategories()
@@ -25,8 +30,16 @@ function CategoryManagementDialog({ open, onClose }) {
     }
   }, [open]);
 
+  // ActivityGroup の一覧を取得する
+  useEffect(() => {
+    fetchActivityGroups()
+      .then(data => setGroups(data))
+      .catch(err => console.error('Error fetching groups:', err));
+  }, []);
+
   const handleAdd = async () => {
     try {
+      // ここでは、新規追加時にグループとしてグループ名を渡す前提
       await addCategory({ name: newCategoryName, group: newCategoryGroup });
       const updated = await fetchCategories();
       setCategories(updated);
@@ -40,6 +53,8 @@ function CategoryManagementDialog({ open, onClose }) {
   const handleEdit = (category) => {
     setEditCategoryId(category.id);
     setEditCategoryName(category.name);
+    // ここで、APIから返されるカテゴリ情報内のグループがどのプロパティか確認する。
+    // 例として、category.group がグループ名ならそのままで、そうでなければ category.group_name に変更
     setEditCategoryGroup(category.group);
   };
 
@@ -80,10 +95,18 @@ function CategoryManagementDialog({ open, onClose }) {
           />
           <TextField
             label="グループ"
+            select
             value={newCategoryGroup}
             onChange={(e) => setNewCategoryGroup(e.target.value)}
-            style={{ marginRight: '16px' }}
-          />
+            style={{ marginRight: '16px', width: '160px' }}
+          >
+            <MenuItem value="">All</MenuItem>
+            {groups.map((g) => (
+              <MenuItem key={g.id} value={g.name}>
+                {g.name}
+              </MenuItem>
+            ))}
+          </TextField>
           <Button variant="contained" color="primary" onClick={handleAdd}>
             追加
           </Button>
@@ -115,11 +138,21 @@ function CategoryManagementDialog({ open, onClose }) {
                 <TableCell>
                   {editCategoryId === cat.id ? (
                     <TextField
+                      label="グループ"
+                      select
                       value={editCategoryGroup}
                       onChange={(e) => setEditCategoryGroup(e.target.value)}
-                    />
+                      style={{ marginRight: '16px', width: '160px' }}
+                    >
+                      {groups.map((g) => (
+                        <MenuItem key={g.id} value={g.name}>
+                          {g.name}
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   ) : (
-                    cat.group
+                    // ここも、バックエンドのAPIで返されるフィールド名に合わせる
+                    cat.group_name
                   )}
                 </TableCell>
                 <TableCell align="right">

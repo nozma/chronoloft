@@ -3,6 +3,7 @@ from pypresence import Presence
 import os
 from dotenv import load_dotenv
 import time
+from app.models import ActivityGroup
 
 load_dotenv()
 
@@ -45,13 +46,12 @@ class DiscordRPCManager:
             finally:
                 self.rpc = None
 
-# グループごとの CLIENT_ID は .env から読み込む
 def get_discord_manager_for_group(group):
-    # "study", "game", "workout" に対応する名前で環境変数を定義しておく
-    env_var = f"DISCORD_CLIENT_ID_{group.upper()}"
-    client_id = os.getenv(env_var)
-    if client_id:
-        return DiscordRPCManager(client_id)
+    # group は例として "study", "game", "workout" などとする
+    # ActivityGroup テーブルから該当するグループをクエリする
+    activity_group = ActivityGroup.query.filter_by(name=group).first()
+    if activity_group and activity_group.client_id:
+        return DiscordRPCManager(activity_group.client_id)
     else:
         print(f"No Discord CLIENT_ID set for group {group}.")
         return None

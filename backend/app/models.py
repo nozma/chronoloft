@@ -6,10 +6,22 @@ class ActivityUnitType(enum.Enum):
     COUNT = "count"
     MINUTES = "minutes"
 
-class ActivityGroup(enum.Enum):
-    STUDY = "study"
-    GAME = "game"
-    WORKOUT = "workout"
+class ActivityGroup(db.Model):
+    """
+    アクティビティのグループを管理するモデル。
+    
+    Attributes:
+        id (int): 自動採番される主キー。
+        name (str): グループ名。
+        client_id (str): Discord連携に使うClient ID。
+    """
+    __tablename__ = 'activity_group'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    client_id = db.Column(db.String(50), unique=True)
+    
+    def __repr__(self):
+        return f"<ActivityGroup name={self.name} client_id={self.client_id}>"
 
 class Activity(db.Model):
     """
@@ -45,11 +57,12 @@ class Category(db.Model):
     Attributes:
         id (int): 自動採番される主キー。
         name (str): カテゴリーの名称(例: "英語", "数学")。
-        group: カテゴリーごとに決まるアクティビティの種類(勉強・ゲーム・運動のいずれか)
+        group_id: アクティビティグループのid。
     """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
-    group = db.Column(db.Enum(ActivityGroup), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('activity_group.id'), nullable=False)
+    group = db.relationship('ActivityGroup', backref='categories')
     
     activities = db.relationship('Activity', back_populates='category', lazy=True)
 

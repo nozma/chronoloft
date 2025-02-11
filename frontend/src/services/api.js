@@ -1,3 +1,18 @@
+export async function fetchActivityGroups() {
+    try {
+        const response = await fetch('/api/activity_groups');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch activity groups: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching activity groups:', error);
+        throw error;
+    }
+}
+
+
 export async function fetchCategories() {
     const response = await fetch('/api/categories');
     if (!response.ok) {

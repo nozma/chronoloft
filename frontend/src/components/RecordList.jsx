@@ -6,12 +6,11 @@ import Button from '@mui/material/Button';
 import RecordFilter from './RecordFilter';
 
 
-function RecordList({ records, onRecordUpdate }) {
+function RecordList({ records, categories, onRecordUpdate }) {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [selectedRecordId, setSelectedRecordId] = useState(null);
-    const [categories, setCategories] = useState([]);
     const [filterCriteria, setFilterCriteria] = useState({
         group: '',
         category: '',
