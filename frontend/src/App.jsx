@@ -54,7 +54,6 @@ function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <div>
-                <h1>Activity Tracker</h1>
                 <h2>Activities</h2>
                 <Button variant="contained" onClick={handleOpenCategoryDialog}>
                     カテゴリの管理
