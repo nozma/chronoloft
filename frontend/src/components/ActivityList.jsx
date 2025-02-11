@@ -19,6 +19,7 @@ import Stopwatch from './Stopwatch';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import HomeWorkIcon from '@mui/icons-material/HomeWork';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -166,6 +167,8 @@ function ActivityList({ onRecordUpdate, records }) {
                 IconComponent = SportsEsportsIcon;
               } else if (groupName === 'workout') {
                 IconComponent = FitnessCenterIcon;
+              } else {
+                IconComponent = HomeWorkIcon;
               }
           
               return (
