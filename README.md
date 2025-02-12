@@ -54,3 +54,23 @@ npm run start
 ```
 
 http://localhost:5173/ にアクセス。
+
+## 使用方法
+
+### 1. 記録の開始
+
+アクティビティを選択し、STARTボタンで記録を開始する。アクティビティの記録単位が分であればストップウォッチが、回であれば記録用ダイアログが開く。ストップウォッチ動作中は、Discord連携設定をしていればDiscordのステータスにアクティビティの内容が表示される。
+
+### 2. グループの設定とDiscord連携設定（オプション）
+
+アクティビティの大きなグループで、Discordのアプリと関連付けられる。
+
+Discord連携機能を使う場合、あらかじめ[Discord Developer Portall](https://discordapp.com/developers)からアプリケーションを作成しておき、APPLICATION IDを入手し、グループの管理からDiscord Client IDにセットしておく。
+
+Discord連携時の「◯◯をプレイ中」の表示はアプリ名となるため、グループごとに表示を変える場合はアクティビティごとにアプリケーションを作成しておく。
+
+### 3. アクティビティの設定
+
+アクティビティの管理ボタンで開くテーブルから登録されているアクティビティの確認、追加、編集、削除ができる。
+
+Asset KeyにDiscord Developer Portal > Rich Presence > Rich Presence Assetsから登録したアセット画像のキーを設定しておくと、Discord連携時に画像が表示される。
