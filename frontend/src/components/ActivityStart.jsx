@@ -10,12 +10,15 @@ function ActivityStart({ activities, onStart }) {
             <Autocomplete
                 options={activities}
                 getOptionLabel={(option) => option.name}
-                renderOption={(props, option) => (
-                    <li {...props}>
+                renderOption={(props, option) => {
+                    const { key, ...rest } = props;
+                    return (
+                      <li key={key} {...rest}>
                         {getIconForGroup(option.category_group)}
                         {option.name}
-                    </li>
-                )}
+                      </li>
+                    );
+                  }}
                 renderInput={(params) => (
                     <TextField
                         {...params}

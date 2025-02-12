@@ -168,8 +168,6 @@ function ActivityList({ onRecordUpdate, records }) {
 
     // 累計時間を計算する関数
     const calculateTimeDetails = (activityId, records) => {
-        console.log("Calculating for activityId:", activityId);
-        console.log("Received records:", records);
         const now = new Date();
         const last30Days = new Date();
         last30Days.setDate(now.getDate() - 30);
