@@ -15,7 +15,7 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
     const startTimeRef = useRef(null);
     const offsetRef = useRef(0);
 
-    // ローカルストレージから状態を復元する
+    // ローカルストレージから状態を復元し、保存状態がなければ自動開始する
     useEffect(() => {
         const savedState = localStorage.getItem('stopwatchState');
         if (savedState) {
@@ -25,6 +25,8 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
             setDisplayTime(state.displayTime);
             setIsRunning(state.isRunning);
             setIsPaused(state.isPaused);
+        } else {
+            handleStart();
         }
         setRestored(true);
     }, []);
@@ -70,6 +72,7 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
     };
 
     const handleStart = async () => {
+        if (startTimeRef.current) { return; } // 二重に起動しない
         const now = Date.now();
         startTimeRef.current = now;
         offsetRef.current = 0;
@@ -157,23 +160,15 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
             </Typography>
             <Typography variant="h4">{formatTime(displayTime)}</Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                {(!isRunning && !isPaused) ? (
-                    <Button variant="contained" color="primary" onClick={handleStart}>
-                        Start
-                    </Button>
-                ) : (
-                    <>
-                        <Button variant="contained" onClick={handleTogglePause}>
-                            {isPaused ? 'Resume' : 'Pause'}
-                        </Button>
-                        <Button variant="contained" color="primary" onClick={handleComplete}>
-                            完了
-                        </Button>
-                        <Button variant="outlined" color="error" onClick={handleCancel}>
-                            キャンセル
-                        </Button>
-                    </>
-                )}
+                <Button variant="contained" onClick={handleTogglePause}>
+                    {isPaused ? 'Resume' : 'Pause'}
+                </Button>
+                <Button variant="contained" color="primary" onClick={handleComplete}>
+                    完了
+                </Button>
+                <Button variant="outlined" color="error" onClick={handleCancel}>
+                    キャンセル
+                </Button>
             </Box>
         </Box>
     );
