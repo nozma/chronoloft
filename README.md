@@ -44,6 +44,7 @@ python init_db.py
 cd ../frontend
 npm install
 cd ..
+npm install
 ```
 
 ### 4. 起動
