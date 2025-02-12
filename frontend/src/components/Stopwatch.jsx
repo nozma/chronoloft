@@ -2,12 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import HomeWorkIcon from '@mui/icons-material/HomeWork';
 
-function Stopwatch({ onComplete, onCancel, discordData }) {
+function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
     const [displayTime, setDisplayTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
-    const [restored, setRestored] = useState(false);  // 復元完了フラグ
+    const [restored, setRestored] = useState(false);
     const timerRef = useRef(null);
 
     // startTime と offset を useRef で管理する
@@ -148,9 +152,26 @@ function Stopwatch({ onComplete, onCancel, discordData }) {
         return `${hours}時間${minutes}分${seconds}秒`;
     };
 
+    // グループに応じたアイコンを返す関数
+    const getIconForGroup = (group) => {
+        switch (group) {
+            case 'study':
+                return <MenuBookIcon sx={{ mr: 1, color: 'blue' }} />;
+            case 'game':
+                return <SportsEsportsIcon sx={{ mr: 1, color: 'red' }} />;
+            case 'workout':
+                return <FitnessCenterIcon sx={{ mr: 1, color: 'green' }} />;
+            default:
+                return <HomeWorkIcon sx={{ mr: 1, color: 'gray' }} />;
+        }
+    };
+
     return (
         <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
-            <Typography variant="h6">ストップウォッチ</Typography>
+            <Typography variant="h6" sx={{ mb: 1 }}>
+                {getIconForGroup(activityGroup)}
+                {activityName}
+            </Typography>
             <Typography variant="h4">{formatTime(displayTime)}</Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
                 {(!isRunning && !isPaused) ? (

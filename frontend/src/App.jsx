@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import CategoryManagementDialog from './components/CategoryManagementDialog';
-import GroupManagementDialog from './components/GroupManagementDialog';
 import ActivityList from './components/ActivityList';
 import RecordList from './components/RecordList';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import Button from '@mui/material/Button';
 import { fetchRecords, fetchCategories } from './services/api';
 
 function App() {
@@ -23,8 +20,6 @@ function App() {
         [prefersDarkMode]
     );
 
-    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
     const [records, setRecords] = useState([]);
     const [categories, setCategories] = useState([]);
 
@@ -56,28 +51,11 @@ function App() {
         updateCategories();
     }, []);
 
-    const handleOpenCategoryDialog = () => setCategoryDialogOpen(true);
-    const handleCloseCategoryDialog = () => setCategoryDialogOpen(false);
-    const handleOpenGroupDialog = () => setGroupDialogOpen(true);
-    const handleCloseGroupDialog = () => setGroupDialogOpen(false);
-
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <div>
                 <h2>Activities</h2>
-                <Button variant="contained" onClick={handleOpenCategoryDialog}>
-                    カテゴリの管理
-                </Button>
-                <Button
-                    variant="contained"
-                    onClick={handleOpenGroupDialog}
-                    style={{ marginLeft: '16px' }}
-                >
-                    グループの管理
-                </Button>
-                <CategoryManagementDialog open={categoryDialogOpen} onClose={handleCloseCategoryDialog} />
-                <GroupManagementDialog open={groupDialogOpen} onClose={handleCloseGroupDialog} />
                 <ActivityList onRecordUpdate={updateRecords} records={records} />
                 <h2>Records</h2>
                 <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />

@@ -211,7 +211,6 @@ function ActivityList({ onRecordUpdate, records }) {
             headerName: '項目名',
             width: 200,
             renderCell: (params) => {
-                // row にグループ名が group_name として含まれている前提
                 let IconComponent = null;
                 const groupName = params.row.category_group; // APIレスポンスのフィールド名に合わせる
                 if (groupName === 'study') {
@@ -335,15 +334,10 @@ function ActivityList({ onRecordUpdate, records }) {
             console.error("Failed to create record:", err);
         }
     };
-
-    const handleOpenCategoryDialog = () => setCategoryDialogOpen(true);
-    const handleCloseCategoryDialog = () => setCategoryDialogOpen(false);
-    const handleOpenGroupDialog = () => setGroupDialogOpen(true);
-    const handleCloseGroupDialog = () => setGroupDialogOpen(false);
-
+    
     return (
         <div>
-            {!showGrid && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}
+            {!showGrid && !stopwatchVisible && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}
             {!stopwatchVisible && (
                 !showGrid ? (
                     <div>
@@ -459,6 +453,8 @@ function ActivityList({ onRecordUpdate, records }) {
                         setSelectedActivity(null);
                     }}
                     discordData={discordData}
+                    activityName={selectedActivity.name}
+                    activityGroup={selectedActivity.category_group}
                 />
             )}
         </div>
