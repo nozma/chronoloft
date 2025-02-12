@@ -7,7 +7,7 @@ Discordへのステータス表示機能を備えたアクティビティ記録�
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/yourusername/activity-tracker.git
+git clone https://github.com/nozma/activity-tracker.git
 cd activity-tracker
 ```
 ### 2. バックエンド
