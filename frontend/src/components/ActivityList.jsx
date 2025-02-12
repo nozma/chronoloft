@@ -1,29 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import {
-    fetchActivities,
-    addActivity,
-    updateActivity,
-    deleteActivity,
-    fetchCategories,
-    createRecord
+  fetchActivities,
+  addActivity,
+  updateActivity,
+  deleteActivity,
+  fetchCategories,
+  createRecord
 } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
+import {
+  Button,
+  Snackbar,
+  Alert,
+  Box
+} from '@mui/material';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
 import ConfirmDialog from './ConfirmDialog';
-import Button from '@mui/material/Button';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 import ActivityStart from './ActivityStart';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import HomeWorkIcon from '@mui/icons-material/HomeWork';
-import Box from '@mui/material/Box';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import GroupManagementDialog from './GroupManagementDialog';
+import getIconForGroup from '../utils/getIconForGroup';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -211,21 +210,10 @@ function ActivityList({ onRecordUpdate, records }) {
             headerName: '項目名',
             width: 200,
             renderCell: (params) => {
-                let IconComponent = null;
-                const groupName = params.row.category_group; // APIレスポンスのフィールド名に合わせる
-                if (groupName === 'study') {
-                    IconComponent = MenuBookIcon;
-                } else if (groupName === 'game') {
-                    IconComponent = SportsEsportsIcon;
-                } else if (groupName === 'workout') {
-                    IconComponent = FitnessCenterIcon;
-                } else {
-                    IconComponent = HomeWorkIcon;
-                }
-
+                const groupName = params.row.category_group;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {IconComponent && <IconComponent style={{ marginRight: 8 }} />}
+                        {getIconForGroup(groupName)}
                         <span>{params.value}</span>
                     </div>
                 );

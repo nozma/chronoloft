@@ -2,10 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography, Box } from '@mui/material';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import HomeWorkIcon from '@mui/icons-material/HomeWork';
+import getIconForGroup from '../utils/getIconForGroup';
 
 function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
     const [displayTime, setDisplayTime] = useState(0);
@@ -150,20 +147,6 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
         return `${hours}時間${minutes}分${seconds}秒`;
-    };
-
-    // グループに応じたアイコンを返す関数
-    const getIconForGroup = (group) => {
-        switch (group) {
-            case 'study':
-                return <MenuBookIcon sx={{ mr: 1, color: 'blue' }} />;
-            case 'game':
-                return <SportsEsportsIcon sx={{ mr: 1, color: 'red' }} />;
-            case 'workout':
-                return <FitnessCenterIcon sx={{ mr: 1, color: 'green' }} />;
-            default:
-                return <HomeWorkIcon sx={{ mr: 1, color: 'gray' }} />;
-        }
     };
 
     return (
