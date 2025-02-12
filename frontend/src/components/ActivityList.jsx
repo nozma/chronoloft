@@ -16,6 +16,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
+import ActivityStart from './ActivityStart';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
@@ -35,6 +36,50 @@ function ActivityList({ onRecordUpdate, records }) {
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [preFilledValue, setPreFilledValue] = useState(null);
     const [discordData, setDiscordData] = useState(null);
+
+    // 状態の復元
+    useEffect(() => {
+        const savedVisible = localStorage.getItem('stopwatchVisible');
+        if (savedVisible === 'true') {
+            setStopwatchVisible(true);
+        }
+        const savedActivity = localStorage.getItem('selectedActivity');
+        if (savedActivity) {
+            try {
+                setSelectedActivity(JSON.parse(savedActivity));
+            } catch (error) {
+                console.error("Failed to parse selectedActivity:", error);
+            }
+        }
+        const savedDiscordData = localStorage.getItem('discordData');
+        if (savedDiscordData) {
+            try {
+                setDiscordData(JSON.parse(savedDiscordData));
+            } catch (error) {
+                console.error("Failed to parse discordData from localStorage:", error);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('stopwatchVisible', stopwatchVisible);
+    }, [stopwatchVisible]);
+
+    useEffect(() => {
+        if (selectedActivity) {
+            localStorage.setItem('selectedActivity', JSON.stringify(selectedActivity));
+        } else {
+            localStorage.removeItem('selectedActivity');
+        }
+    }, [selectedActivity]);
+    useEffect(() => {
+        if (discordData) {
+            localStorage.setItem('discordData', JSON.stringify(discordData));
+        } else {
+            localStorage.removeItem('discordData');
+        }
+    }, [discordData]);
+
 
     useEffect(() => {
         fetchActivities()
@@ -158,27 +203,27 @@ function ActivityList({ onRecordUpdate, records }) {
             headerName: '項目名',
             width: 200,
             renderCell: (params) => {
-              // row にグループ名が group_name として含まれている前提
-              let IconComponent = null;
-              const groupName = params.row.category_group; // APIレスポンスのフィールド名に合わせる
-              if (groupName === 'study') {
-                IconComponent = MenuBookIcon;
-              } else if (groupName === 'game') {
-                IconComponent = SportsEsportsIcon;
-              } else if (groupName === 'workout') {
-                IconComponent = FitnessCenterIcon;
-              } else {
-                IconComponent = HomeWorkIcon;
-              }
-          
-              return (
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                  {IconComponent && <IconComponent style={{ marginRight: 8 }} />}
-                  <span>{params.value}</span>
-                </div>
-              );
+                // row にグループ名が group_name として含まれている前提
+                let IconComponent = null;
+                const groupName = params.row.category_group; // APIレスポンスのフィールド名に合わせる
+                if (groupName === 'study') {
+                    IconComponent = MenuBookIcon;
+                } else if (groupName === 'game') {
+                    IconComponent = SportsEsportsIcon;
+                } else if (groupName === 'workout') {
+                    IconComponent = FitnessCenterIcon;
+                } else {
+                    IconComponent = HomeWorkIcon;
+                }
+
+                return (
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {IconComponent && <IconComponent style={{ marginRight: 8 }} />}
+                        <span>{params.value}</span>
+                    </div>
+                );
             }
-          },
+        },
         {
             field: 'unit',
             headerName: '記録単位',
@@ -218,18 +263,31 @@ function ActivityList({ onRecordUpdate, records }) {
                         >
                             Delete
                         </Button>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleStartRecord(params.row)}
-                        >
-                            Start
-                        </Button>
                     </>
                 );
             }
         }
     ];
+
+    // activityを選択して開始する場合の処理
+    const handleStartRecordFromSelect = (activity) => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+        if (activity.unit === 'count') {
+            setRecordDialogOpen(true);
+        } else if (activity.unit === 'minutes') {
+            // minutes の場合は、Discord 連携用の情報を組み立てる
+            const details = calculateTimeDetails(activity.id, records);
+            const data = {
+                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
+                activity_name: activity.name,
+                details: details,
+                asset_key: activity.asset_key || "default_image"
+            };
+            setDiscordData(data);
+            setStopwatchVisible(true);
+        }
+    };
 
     // 「Start」ボタン押下時の処理
     const handleStartRecord = (activity) => {
@@ -269,6 +327,9 @@ function ActivityList({ onRecordUpdate, records }) {
             setSelectedActivity(null);
             setPreFilledValue(null);
             onRecordUpdate();
+            fetchActivities()
+                .then(data => setActivities(data))
+                .catch(err => setError(err.message));
         } catch (err) {
             console.error("Failed to create record:", err);
         }
@@ -276,6 +337,7 @@ function ActivityList({ onRecordUpdate, records }) {
 
     return (
         <div>
+            <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />
             <div style={{ height: 400, width: '100%' }}>
                 <DataGrid
                     rows={activities}
