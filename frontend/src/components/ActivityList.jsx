@@ -21,6 +21,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
+import Box from '@mui/material/Box';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -36,6 +37,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [preFilledValue, setPreFilledValue] = useState(null);
     const [discordData, setDiscordData] = useState(null);
+    const [showGrid, setShowGrid] = useState(false);
 
     // 状態の復元
     useEffect(() => {
@@ -289,26 +291,6 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     };
 
-    // 「Start」ボタン押下時の処理
-    const handleStartRecord = (activity) => {
-        setSelectedActivity(activity);
-        if (activity.unit === 'count') {
-            // 「回」の場合はダイアログを表示
-            setRecordDialogOpen(true);
-        } else if (activity.unit === 'minutes') {
-            // discordData に必要な情報を組み立てる
-            const details = calculateTimeDetails(activity.id, records);
-            const data = {
-                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
-                activity_name: activity.name,
-                details: details,
-                asset_key: activity.asset_key || "default_image"
-            };
-            setDiscordData(data);
-            setStopwatchVisible(true);
-        }
-    };
-
     // Stopwatch 完了時の処理
     const handleStopwatchComplete = (minutes) => {
         console.log("Stopwatch completed. Elapsed minutes:", minutes);
@@ -337,23 +319,40 @@ function ActivityList({ onRecordUpdate, records }) {
 
     return (
         <div>
-            <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />
-            <div style={{ height: 400, width: '100%' }}>
-                <DataGrid
-                    rows={activities}
-                    columns={columns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5]}
-                    disableSelectionOnClick
-                    processRowUpdate={processRowUpdate}
-                    slots={{
-                        toolbar: CustomToolbar,
-                    }}
-                    slotProps={{
-                        toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick },
-                    }}
-                />
-            </div>
+            {!showGrid && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}
+            {!stopwatchVisible && (
+                !showGrid ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+                        <Button variant="contained" onClick={() => setShowGrid(true)}>
+                            アクティビティの管理
+                        </Button>
+                    </Box>
+                ) : (
+                    <>
+                        <div style={{ height: 400, width: '100%' }}>
+                            <DataGrid
+                                rows={activities}
+                                columns={columns}
+                                pageSize={5}
+                                rowsPerPageOptions={[5]}
+                                disableSelectionOnClick
+                                processRowUpdate={processRowUpdate}
+                                slots={{
+                                    toolbar: CustomToolbar,
+                                }}
+                                slotProps={{
+                                    toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick },
+                                }}
+                            />
+                        </div>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, mt: 1 }}>
+                            <Button variant="contained" onClick={() => setShowGrid(false)} sx={{ mb: 2 }}>
+                                閉じる
+                            </Button>
+                        </Box>
+                    </>
+                )
+            )}
             <AddActivityDialog
                 open={dialogOpen}
                 onClose={handleDialogClose}
