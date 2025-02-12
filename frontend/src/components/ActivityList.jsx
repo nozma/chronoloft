@@ -22,6 +22,8 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import Box from '@mui/material/Box';
+import CategoryManagementDialog from './CategoryManagementDialog';
+import GroupManagementDialog from './GroupManagementDialog';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -38,6 +40,10 @@ function ActivityList({ onRecordUpdate, records }) {
     const [preFilledValue, setPreFilledValue] = useState(null);
     const [discordData, setDiscordData] = useState(null);
     const [showGrid, setShowGrid] = useState(false);
+    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
+    const [activityGridVisible, setActivityGridVisible] = useState(false);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
 
     // 状態の復元
     useEffect(() => {
@@ -236,7 +242,7 @@ function ActivityList({ onRecordUpdate, records }) {
                 else return params;
             }
         },
-        { field: 'asset_key', headerName: 'Asset Key', width: 150, editable: true },
+        { field: 'asset_key', headerName: 'Asset Key', width: 150 },
         {
             field: 'created_at',
             headerName: '登録日',
@@ -258,6 +264,14 @@ function ActivityList({ onRecordUpdate, records }) {
             renderCell: (params) => {
                 return (
                     <>
+                        <Button
+                            variant="outlined"
+                            color="info"
+                            onClick={() => handleEditActivity(params.row)}
+                            sx={{ mr: 1 }}
+                        >
+                            Edit
+                        </Button>
                         <Button
                             variant="contained"
                             color="secondary"
@@ -291,6 +305,11 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     };
 
+    const handleEditActivity = (activity) => {
+        setSelectedActivity(activity);
+        setEditDialogOpen(true);
+    };
+
     // Stopwatch 完了時の処理
     const handleStopwatchComplete = (minutes) => {
         console.log("Stopwatch completed. Elapsed minutes:", minutes);
@@ -317,19 +336,34 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     };
 
+    const handleOpenCategoryDialog = () => setCategoryDialogOpen(true);
+    const handleCloseCategoryDialog = () => setCategoryDialogOpen(false);
+    const handleOpenGroupDialog = () => setGroupDialogOpen(true);
+    const handleCloseGroupDialog = () => setGroupDialogOpen(false);
+
     return (
         <div>
             {!showGrid && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}
             {!stopwatchVisible && (
                 !showGrid ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
-                        <Button variant="contained" onClick={() => setShowGrid(true)}>
-                            アクティビティの管理
-                        </Button>
-                    </Box>
+                    <div>
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, gap: '8px' }}>
+                            <Button variant="contained" onClick={() => setCategoryDialogOpen(true)}>
+                                カテゴリの管理
+                            </Button>
+                            <Button variant="contained" onClick={() => setGroupDialogOpen(true)}>
+                                グループの管理
+                            </Button>
+                            <Button variant="contained" onClick={() => setShowGrid(true)}>
+                                アクティビティの管理
+                            </Button>
+                        </Box>
+                        <CategoryManagementDialog open={categoryDialogOpen} onClose={() => setCategoryDialogOpen(false)} />
+                        <GroupManagementDialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} />
+                    </div>
                 ) : (
                     <>
-                        <div style={{ height: 400, width: '100%' }}>
+                        <div style={{ height: 400, width: '100%', maxWidth: '800px' }}>
                             <DataGrid
                                 rows={activities}
                                 columns={columns}
@@ -375,6 +409,27 @@ function ActivityList({ onRecordUpdate, records }) {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
+            {/* 編集ダイアログ */}
+            {editDialogOpen && selectedActivity && (
+                <AddActivityDialog
+                    open={editDialogOpen}
+                    onClose={() => setEditDialogOpen(false)}
+                    onSubmit={async (activityData) => {
+                        try {
+                            await updateActivity(selectedActivity.id, activityData);
+                            const updatedActivities = await fetchActivities();
+                            setActivities(updatedActivities);
+                            setEditDialogOpen(false);
+                            setSelectedActivity(null);
+                        } catch (err) {
+                            console.error("Failed to update activity:", err);
+                        }
+                    }}
+                    // 編集用の場合は初期値を selectedActivity に設定
+                    initialData={selectedActivity}
+                    categories={categories}
+                />
+            )}
             {/* 「count」用のレコード作成ダイアログ */}
             {recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
                 <AddRecordDialog
