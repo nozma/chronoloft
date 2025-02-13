@@ -14,6 +14,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
     const [filterCriteria, setFilterCriteria] = useState({
         group: '',
         category: '',
+        unit: '',
         activityName: '',
     });
     const [groups, setGroups] = useState([]);
@@ -30,15 +31,16 @@ function RecordList({ records, categories, onRecordUpdate }) {
 
     // フィルタ条件に応じて records を絞る
     useEffect(() => {
-        const { group, category, activityName } = filterCriteria;
+        const { group, category, unit, activityName } = filterCriteria;
         const filtered = records.filter((record) => {
             const groupMatch = group ? record.activity_group === group : true;
             // バックエンドが activity_category_id を返していない場合は activity_category で判定
             const categoryMatch = category ? record.activity_category_id === category : true;
+            const unitMatch = unit ? record.unit === unit : true;
             const nameMatch = activityName
                 ? record.activity_name && record.activity_name.toLowerCase().includes(activityName.toLowerCase())
                 : true;
-            return groupMatch && categoryMatch && nameMatch;
+            return groupMatch && categoryMatch && unitMatch && nameMatch;
         });
         setFilteredRecords(filtered);
     }, [filterCriteria, records]);
