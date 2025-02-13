@@ -5,6 +5,7 @@ import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api
 import ConfirmDialog from './ConfirmDialog';
 import Button from '@mui/material/Button';
 import RecordFilter from './RecordFilter';
+import RecordHeatmap from './RecordHeatmap';
 
 function RecordList({ records, categories, onRecordUpdate }) {
     const [filteredRecords, setFilteredRecords] = useState([]);
@@ -144,6 +145,12 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     groups={groups}
                     categories={categories}
                     onFilterChange={setFilterCriteria}
+                />
+                <RecordHeatmap
+                    records={filteredRecords}
+                    groups={groups}
+                    categories={categories}
+                    unitFilter={filterCriteria.unit}
                 />
                 <DataGrid
                     rows={filteredRecords}
