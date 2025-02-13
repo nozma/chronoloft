@@ -1,10 +1,10 @@
+// frontend/src/components/RecordList.jsx
 import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { fetchRecords, updateRecord, deleteRecord, fetchCategories } from '../services/api';
+import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import Button from '@mui/material/Button';
 import RecordFilter from './RecordFilter';
-
 
 function RecordList({ records, categories, onRecordUpdate }) {
     const [filteredRecords, setFilteredRecords] = useState([]);
@@ -16,22 +16,32 @@ function RecordList({ records, categories, onRecordUpdate }) {
         category: '',
         activityName: '',
     });
-    const groups = ['study', 'game', 'workout'];
+    const [groups, setGroups] = useState([]);
 
+    // groups を API から取得する
+    useEffect(() => {
+        fetchActivityGroups()
+            .then(data => setGroups(data))
+            .catch(err => {
+                console.error("Failed to fetch groups:", err);
+                setError("グループの取得に失敗しました。");
+            });
+    }, []);
+
+    // フィルタ条件に応じて records を絞る
     useEffect(() => {
         const { group, category, activityName } = filterCriteria;
         const filtered = records.filter((record) => {
-          const groupMatch = group ? record.activity_group === group : true;
-          // もしバックエンドが activity_category_id を返していない場合は、activity_category だけで判定する
-          const categoryMatch = category ? record.activity_category_id === category : true;
-          const nameMatch = activityName
-            ? record.activity_name && record.activity_name.toLowerCase().includes(activityName.toLowerCase())
-            : true;
-          return groupMatch && categoryMatch && nameMatch;
+            const groupMatch = group ? record.activity_group === group : true;
+            // バックエンドが activity_category_id を返していない場合は activity_category で判定
+            const categoryMatch = category ? record.activity_category_id === category : true;
+            const nameMatch = activityName
+                ? record.activity_name && record.activity_name.toLowerCase().includes(activityName.toLowerCase())
+                : true;
+            return groupMatch && categoryMatch && nameMatch;
         });
         setFilteredRecords(filtered);
-      }, [filterCriteria, records]);
-
+    }, [filterCriteria, records]);
 
     // 削除確認用のハンドラー
     const handleDeleteRecordClick = (recordId) => {
@@ -71,7 +81,6 @@ function RecordList({ records, categories, onRecordUpdate }) {
             headerName: '記録日',
             width: 200,
             valueFormatter: (params) => {
-                // params.value は ISO 8601 形式の文字列として受け取る前提
                 const date = new Date(params);
                 const year = date.getFullYear();
                 const month = ("0" + (date.getMonth() + 1)).slice(-2);
