@@ -75,6 +75,10 @@ function RecordHeatmap({ records, unitFilter }) {
                         blockSize={15}
                         blockMargin={2}
                         fontSize={14}
+                        theme={{
+                            light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
+                            dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
+                            }}
                         hideMonthLabels={false}
                         showWeekdayLabels={["Mon", "Wed", "Fri"]}
                         labels={{
