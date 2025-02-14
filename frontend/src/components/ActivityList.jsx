@@ -23,6 +23,7 @@ import ActivityStart from './ActivityStart';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import GroupManagementDialog from './GroupManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
+import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
 function ActivityList({ onRecordUpdate, records }) {
     const [activities, setActivities] = useState([]);
@@ -43,6 +44,8 @@ function ActivityList({ onRecordUpdate, records }) {
     const [groupDialogOpen, setGroupDialogOpen] = useState(false);
     const [activityGridVisible, setActivityGridVisible] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const { setActiveActivity } = useActiveActivity();
+
 
     // 状態の復元
     useEffect(() => {
@@ -274,6 +277,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const handleStartRecordFromSelect = (activity) => {
         if (!activity) return;
         setSelectedActivity(activity);
+        setActiveActivity(activity);
         if (activity.unit === 'count') {
             setRecordDialogOpen(true);
         } else if (activity.unit === 'minutes') {
