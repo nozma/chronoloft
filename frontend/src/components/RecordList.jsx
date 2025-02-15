@@ -1,13 +1,16 @@
 // frontend/src/components/RecordList.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
-import Button from '@mui/material/Button';
+import { Box, Button, Collapse } from '@mui/material';
 import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
+import { useActiveActivity } from '../contexts/ActiveActivityContext';
+
 
 function RecordList({ records, categories, onRecordUpdate }) {
+    const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -19,6 +22,11 @@ function RecordList({ records, categories, onRecordUpdate }) {
         activityName: '',
     });
     const [groups, setGroups] = useState([]);
+    const dataGridRef = useRef(null);
+    const [showRecords, setShowRecords] = useState(false);
+
+    // RecordList 全体のコンテナ用 ref（Collapse を含む）
+    const containerRef = useRef(null);
 
     // groups を API から取得する
     useEffect(() => {
@@ -33,7 +41,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
     // フィルタ条件に応じて records を絞る
     useEffect(() => {
         const { group, category, unit, activityName } = filterCriteria;
-        const filtered = records.filter((record) => {
+        let filtered = records.filter((record) => {
             const groupMatch = group ? record.activity_group === group : true;
             // バックエンドが activity_category_id を返していない場合は activity_category で判定
             const categoryMatch = category ? record.activity_category_id === category : true;
@@ -43,8 +51,15 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 : true;
             return groupMatch && categoryMatch && unitMatch && nameMatch;
         });
+        if (activeActivity) {
+            filtered = filtered.filter(record => record.activity_id === activeActivity.id);
+            setFilterCriteria(prev => ({
+                ...prev,
+                unit: activeActivity.unit
+            }));
+        }
         setFilteredRecords(filtered);
-    }, [filterCriteria, records]);
+    }, [filterCriteria, records, activeActivity]);
 
     // 削除確認用のハンドラー
     const handleDeleteRecordClick = (recordId) => {
@@ -138,9 +153,9 @@ function RecordList({ records, categories, onRecordUpdate }) {
     ];
 
     return (
-        <div>
+        <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
-            <div style={{ height: 400, width: '100%' }}>
+            <div style={{ width: '100%' }}>
                 <RecordFilter
                     groups={groups}
                     categories={categories}
@@ -152,19 +167,42 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     categories={categories}
                     unitFilter={filterCriteria.unit}
                 />
-                <DataGrid
-                    rows={filteredRecords}
-                    columns={columns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5]}
-                    disableSelectionOnClick
-                    processRowUpdate={processRowUpdate}
-                    initialState={{
-                        sorting: {
-                            sortModel: [{ field: 'created_at', sort: 'desc' }],
-                        },
-                    }}
-                />
+                {showRecords ? (
+                    <Button variant="contained" onClick={() => setShowRecords(false)} sx={{ mb: 2 }}>
+                        閉じる
+                    </Button>
+                ) : (
+                    <Button variant="contained" onClick={() => setShowRecords(true)} sx={{ mb: 2 }}>
+                        すべてのレコードを表示
+                    </Button>
+                )}
+                <Collapse
+                    in={showRecords}
+                >
+                    <Box ref={dataGridRef} sx={{ height: 400, width: '100%', mb: 2 }}>
+                        <DataGrid
+                            rows={filteredRecords}
+                            columns={columns}
+                            pageSize={5}
+                            rowsPerPageOptions={[5]}
+                            disableSelectionOnClick
+                            processRowUpdate={async (newRow, oldRow) => {
+                                try {
+                                    await updateRecord(newRow.id, newRow);
+                                    return newRow;
+                                } catch (error) {
+                                    console.error("Failed to update record:", error);
+                                    throw error;
+                                }
+                            }}
+                            initialState={{
+                                sorting: {
+                                    sortModel: [{ field: 'created_at', sort: 'desc' }],
+                                },
+                            }}
+                        />
+                    </Box>
+                </Collapse>
             </div>
             <ConfirmDialog
                 open={confirmDialogOpen}
@@ -173,7 +211,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />
-        </div>
+        </Box>
     );
 }
 
