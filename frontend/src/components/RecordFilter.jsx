@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
+import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
 function RecordFilter({ groups, categories, onFilterChange, records }) {
+    const { activeActivity } = useActiveActivity();
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedActivityName, setSelectedActivityName] = useState('');
@@ -61,6 +63,33 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
         }
     }, [selectedActivityName, records]);
 
+    // activeActivity の変更に合わせてフィルタ状態を更新
+    useEffect(() => {
+        if (activeActivity) {
+            setSelectedActivityName(activeActivity.name);
+            // activeActivity.activity_category_id が存在する場合、その値を文字列に変換してセット
+            if (activeActivity.activity_category_id !== undefined) {
+                setSelectedCategory(String(activeActivity.activity_category_id));
+            }
+            // activeActivity.activity_group が存在する場合
+            if (activeActivity.activity_group) {
+                setSelectedGroup(activeActivity.activity_group);
+            }
+        } else {
+            // activeActivity が null になったとき、一度だけフィルタ状態を初期化する
+            setSelectedGroup('');
+            setSelectedCategory('');
+            setSelectedActivityName('');
+        }
+    }, [activeActivity]);
+
+
+    // ★ リセットボタン用のハンドラー
+    const handleReset = () => {
+        setSelectedGroup('');
+        setSelectedCategory('');
+        setSelectedActivityName('');
+    };
 
     return (
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -111,7 +140,7 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                 label="アクティビティ"
                 select
                 value={selectedActivityName}
-                onChange={(e) => {setSelectedActivityName(e.target.value);}}
+                onChange={(e) => { setSelectedActivityName(e.target.value); }}
                 sx={{ minWidth: 180 }}
             >
                 <MenuItem value="">All</MenuItem>
@@ -121,6 +150,9 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                     </MenuItem>
                 ))}
             </TextField>
+            <Button variant="outlined" color="secondary" onClick={handleReset}>
+                Reset
+            </Button>
         </div>
     );
 }

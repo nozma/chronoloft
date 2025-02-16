@@ -42,11 +42,8 @@ function RecordList({ records, categories, onRecordUpdate }) {
     useEffect(() => {
         const { group, category, activityName } = filterCriteria;
         let filtered = records.filter((record) => {
-            // グループの比較はそのままで（record.activity_group と selectedGroup は同じ型である前提）
             const groupMatch = group ? record.activity_group === group : true;
-            // カテゴリの比較は、record.activity_category_id を文字列に変換して selectedCategory と比較
             const categoryMatch = category ? String(record.activity_category_id) === category : true;
-            // アクティビティ名の比較は、完全一致に変更
             const nameMatch = activityName
                 ? record.activity_name.toLowerCase() === activityName.toLowerCase()
                 : true;
@@ -57,24 +54,6 @@ function RecordList({ records, categories, onRecordUpdate }) {
         }
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
-
-    // activeActivity の変更時にフィルタ条件を更新する
-    useEffect(() => {
-        if (activeActivity) {
-            setFilterCriteria(prev => ({
-                ...prev,
-                unit: activeActivity.unit
-            }));
-        } else {
-            // activeActivity が null になったとき、一度だけフィルタ状態を初期化する
-            setFilterCriteria({
-                group: '',
-                category: '',
-                unit: '',
-                activityName: ''
-            });
-        }
-    }, [activeActivity]);
 
     // 削除確認用のハンドラー
     const handleDeleteRecordClick = (recordId) => {
