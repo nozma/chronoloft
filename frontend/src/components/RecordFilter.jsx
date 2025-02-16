@@ -3,25 +3,29 @@ import React, { useState, useEffect } from 'react';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
-import { fetchActivityGroups } from '../services/api';
 
-function RecordFilter({ categories, onFilterChange }) {
-    const [groups, setGroups] = useState([]);
+function RecordFilter({ groups, categories, onFilterChange, records }) {
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
-    const [activityName, setActivityName] = useState('');
+    const [selectedActivityName, setSelectedActivityName] = useState('');
+    const [activityNames, setActivityNames] = useState([]);
 
+    // records prop から activityNames を自動計算**
     useEffect(() => {
-        fetchActivityGroups()
-            .then(data => setGroups(data))
-            .catch(err => console.error(err));
-    }, []);
+        if (records && records.length > 0) {
+            const names = Array.from(new Set(records.map(rec => rec.activity_name)));
+            setActivityNames(names);
+        } else {
+            setActivityNames([]);
+        }
+    }, [records]);
+
 
     const handleFilter = () => {
         onFilterChange({
             group: selectedGroup,
             category: selectedCategory,
-            activityName,
+            activityName: selectedActivityName,
         });
     };
 
@@ -46,7 +50,7 @@ function RecordFilter({ categories, onFilterChange }) {
                 select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                style={{ minWidth: 120 }}
+                style={{ minWidth: 180 }}
             >
                 <MenuItem value="">All</MenuItem>
                 {categories.map((cat) => (
@@ -56,11 +60,19 @@ function RecordFilter({ categories, onFilterChange }) {
                 ))}
             </TextField>
             <TextField
-                label="項目名"
-                value={activityName}
-                onChange={(e) => setActivityName(e.target.value)}
-                style={{ minWidth: 150 }}
-            />
+                label="アクティビティ"
+                select
+                value={selectedActivityName}
+                onChange={(e) => setSelectedActivityName(e.target.value)}
+                style={{ minWidth: 180 }}
+            >
+                <MenuItem value="">All</MenuItem>
+                {activityNames.map((name, idx) => (
+                    <MenuItem key={idx} value={name}>
+                        {name}
+                    </MenuItem>
+                ))}
+            </TextField>
             <Button variant="contained" color="primary" onClick={handleFilter}>
                 Filter
             </Button>

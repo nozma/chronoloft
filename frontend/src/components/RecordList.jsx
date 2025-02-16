@@ -53,26 +53,27 @@ function RecordList({ records, categories, onRecordUpdate }) {
         });
         if (activeActivity) {
             filtered = filtered.filter(record => record.activity_id === activeActivity.id);
-            if (filterCriteria.unit !== activeActivity.unit) {
-                setFilterCriteria(prev => ({
-                    ...prev,
-                    unit: activeActivity.unit
-                }));
-            }
-        } else {
-            const initialCriteria = { group: '', category: '', unit: '', activityName: '' };
-            // すでに初期状態でなければ更新する
-            if (
-                filterCriteria.group !== '' ||
-                filterCriteria.category !== '' ||
-                filterCriteria.unit !== '' ||
-                filterCriteria.activityName !== ''
-            ) {
-                setFilterCriteria(initialCriteria);
-            }
         }
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
+
+    // activeActivity の変更時にフィルタ条件を更新する
+    useEffect(() => {
+        if (activeActivity) {
+            setFilterCriteria(prev => ({
+                ...prev,
+                unit: activeActivity.unit
+            }));
+        } else {
+            // activeActivity が null になったとき、一度だけフィルタ状態を初期化する
+            setFilterCriteria({
+                group: '',
+                category: '',
+                unit: '',
+                activityName: ''
+            });
+        }
+    }, [activeActivity]);
 
     // 削除確認用のハンドラー
     const handleDeleteRecordClick = (recordId) => {
@@ -173,6 +174,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     groups={groups}
                     categories={categories}
                     onFilterChange={setFilterCriteria}
+                    records={records}
                 />
                 <RecordHeatmap
                     records={filteredRecords}
