@@ -53,10 +53,23 @@ function RecordList({ records, categories, onRecordUpdate }) {
         });
         if (activeActivity) {
             filtered = filtered.filter(record => record.activity_id === activeActivity.id);
-            setFilterCriteria(prev => ({
-                ...prev,
-                unit: activeActivity.unit
-            }));
+            if (filterCriteria.unit !== activeActivity.unit) {
+                setFilterCriteria(prev => ({
+                    ...prev,
+                    unit: activeActivity.unit
+                }));
+            }
+        } else {
+            const initialCriteria = { group: '', category: '', unit: '', activityName: '' };
+            // すでに初期状態でなければ更新する
+            if (
+                filterCriteria.group !== '' ||
+                filterCriteria.category !== '' ||
+                filterCriteria.unit !== '' ||
+                filterCriteria.activityName !== ''
+            ) {
+                setFilterCriteria(initialCriteria);
+            }
         }
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
@@ -178,7 +191,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 )}
                 <Collapse
                     in={showRecords}
-                    timeout={{enter: 0, exit:200}}
+                    timeout={{ enter: 0, exit: 200 }}
                     onEntered={() => {
                         // 展開後に DataGrid コンテナの下端までスクロールする
                         if (dataGridRef.current) {

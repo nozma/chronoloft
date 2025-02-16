@@ -437,10 +437,14 @@ function ActivityList({ onRecordUpdate, records }) {
             {/* Stopwatch UI */}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
-                    onComplete={handleStopwatchComplete}
+                    onComplete={(minutes) => {
+                        handleStopwatchComplete(minutes);
+                        setActiveActivity(null);
+                    }}
                     onCancel={() => {
                         setStopwatchVisible(false);
                         setSelectedActivity(null);
+                        setActiveActivity(null);
                     }}
                     discordData={discordData}
                     activityName={selectedActivity.name}

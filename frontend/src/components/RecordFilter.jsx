@@ -1,5 +1,8 @@
+// frontend/src/components/RecordFilter.jsx
 import React, { useState, useEffect } from 'react';
-import { TextField, MenuItem, Button, Box } from '@mui/material';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
 import { fetchActivityGroups } from '../services/api';
 
 function RecordFilter({ categories, onFilterChange }) {
@@ -7,7 +10,6 @@ function RecordFilter({ categories, onFilterChange }) {
     const [selectedGroup, setSelectedGroup] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [activityName, setActivityName] = useState('');
-    const [unit, setUnit] = useState('');
 
     useEffect(() => {
         fetchActivityGroups()
@@ -17,7 +19,6 @@ function RecordFilter({ categories, onFilterChange }) {
 
     const handleFilter = () => {
         onFilterChange({
-            unit,            // "count" または "minutes"
             group: selectedGroup,
             category: selectedCategory,
             activityName,
@@ -25,13 +26,13 @@ function RecordFilter({ categories, onFilterChange }) {
     };
 
     return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: '16px' }}>
             <TextField
                 label="グループ"
                 select
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
-                sx={{ minWidth: 120 }}
+                style={{ minWidth: 120 }}
             >
                 <MenuItem value="">All</MenuItem>
                 {groups.map((g) => (
@@ -45,7 +46,7 @@ function RecordFilter({ categories, onFilterChange }) {
                 select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                sx={{ minWidth: 120 }}
+                style={{ minWidth: 120 }}
             >
                 <MenuItem value="">All</MenuItem>
                 {categories.map((cat) => (
@@ -55,26 +56,15 @@ function RecordFilter({ categories, onFilterChange }) {
                 ))}
             </TextField>
             <TextField
-                label="記録単位"
-                select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                sx={{ minWidth: 120 }}
-            >
-                <MenuItem value="">全て</MenuItem>
-                <MenuItem value="count">回</MenuItem>
-                <MenuItem value="minutes">分</MenuItem>
-            </TextField>
-            <TextField
                 label="項目名"
                 value={activityName}
                 onChange={(e) => setActivityName(e.target.value)}
-                sx={{ minWidth: 150 }}
+                style={{ minWidth: 150 }}
             />
             <Button variant="contained" color="primary" onClick={handleFilter}>
                 Filter
             </Button>
-        </Box>
+        </div>
     );
 }
 
