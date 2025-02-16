@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Box } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { format } from 'date-fns';
 
 function RecordHeatmap({ records, unitFilter }) {
+    const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
+
+    // UI用: モード切替用ハンドラー
+    const handleModeChange = (event, newMode) => {
+        if (newMode !== null) {
+            setDisplayMode(newMode);
+        }
+    };
 
     useEffect(() => {
         // 過去365日分に絞り込む
@@ -14,14 +22,30 @@ function RecordHeatmap({ records, unitFilter }) {
         cutoff.setDate(cutoff.getDate() - 365);
         const recentRecords = records.filter(rec => new Date(rec.created_at) >= cutoff);
 
-        // 日別に集計（record.created_at を "yyyy-MM-dd" 形式に変換）
+        // 日別にレコードを集計する
         const grouped = {};
         recentRecords.forEach(rec => {
             const dateStr = format(new Date(rec.created_at), 'yyyy-MM-dd');
             if (!grouped[dateStr]) {
                 grouped[dateStr] = 0;
             }
-            grouped[dateStr] += rec.value;
+            // displayMode に応じた集計処理
+            if (displayMode === 'time') {
+                // 時間モード: アクティビティの記録単位が「分」のものだけを採用
+                if (rec.unit === 'minutes') {
+                    // 分の合計を加算
+                    grouped[dateStr] += rec.value;
+                }
+            } else if (displayMode === 'count') {
+                // 回数モード:
+                if (rec.unit === 'count') {
+                    // 「回」の場合はそのまま加算
+                    grouped[dateStr] += rec.value;
+                } else if (rec.unit === 'minutes') {
+                    // 「分」の場合は1として加算
+                    grouped[dateStr] += 1;
+                }
+            }
         });
 
         // 過去365日分の全日付を生成する
@@ -57,14 +81,14 @@ function RecordHeatmap({ records, unitFilter }) {
             return { ...item, level };
         });
         setHeatmapData(dataWithLevel);
-    }, [records]);
+    }, [records, displayMode]);
 
     // heatmapData 全体の count 合計を算出
     const totalCount = heatmapData.reduce((sum, item) => sum + item.count, 0);
     const totalCountLabel =
-        unitFilter === 'minutes'
+        displayMode === 'time'
             ? `${Math.floor(totalCount / 60)}時間${(totalCount % 60).toFixed(0)}分 / 年`
-            : `${totalCount.toFixed(0)} Activities / 年`;
+            : `${totalCount.toFixed(0)} 回 / 年`;
 
     return (
         <Box sx={{ mb: 4 }}>
@@ -78,7 +102,7 @@ function RecordHeatmap({ records, unitFilter }) {
                         theme={{
                             light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
                             dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
-                            }}
+                        }}
                         hideMonthLabels={false}
                         showWeekdayLabels={["Mon", "Wed", "Fri"]}
                         labels={{
@@ -90,13 +114,13 @@ function RecordHeatmap({ records, unitFilter }) {
                         }}
                         renderBlock={(block, activity) => {
                             let tooltipText;
-                            if (unitFilter === 'minutes') {
+                            if (displayMode === 'time') {
                                 const totalMinutes = Number(activity.count);
                                 const hours = Math.floor(totalMinutes / 60);
                                 const minutes = Math.round(totalMinutes % 60);
                                 tooltipText = `${hours}時間${minutes}分 on ${activity.date}`;
                             } else {
-                                tooltipText = `${Number(activity.count).toFixed(0)} activities on ${activity.date}`;
+                                tooltipText = `${Number(activity.count).toFixed(0)} 回 on ${activity.date}`;
                             }
                             return React.cloneElement(block, {
                                 'data-tooltip-id': 'react-tooltip',
@@ -105,6 +129,17 @@ function RecordHeatmap({ records, unitFilter }) {
                         }}
                     />
                     <ReactTooltip id="react-tooltip" />
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <ToggleButtonGroup
+                            value={displayMode}
+                            exclusive
+                            onChange={handleModeChange}
+                            sx={{ height: 30 }}
+                        >
+                            <ToggleButton value="time">時間で表示</ToggleButton>
+                            <ToggleButton value="count">回数で表示</ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
                 </>
             ) : (
                 <Box>表示する記録データがありません。</Box>
