@@ -3,6 +3,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
+import getIconForGroup from '../utils/getIconForGroup';
 
 function RecordFilter({ groups, categories, onFilterChange, records }) {
     const { activeActivity } = useActiveActivity();
@@ -108,7 +109,10 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                 <MenuItem value="">All</MenuItem>
                 {groups.map((g) => (
                     <MenuItem key={g.id} value={g.name}>
-                        {g.name}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {getIconForGroup(g.name)}
+                            {g.name}
+                        </span>
                     </MenuItem>
                 ))}
             </TextField>
