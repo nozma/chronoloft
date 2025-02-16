@@ -64,7 +64,7 @@ function RecordHeatmap({ records, unitFilter }) {
     const totalCountLabel =
         unitFilter === 'minutes'
             ? `${Math.floor(totalCount / 60)}時間${(totalCount % 60).toFixed(0)}分 / 年`
-            : `${totalCount} Activities / 年`;
+            : `${totalCount.toFixed(0)} Activities / 年`;
 
     return (
         <Box sx={{ mb: 4 }}>
