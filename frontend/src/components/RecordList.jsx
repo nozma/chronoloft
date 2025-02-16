@@ -40,16 +40,17 @@ function RecordList({ records, categories, onRecordUpdate }) {
 
     // フィルタ条件に応じて records を絞る
     useEffect(() => {
-        const { group, category, unit, activityName } = filterCriteria;
+        const { group, category, activityName } = filterCriteria;
         let filtered = records.filter((record) => {
+            // グループの比較はそのままで（record.activity_group と selectedGroup は同じ型である前提）
             const groupMatch = group ? record.activity_group === group : true;
-            // バックエンドが activity_category_id を返していない場合は activity_category で判定
-            const categoryMatch = category ? record.activity_category_id === category : true;
-            const unitMatch = unit ? record.unit === unit : true;
+            // カテゴリの比較は、record.activity_category_id を文字列に変換して selectedCategory と比較
+            const categoryMatch = category ? String(record.activity_category_id) === category : true;
+            // アクティビティ名の比較は、完全一致に変更
             const nameMatch = activityName
-                ? record.activity_name && record.activity_name.toLowerCase().includes(activityName.toLowerCase())
+                ? record.activity_name.toLowerCase() === activityName.toLowerCase()
                 : true;
-            return groupMatch && categoryMatch && unitMatch && nameMatch;
+            return groupMatch && categoryMatch && nameMatch;
         });
         if (activeActivity) {
             filtered = filtered.filter(record => record.activity_id === activeActivity.id);

@@ -21,15 +21,15 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
         let recs;
         if (selectedCategory) {
             // カテゴリが選択されている場合は、そのカテゴリに属するレコードを抽出
-            recs = records.filter(rec => rec.activity_category_id === selectedCategory);
+            recs = records.filter(rec => String(rec.activity_category_id) === selectedCategory);
         } else if (selectedGroup) {
-            // **変更箇所: カテゴリが未選択でも、グループが選択されている場合は、
+            // グループが選択されている場合は、
             // categories から selectedGroup に属するカテゴリのIDリストを作成し、
-            // そのIDに含まれるレコードを抽出する**
+            // そのIDに含まれるレコードを抽出する
             const groupCategoryIds = categories
                 .filter(cat => cat.group_name === selectedGroup)
-                .map(cat => cat.id);
-            recs = records.filter(rec => groupCategoryIds.includes(rec.activity_category_id));
+                .map(cat => String(cat.id));
+            recs = records.filter(rec => groupCategoryIds.includes(String(rec.activity_category_id)));
         } else {
             // どちらも未選択なら全レコードを利用
             recs = records;
@@ -44,6 +44,22 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
             activityName: selectedActivityName,
         });
     }, [selectedGroup, selectedCategory, selectedActivityName, onFilterChange]);
+
+    // selectedActivityName の変更時に、対応するカテゴリとグループを自動セット
+    useEffect(() => {
+        if (selectedActivityName) {
+            const rec = records.find(r => r.activity_name === selectedActivityName);
+            if (rec) {
+                // 更新が必要な場合のみ実施
+                if (String(rec.activity_category_id) !== selectedCategory) {
+                    setSelectedCategory(String(rec.activity_category_id));
+                }
+                if (rec.activity_group !== selectedGroup) {
+                    setSelectedGroup(rec.activity_group);
+                }
+            }
+        }
+    }, [selectedActivityName, records]);
 
 
     return (
@@ -72,15 +88,21 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                 select
                 value={selectedCategory}
                 onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    // カテゴリ変更時、項目名はリセットする
+                    const newCatId = e.target.value;
+                    setSelectedCategory(newCatId);
+                    // カテゴリ変更時、アクティビティはリセット
                     setSelectedActivityName('');
+                    // ★ 自動更新: 選択したカテゴリに対応するグループを自動セット
+                    const cat = categories.find(cat => String(cat.id) === newCatId);
+                    if (cat && cat.group_name) {
+                        setSelectedGroup(cat.group_name);
+                    }
                 }}
-                style={{ minWidth: 180 }}
+                sx={{ minWidth: 180 }}
             >
                 <MenuItem value="">All</MenuItem>
                 {filteredCategories.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
+                    <MenuItem key={cat.id} value={String(cat.id)}>
                         {cat.name}
                     </MenuItem>
                 ))}
@@ -89,8 +111,8 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                 label="アクティビティ"
                 select
                 value={selectedActivityName}
-                onChange={(e) => setSelectedActivityName(e.target.value)}
-                style={{ minWidth: 180 }}
+                onChange={(e) => {setSelectedActivityName(e.target.value);}}
+                sx={{ minWidth: 180 }}
             >
                 <MenuItem value="">All</MenuItem>
                 {filteredActivityNames.map((name, idx) => (
