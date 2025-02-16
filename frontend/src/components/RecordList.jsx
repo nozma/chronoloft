@@ -178,6 +178,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 )}
                 <Collapse
                     in={showRecords}
+                    timeout={{enter: 0, exit:200}}
+                    onEntered={() => {
+                        // 展開後に DataGrid コンテナの下端までスクロールする
+                        if (dataGridRef.current) {
+                            dataGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }
+                    }}
                 >
                     <Box ref={dataGridRef} sx={{ height: 400, width: '100%', mb: 2 }}>
                         <DataGrid
