@@ -6,6 +6,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { fetchRecords, fetchCategories } from './services/api';
+import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
 
 function App() {
     // カラーテーマ対応
@@ -54,12 +55,14 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <div>
-                <h2>Activities</h2>
-                <ActivityList onRecordUpdate={updateRecords} records={records} />
-                <h2>Records</h2>
-                <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
-            </div>
+            <ActiveActivityProvider>
+                <div>
+                    <h2>Activities</h2>
+                    <ActivityList onRecordUpdate={updateRecords} records={records} />
+                    <h2>Records</h2>
+                    <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
+                </div>
+            </ActiveActivityProvider>
         </ThemeProvider>
     );
 }
