@@ -1,11 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useReducer } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import {
-    Button,
-    Snackbar,
-    Alert,
-    Box
-} from '@mui/material';
+import { Button, Snackbar, Alert, Box } from '@mui/material';
 
 // API 関連
 import {
@@ -35,30 +30,31 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
+// UI 状態管理用 reducer
+import { initialUIState, uiReducer } from '../reducers/uiReducer';
+
 // ---------------------------------------------------------------------
 // ActivityList コンポーネント本体
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
-    // 状態管理（通常の useState とローカルストレージ用カスタムフックの併用）
+    // 通常の状態管理
     const [activities, setActivities] = useState([]);
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
-    const [recordDialogOpen, setRecordDialogOpen] = useState(false);
+    const [preFilledValue, setPreFilledValue] = useState(null);
+
     // ローカルストレージで管理する状態
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
-    // その他の状態
-    const [preFilledValue, setPreFilledValue] = useState(null);
-    const [showGrid, setShowGrid] = useState(false);
-    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-    const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-    const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+    // 複数のUI状態は reducer で一元管理
+    const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
+    const { showGrid, categoryDialogOpen, groupDialogOpen, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
     const { setActiveActivity } = useActiveActivity();
 
     // -----------------------------------------------------------------
@@ -76,7 +72,6 @@ function ActivityList({ onRecordUpdate, records }) {
             .catch(err => console.error(err));
     }, []);
 
-    // エラー表示
     if (error) return <div>Error: {error}</div>;
 
     // -----------------------------------------------------------------
@@ -98,7 +93,7 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleDeleteButtonClick = (activityId) => {
         setSelectedActivityId(activityId);
-        setConfirmDialogOpen(true);
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: true });
     };
 
     const handleConfirmDelete = async () => {
@@ -112,12 +107,12 @@ function ActivityList({ onRecordUpdate, records }) {
             setSnackbarMessage(err.message);
             setSnackbarOpen(true);
         }
-        setConfirmDialogOpen(false);
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         setSelectedActivityId(null);
     };
 
     const handleCancelDelete = () => {
-        setConfirmDialogOpen(false);
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         setSelectedActivityId(null);
     };
 
@@ -139,7 +134,7 @@ function ActivityList({ onRecordUpdate, records }) {
         setSelectedActivity(activity);
         setActiveActivity(activity);
         if (activity.unit === 'count') {
-            setRecordDialogOpen(true);
+            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
         } else if (activity.unit === 'minutes') {
             const details = calculateTimeDetails(activity.id, records);
             const data = {
@@ -155,21 +150,21 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleEditActivity = (activity) => {
         setSelectedActivity(activity);
-        setEditDialogOpen(true);
+        dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
 
     const handleStopwatchComplete = (minutes) => {
         console.log("Stopwatch completed. Elapsed minutes:", minutes);
         setPreFilledValue(minutes);
         setStopwatchVisible(false);
-        setRecordDialogOpen(true);
+        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
     };
 
     const handleRecordCreated = async (recordData) => {
         try {
             const res = await createRecord(recordData);
             console.log("Record created:", res);
-            setRecordDialogOpen(false);
+            dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
             setSelectedActivity(null);
             setPreFilledValue(null);
             onRecordUpdate();
@@ -276,18 +271,18 @@ function ActivityList({ onRecordUpdate, records }) {
                 !showGrid ? (
                     <div>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, gap: '8px' }}>
-                            <Button variant="contained" onClick={() => setCategoryDialogOpen(true)}>
+                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}>
                                 カテゴリの管理
                             </Button>
-                            <Button variant="contained" onClick={() => setGroupDialogOpen(true)}>
+                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}>
                                 グループの管理
                             </Button>
-                            <Button variant="contained" onClick={() => setShowGrid(true)}>
+                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}>
                                 アクティビティの管理
                             </Button>
                         </Box>
-                        <CategoryManagementDialog open={categoryDialogOpen} onClose={() => setCategoryDialogOpen(false)} />
-                        <GroupManagementDialog open={groupDialogOpen} onClose={() => setGroupDialogOpen(false)} />
+                        <CategoryManagementDialog open={categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
+                        <GroupManagementDialog open={groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                     </div>
                 ) : (
                     <>
@@ -306,7 +301,7 @@ function ActivityList({ onRecordUpdate, records }) {
                             />
                         </div>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, mt: 1 }}>
-                            <Button variant="contained" onClick={() => setShowGrid(false)} sx={{ mb: 2 }}>
+                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: false })} sx={{ mb: 2 }}>
                                 閉じる
                             </Button>
                         </Box>
@@ -338,13 +333,13 @@ function ActivityList({ onRecordUpdate, records }) {
             {editDialogOpen && selectedActivity && (
                 <AddActivityDialog
                     open={editDialogOpen}
-                    onClose={() => setEditDialogOpen(false)}
+                    onClose={() => dispatch({ type: 'SET_EDIT_DIALOG', payload: false })}
                     onSubmit={async (activityData) => {
                         try {
                             await updateActivity(selectedActivity.id, activityData);
                             const updatedActivities = await fetchActivities();
                             setActivities(updatedActivities);
-                            setEditDialogOpen(false);
+                            dispatch({ type: 'SET_EDIT_DIALOG', payload: false });
                             setSelectedActivity(null);
                         } catch (err) {
                             console.error("Failed to update activity:", err);
@@ -357,7 +352,7 @@ function ActivityList({ onRecordUpdate, records }) {
             {recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
                 <AddRecordDialog
                     open={recordDialogOpen}
-                    onClose={() => setRecordDialogOpen(false)}
+                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}
                     initialValue={null}
@@ -366,7 +361,7 @@ function ActivityList({ onRecordUpdate, records }) {
             {recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <AddRecordDialog
                     open={recordDialogOpen}
-                    onClose={() => setRecordDialogOpen(false)}
+                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}
                     initialValue={preFilledValue}
