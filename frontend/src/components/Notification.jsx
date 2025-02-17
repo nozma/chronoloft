@@ -8,14 +8,18 @@ export const NotificationProvider = ({ children }) => {
   const [notification, setNotification] = useState({
     open: false,
     message: '',
-    severity: 'info'
+    severity: 'info', // 'error', 'warning', 'success', 'info'
   });
 
   const showNotification = (message, severity = 'info') => {
     setNotification({ open: true, message, severity });
   };
 
-  const handleClose = () => {
+  const handleClose = (event, reason) => {
+    // クリックアウェイの場合は閉じない
+    if (reason === 'clickaway') {
+      return;
+    }
     setNotification(prev => ({ ...prev, open: false }));
   };
 
