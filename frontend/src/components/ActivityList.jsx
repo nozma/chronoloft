@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { DataGrid } from '@mui/x-data-grid';
+import {
+  Button,
+  Snackbar,
+  Alert,
+  Box
+} from '@mui/material';
+
+// API 関連
 import {
   fetchActivities,
   addActivity,
@@ -7,13 +16,8 @@ import {
   fetchCategories,
   createRecord
 } from '../services/api';
-import { DataGrid } from '@mui/x-data-grid';
-import {
-  Button,
-  Snackbar,
-  Alert,
-  Box
-} from '@mui/material';
+
+// カスタムコンポーネント
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
 import ConfirmDialog from './ConfirmDialog';
@@ -22,14 +26,21 @@ import Stopwatch from './Stopwatch';
 import ActivityStart from './ActivityStart';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import GroupManagementDialog from './GroupManagementDialog';
+
+// ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
+import { calculateTimeDetails } from '../utils/timeUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
+// ---------------------------------------------------------------------
+// ActivityList コンポーネント本体
+// ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
+    // 状態変数
     const [activities, setActivities] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [categories, setCategories] = useState([]);
     const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -46,13 +57,13 @@ function ActivityList({ onRecordUpdate, records }) {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const { setActiveActivity } = useActiveActivity();
 
-
-    // 状態の復元
+    // -----------------------------------------------------------------
+    // ローカルストレージからの状態復元と保存
+    // -----------------------------------------------------------------
     useEffect(() => {
         const savedVisible = localStorage.getItem('stopwatchVisible');
-        if (savedVisible === 'true') {
-            setStopwatchVisible(true);
-        }
+        if (savedVisible === 'true') setStopwatchVisible(true);
+
         const savedActivity = localStorage.getItem('selectedActivity');
         if (savedActivity) {
             try {
@@ -61,6 +72,7 @@ function ActivityList({ onRecordUpdate, records }) {
                 console.error("Failed to parse selectedActivity:", error);
             }
         }
+
         const savedDiscordData = localStorage.getItem('discordData');
         if (savedDiscordData) {
             try {
@@ -82,6 +94,7 @@ function ActivityList({ onRecordUpdate, records }) {
             localStorage.removeItem('selectedActivity');
         }
     }, [selectedActivity]);
+
     useEffect(() => {
         if (discordData) {
             localStorage.setItem('discordData', JSON.stringify(discordData));
@@ -90,7 +103,9 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     }, [discordData]);
 
-
+    // -----------------------------------------------------------------
+    // API 呼び出し: アクティビティとカテゴリの取得
+    // -----------------------------------------------------------------
     useEffect(() => {
         fetchActivities()
             .then(data => setActivities(data))
@@ -103,22 +118,18 @@ function ActivityList({ onRecordUpdate, records }) {
             .catch(err => console.error(err));
     }, []);
 
-    if (error) {
-        return <div>Error: {error}</div>;
-    }
+    // エラー表示
+    if (error) return <div>Error: {error}</div>;
 
-    const handleAddClick = () => {
-        setDialogOpen(true);
-    };
-
-    const handleDialogClose = () => {
-        setDialogOpen(false);
-    };
+    // -----------------------------------------------------------------
+    // イベントハンドラ
+    // -----------------------------------------------------------------
+    const handleAddClick = () => setDialogOpen(true);
+    const handleDialogClose = () => setDialogOpen(false);
 
     const handleActivityAdded = async (activityData) => {
         try {
             await addActivity(activityData);
-            // 新規登録後、再度アクティビティ一覧を取得する
             fetchActivities()
                 .then(data => setActivities(data))
                 .catch(err => setError(err.message));
@@ -127,13 +138,11 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     };
 
-    // 削除確認ダイアログ
     const handleDeleteButtonClick = (activityId) => {
         setSelectedActivityId(activityId);
         setConfirmDialogOpen(true);
     };
 
-    // 確認ダイアログで「Confirm」が押された場合の削除処理
     const handleConfirmDelete = async () => {
         try {
             await deleteActivity(selectedActivityId);
@@ -149,15 +158,12 @@ function ActivityList({ onRecordUpdate, records }) {
         setSelectedActivityId(null);
     };
 
-    // ダイアログで「Cancel」が押された場合の処理
     const handleCancelDelete = () => {
         setConfirmDialogOpen(false);
         setSelectedActivityId(null);
     };
 
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
-    };
+    const handleSnackbarClose = () => setSnackbarOpen(false);
 
     const processRowUpdate = async (newRow, oldRow) => {
         try {
@@ -169,30 +175,57 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     };
 
-    // 累計時間を計算する関数
-    const calculateTimeDetails = (activityId, records) => {
-        const now = new Date();
-        const last30Days = new Date();
-        last30Days.setDate(now.getDate() - 30);
-        // activity_idが一致するレコードを抽出
-        const activityRecords = records.filter(rec => rec.activity_id === activityId);
-        const totalOverall = activityRecords.reduce((sum, rec) => sum + rec.value, 0);
-        const totalLast30Days = activityRecords
-            .filter(rec => new Date(rec.created_at) >= last30Days)
-            .reduce((sum, rec) => sum + rec.value, 0);
-        // 時間表示をフォーマット
-        const formatTime30Days = (minutes) => {
-            const hrs = Math.floor(minutes / 60);
-            const mins = Math.round(minutes % 60);
-            return `${hrs}時間${mins}分`;
-        };
-        const formatTimeTotal = (minutes) => {
-            const hrs = Math.floor(minutes / 60);
-            return `${hrs}時間`;
-        };
-        return `${formatTime30Days(totalLast30Days)}/30日 (合計${formatTimeTotal(totalOverall)})`;
+    // activity を選択して開始する処理（分の場合は累計時間計算を利用）
+    const handleStartRecordFromSelect = (activity) => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+        setActiveActivity(activity);
+        if (activity.unit === 'count') {
+            setRecordDialogOpen(true);
+        } else if (activity.unit === 'minutes') {
+            const details = calculateTimeDetails(activity.id, records);
+            const data = {
+                group: activity.category_group,
+                activity_name: activity.name,
+                details: details,
+                asset_key: activity.asset_key || "default_image"
+            };
+            setDiscordData(data);
+            setStopwatchVisible(true);
+        }
     };
 
+    const handleEditActivity = (activity) => {
+        setSelectedActivity(activity);
+        setEditDialogOpen(true);
+    };
+
+    const handleStopwatchComplete = (minutes) => {
+        console.log("Stopwatch completed. Elapsed minutes:", minutes);
+        setPreFilledValue(minutes);
+        setStopwatchVisible(false);
+        setRecordDialogOpen(true);
+    };
+
+    const handleRecordCreated = async (recordData) => {
+        try {
+            const res = await createRecord(recordData);
+            console.log("Record created:", res);
+            setRecordDialogOpen(false);
+            setSelectedActivity(null);
+            setPreFilledValue(null);
+            onRecordUpdate();
+            fetchActivities()
+                .then(data => setActivities(data))
+                .catch(err => setError(err.message));
+        } catch (err) {
+            console.error("Failed to create record:", err);
+        }
+    };
+
+    // -----------------------------------------------------------------
+    // データグリッドの列定義
+    // -----------------------------------------------------------------
     const columns = [
         {
             field: 'category_group',
@@ -249,85 +282,38 @@ function ActivityList({ onRecordUpdate, records }) {
             width: 240,
             sortable: false,
             filterable: false,
-            renderCell: (params) => {
-                return (
-                    <>
-                        <Button
-                            variant="outlined"
-                            color="info"
-                            onClick={() => handleEditActivity(params.row)}
-                            sx={{ mr: 1 }}
-                        >
-                            Edit
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => handleDeleteButtonClick(params.row.id)}
-                        >
-                            Delete
-                        </Button>
-                    </>
-                );
-            }
+            renderCell: (params) => (
+                <>
+                    <Button
+                        variant="outlined"
+                        color="info"
+                        onClick={() => handleEditActivity(params.row)}
+                        sx={{ mr: 1 }}
+                    >
+                        Edit
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        onClick={() => handleDeleteButtonClick(params.row.id)}
+                    >
+                        Delete
+                    </Button>
+                </>
+            )
         }
     ];
 
-    // activityを選択して開始する場合の処理
-    const handleStartRecordFromSelect = (activity) => {
-        if (!activity) return;
-        setSelectedActivity(activity);
-        setActiveActivity(activity);
-        if (activity.unit === 'count') {
-            setRecordDialogOpen(true);
-        } else if (activity.unit === 'minutes') {
-            // minutes の場合は、Discord 連携用の情報を組み立てる
-            const details = calculateTimeDetails(activity.id, records);
-            const data = {
-                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
-                activity_name: activity.name,
-                details: details,
-                asset_key: activity.asset_key || "default_image"
-            };
-            setDiscordData(data);
-            setStopwatchVisible(true);
-        }
-    };
-
-    const handleEditActivity = (activity) => {
-        setSelectedActivity(activity);
-        setEditDialogOpen(true);
-    };
-
-    // Stopwatch 完了時の処理
-    const handleStopwatchComplete = (minutes) => {
-        console.log("Stopwatch completed. Elapsed minutes:", minutes);
-        // ストップウォッチの計測結果を preFilledValue にセットし、確認用ダイアログを表示する
-        setPreFilledValue(minutes);
-        setStopwatchVisible(false);
-        setRecordDialogOpen(true);
-    };
-
-    // Recordダイアログでレコード作成が完了したときの処理
-    const handleRecordCreated = async (recordData) => {
-        try {
-            const res = await createRecord(recordData);
-            console.log("Record created:", res);
-            setRecordDialogOpen(false);
-            setSelectedActivity(null);
-            setPreFilledValue(null);
-            onRecordUpdate();
-            fetchActivities()
-                .then(data => setActivities(data))
-                .catch(err => setError(err.message));
-        } catch (err) {
-            console.error("Failed to create record:", err);
-        }
-    };
-    
+    // -----------------------------------------------------------------
+    // レンダリング部
+    // -----------------------------------------------------------------
     return (
         <div>
-            {!showGrid && !stopwatchVisible && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}
+            {/* アクティビティ選択（ストップウォッチ表示前） */}
+            {!showGrid && !stopwatchVisible && (
+                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />
+            )}
+            {/* グリッド表示または管理画面 */}
             {!stopwatchVisible && (
                 !showGrid ? (
                     <div>
@@ -355,11 +341,9 @@ function ActivityList({ onRecordUpdate, records }) {
                                 rowsPerPageOptions={[5]}
                                 disableSelectionOnClick
                                 processRowUpdate={processRowUpdate}
-                                slots={{
-                                    toolbar: CustomToolbar,
-                                }}
+                                slots={{ toolbar: CustomToolbar }}
                                 slotProps={{
-                                    toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick },
+                                    toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick }
                                 }}
                             />
                         </div>
@@ -393,7 +377,6 @@ function ActivityList({ onRecordUpdate, records }) {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-            {/* 編集ダイアログ */}
             {editDialogOpen && selectedActivity && (
                 <AddActivityDialog
                     open={editDialogOpen}
@@ -409,32 +392,28 @@ function ActivityList({ onRecordUpdate, records }) {
                             console.error("Failed to update activity:", err);
                         }
                     }}
-                    // 編集用の場合は初期値を selectedActivity に設定
                     initialData={selectedActivity}
                     categories={categories}
                 />
             )}
-            {/* 「count」用のレコード作成ダイアログ */}
             {recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
                 <AddRecordDialog
                     open={recordDialogOpen}
                     onClose={() => setRecordDialogOpen(false)}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}
-                    initialValue={null}  // この場合はユーザーが入力するので初期値は不要
+                    initialValue={null}
                 />
             )}
-            {/* 「minutes」用のレコード作成ダイアログ、初期値としてストップウォッチ計測結果を渡す */}
             {recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <AddRecordDialog
                     open={recordDialogOpen}
                     onClose={() => setRecordDialogOpen(false)}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}
-                    initialValue={preFilledValue}  // ここに計測結果（分）が初期値としてセットされる
+                    initialValue={preFilledValue}
                 />
             )}
-            {/* Stopwatch UI */}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
                     onComplete={(minutes) => {
