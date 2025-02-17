@@ -1,4 +1,5 @@
 import atexit
+import logging
 from pypresence import Presence
 import os
 from dotenv import load_dotenv
@@ -6,6 +7,7 @@ import time
 from app.models import ActivityGroup
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 class DiscordRPCManager:
     def __init__(self, client_id):
@@ -21,7 +23,7 @@ class DiscordRPCManager:
                 # アプリ終了時に接続を切断する
                 atexit.register(self.close)
             except Exception as e:
-                print("Failed to connect to Discord RPC:", e)
+                logger.error("Failed to connect to Discord RPC: %s", e)
 
     def update_presence(self, state, large_text, details, large_image):
         if self.rpc:
@@ -34,15 +36,15 @@ class DiscordRPCManager:
                     start=time.time(),
                 )
             except Exception as e:
-                print("Failed to update Discord RPC:", e)
+                logger.error("Failed to update Discord RPC: %s", e)
 
     def close(self):
         if self.rpc:
             try:
                 self.rpc.clear()
-                print("Discord RPC disconnected")
+                logger.info("Discord RPC disconnected")
             except Exception as e:
-                print("Error while closing Discord RPC:", e)
+                logger.error("Error while closing Discord RPC: %s", e)
             finally:
                 self.rpc = None
 
