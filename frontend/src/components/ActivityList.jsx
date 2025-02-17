@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import {
-  Button,
-  Snackbar,
-  Alert,
-  Box
+    Button,
+    Snackbar,
+    Alert,
+    Box
 } from '@mui/material';
 
 // API 関連
 import {
-  fetchActivities,
-  addActivity,
-  updateActivity,
-  deleteActivity,
-  fetchCategories,
-  createRecord
+    fetchActivities,
+    addActivity,
+    updateActivity,
+    deleteActivity,
+    fetchCategories,
+    createRecord
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -32,11 +32,14 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
+// カスタムフック
+import useLocalStorageState from '../hooks/useLocalStorageState';
+
 // ---------------------------------------------------------------------
 // ActivityList コンポーネント本体
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
-    // 状態変数
+    // 状態管理（通常の useState とローカルストレージ用カスタムフックの併用）
     const [activities, setActivities] = useState([]);
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
@@ -46,61 +49,17 @@ function ActivityList({ onRecordUpdate, records }) {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [recordDialogOpen, setRecordDialogOpen] = useState(false);
-    const [stopwatchVisible, setStopwatchVisible] = useState(false);
-    const [selectedActivity, setSelectedActivity] = useState(null);
+    // ローカルストレージで管理する状態
+    const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
+    const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
+    const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
+    // その他の状態
     const [preFilledValue, setPreFilledValue] = useState(null);
-    const [discordData, setDiscordData] = useState(null);
     const [showGrid, setShowGrid] = useState(false);
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [groupDialogOpen, setGroupDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const { setActiveActivity } = useActiveActivity();
-
-    // -----------------------------------------------------------------
-    // ローカルストレージからの状態復元と保存
-    // -----------------------------------------------------------------
-    useEffect(() => {
-        const savedVisible = localStorage.getItem('stopwatchVisible');
-        if (savedVisible === 'true') setStopwatchVisible(true);
-
-        const savedActivity = localStorage.getItem('selectedActivity');
-        if (savedActivity) {
-            try {
-                setSelectedActivity(JSON.parse(savedActivity));
-            } catch (error) {
-                console.error("Failed to parse selectedActivity:", error);
-            }
-        }
-
-        const savedDiscordData = localStorage.getItem('discordData');
-        if (savedDiscordData) {
-            try {
-                setDiscordData(JSON.parse(savedDiscordData));
-            } catch (error) {
-                console.error("Failed to parse discordData from localStorage:", error);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        localStorage.setItem('stopwatchVisible', stopwatchVisible);
-    }, [stopwatchVisible]);
-
-    useEffect(() => {
-        if (selectedActivity) {
-            localStorage.setItem('selectedActivity', JSON.stringify(selectedActivity));
-        } else {
-            localStorage.removeItem('selectedActivity');
-        }
-    }, [selectedActivity]);
-
-    useEffect(() => {
-        if (discordData) {
-            localStorage.setItem('discordData', JSON.stringify(discordData));
-        } else {
-            localStorage.removeItem('discordData');
-        }
-    }, [discordData]);
 
     // -----------------------------------------------------------------
     // API 呼び出し: アクティビティとカテゴリの取得
