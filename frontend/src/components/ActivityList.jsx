@@ -53,7 +53,6 @@ function ActivityList({ onRecordUpdate, records }) {
     const [showGrid, setShowGrid] = useState(false);
     const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
     const [groupDialogOpen, setGroupDialogOpen] = useState(false);
-    const [activityGridVisible, setActivityGridVisible] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const { setActiveActivity } = useActiveActivity();
 
