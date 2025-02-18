@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from ..models import Record
 from .. import db
@@ -25,6 +25,7 @@ def get_records():
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -45,6 +46,7 @@ def create_record():
         db.session.commit()
         return jsonify({'message': 'Record created', 'id': new_record.id}), 201
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -59,11 +61,16 @@ def update_record(record_id):
         return jsonify({'error': 'Record not found'}), 404
 
     try:
-        if 'value' in data: # valueのみ更新可能
+        if 'value' in data:  # value更新
             record.value = data['value']
+        if 'created_at' in data:  # 登録日時更新
+            import datetime
+            # ここでは ISO 8601 形式で送信されることを前提とする
+            record.created_at = datetime.datetime.fromisoformat(data['created_at'])
         db.session.commit()
         return jsonify({'message': 'Record updated'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -78,5 +85,6 @@ def delete_record(record_id):
         db.session.commit()
         return jsonify({'message': 'Record deleted'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useReducer } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { Button, Snackbar, Alert, Box } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 // API 関連
 import {
+
     fetchActivities,
     addActivity,
     updateActivity,
@@ -13,6 +15,13 @@ import {
 } from '../services/api';
 
 // カスタムコンポーネント
+import {
+    Button,
+    Snackbar,
+    Alert,
+    Box,
+    IconButton
+} from '@mui/material';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
 import ConfirmDialog from './ConfirmDialog';
@@ -25,6 +34,7 @@ import GroupManagementDialog from './GroupManagementDialog';
 // ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
+import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
 // カスタムフック
@@ -219,15 +229,9 @@ function ActivityList({ onRecordUpdate, records }) {
         { field: 'asset_key', headerName: 'Asset Key', width: 150 },
         {
             field: 'created_at',
-            headerName: '登録日',
+            headerName: '登録日時',
             width: 200,
-            valueFormatter: (params) => {
-                const date = new Date(params);
-                const year = date.getFullYear();
-                const month = ("0" + (date.getMonth() + 1)).slice(-2);
-                const day = ("0" + date.getDate()).slice(-2);
-                return `${year}年${month}月${day}日`;
-            }
+            valueFormatter: (params) => formatToLocal(params)
         },
         {
             field: 'actions',
@@ -235,31 +239,73 @@ function ActivityList({ onRecordUpdate, records }) {
             width: 240,
             sortable: false,
             filterable: false,
-            renderCell: (params) => (
-                <>
-                    <Button
-                        variant="outlined"
-                        color="info"
-                        onClick={() => handleEditActivity(params.row)}
-                        sx={{ mr: 1 }}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => handleDeleteButtonClick(params.row.id)}
-                    >
-                        Delete
-                    </Button>
-                </>
-            )
+            renderCell: (params) => {
+                return (
+                    <>
+                        <IconButton onClick={() => handleEditActivity(params.row)} >
+                            <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => handleDeleteButtonClick(params.row.id)} >
+                            <DeleteIcon />
+                        </IconButton>
+                    </>
+                );
+            }
         }
     ];
 
-    // -----------------------------------------------------------------
-    // レンダリング部
-    // -----------------------------------------------------------------
+    // activityを選択して開始する場合の処理
+    const handleStartRecordFromSelect = (activity) => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+        setActiveActivity(activity);
+        if (activity.unit === 'count') {
+            setRecordDialogOpen(true);
+        } else if (activity.unit === 'minutes') {
+            // minutes の場合は、Discord 連携用の情報を組み立てる
+            const details = calculateTimeDetails(activity.id, records);
+            const data = {
+                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
+                activity_name: activity.name,
+                details: details,
+                asset_key: activity.asset_key || "default_image"
+            };
+            setDiscordData(data);
+            setStopwatchVisible(true);
+        }
+    };
+
+    const handleEditActivity = (activity) => {
+        setSelectedActivity(activity);
+        setEditDialogOpen(true);
+    };
+
+    // Stopwatch 完了時の処理
+    const handleStopwatchComplete = (minutes) => {
+        console.log("Stopwatch completed. Elapsed minutes:", minutes);
+        // ストップウォッチの計測結果を preFilledValue にセットし、確認用ダイアログを表示する
+        setPreFilledValue(minutes);
+        setStopwatchVisible(false);
+        setRecordDialogOpen(true);
+    };
+
+    // Recordダイアログでレコード作成が完了したときの処理
+    const handleRecordCreated = async (recordData) => {
+        try {
+            const res = await createRecord(recordData);
+            console.log("Record created:", res);
+            setRecordDialogOpen(false);
+            setSelectedActivity(null);
+            setPreFilledValue(null);
+            onRecordUpdate();
+            fetchActivities()
+                .then(data => setActivities(data))
+                .catch(err => setError(err.message));
+        } catch (err) {
+            console.error("Failed to create record:", err);
+        }
+    };
+
     return (
         <div>
             {/* アクティビティ選択（ストップウォッチ表示前） */}

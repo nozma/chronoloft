@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from ..models import Category, ActivityGroup
 from .. import db
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +19,7 @@ def get_categories():
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in add_category: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -39,6 +40,7 @@ def add_category():
         db.session.commit()
         return jsonify({'message': 'Category created', 'id': new_category.id}), 201
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in add_category: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
     
@@ -64,6 +66,7 @@ def update_category(category_id):
         db.session.commit()
         return jsonify({'message': 'Category updated'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in add_category: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
     
@@ -78,5 +81,6 @@ def delete_category(category_id):
         db.session.commit()
         return jsonify({'message': 'Category deleted'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in add_category: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

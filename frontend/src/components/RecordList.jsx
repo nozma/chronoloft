@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Button, Collapse } from '@mui/material';
+import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
+import { Box, Button, Collapse, IconButton } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
-// API 関連
-import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
-// カスタムフック
+import AddRecordDialog from './AddRecordDialog';
+import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 
 function RecordList({ records, categories, onRecordUpdate }) {
@@ -83,6 +85,20 @@ function RecordList({ records, categories, onRecordUpdate }) {
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
 
+    const handleEditRecordClick = (record) => {
+        setRecordToEdit(record);
+    };
+
+    const handleEditRecordSubmit = async (updatedData) => {
+        try {
+            await updateRecord(recordToEdit.id, updatedData);
+            onRecordUpdate();
+            setRecordToEdit(null);
+        } catch (error) {
+            console.error("Failed to update record:", error);
+        }
+    };
+
     const processRowUpdate = async (newRow, oldRow) => {
         try {
             await updateRecord(newRow.id, newRow);
@@ -103,15 +119,9 @@ function RecordList({ records, categories, onRecordUpdate }) {
     const columns = [
         {
             field: 'created_at',
-            headerName: '記録日',
+            headerName: '記録日時',
             width: 200,
-            valueFormatter: (params) => {
-                const date = new Date(params);
-                const year = date.getFullYear();
-                const month = ("0" + (date.getMonth() + 1)).slice(-2);
-                const day = ("0" + date.getDate()).slice(-2);
-                return `${year}年${month}月${day}日`;
-            }
+            valueFormatter: (params) => formatToLocal(params)
         },
         {
             field: 'activity_category',
@@ -144,17 +154,18 @@ function RecordList({ records, categories, onRecordUpdate }) {
         {
             field: 'actions',
             headerName: 'Actions',
-            width: 120,
+            width: 240,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => handleDeleteRecordClick(params.row.id)}
-                >
-                    Delete
-                </Button>
+                <>
+                    <IconButton onClick={() => handleEditRecordClick(params.row)}>
+                        <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDeleteRecordClick(params.row.id)}>
+                        <DeleteIcon />
+                    </IconButton>
+                </>
             )
         }
     ];
@@ -220,6 +231,20 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />
+            {/* 編集用ダイアログ */}
+            {recordToEdit && (
+                <AddRecordDialog
+                    open={true}
+                    onClose={() => setRecordToEdit(null)}
+                    onSubmit={handleEditRecordSubmit}
+                    activity={recordToEdit}  // recordToEdit自体を渡す
+                    initialValue={recordToEdit.value}
+                    // 追加：編集用の場合、登録日時（created_at）の編集フィールドを表示するため、初期値として recordToEdit.created_at を渡す
+                    initialDate={recordToEdit.created_at}
+                    // ここで isEdit フラグを渡すなど、ダイアログ側で編集モードと判断できるようにする
+                    isEdit={true}
+                />
+            )}
         </Box>
     );
 }
