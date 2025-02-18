@@ -5,7 +5,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 // API 関連
 import {
-
     fetchActivities,
     addActivity,
     updateActivity,
@@ -254,57 +253,6 @@ function ActivityList({ onRecordUpdate, records }) {
         }
     ];
 
-    // activityを選択して開始する場合の処理
-    const handleStartRecordFromSelect = (activity) => {
-        if (!activity) return;
-        setSelectedActivity(activity);
-        setActiveActivity(activity);
-        if (activity.unit === 'count') {
-            setRecordDialogOpen(true);
-        } else if (activity.unit === 'minutes') {
-            // minutes の場合は、Discord 連携用の情報を組み立てる
-            const details = calculateTimeDetails(activity.id, records);
-            const data = {
-                group: activity.category_group,       // 例: "study"（バックエンドのレスポンスに合わせる）
-                activity_name: activity.name,
-                details: details,
-                asset_key: activity.asset_key || "default_image"
-            };
-            setDiscordData(data);
-            setStopwatchVisible(true);
-        }
-    };
-
-    const handleEditActivity = (activity) => {
-        setSelectedActivity(activity);
-        setEditDialogOpen(true);
-    };
-
-    // Stopwatch 完了時の処理
-    const handleStopwatchComplete = (minutes) => {
-        console.log("Stopwatch completed. Elapsed minutes:", minutes);
-        // ストップウォッチの計測結果を preFilledValue にセットし、確認用ダイアログを表示する
-        setPreFilledValue(minutes);
-        setStopwatchVisible(false);
-        setRecordDialogOpen(true);
-    };
-
-    // Recordダイアログでレコード作成が完了したときの処理
-    const handleRecordCreated = async (recordData) => {
-        try {
-            const res = await createRecord(recordData);
-            console.log("Record created:", res);
-            setRecordDialogOpen(false);
-            setSelectedActivity(null);
-            setPreFilledValue(null);
-            onRecordUpdate();
-            fetchActivities()
-                .then(data => setActivities(data))
-                .catch(err => setError(err.message));
-        } catch (err) {
-            console.error("Failed to create record:", err);
-        }
-    };
 
     return (
         <div>

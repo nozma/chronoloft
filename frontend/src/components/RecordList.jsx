@@ -22,6 +22,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
+    const [recordToEdit, setRecordToEdit] = useState(null);
     
     // ----------------------------
     // Ref の宣言
