@@ -37,8 +37,14 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
             // どちらも未選択なら全レコードを利用
             recs = records;
         }
-        return Array.from(new Set(recs.map(rec => rec.activity_name)));
-    }, [records, selectedCategory, selectedGroup, categories]);
+        // records からユニークな activity_name を抽出
+        let names = Array.from(new Set(recs.map(rec => rec.activity_name)));
+        // 現在の selectedActivityName が空でなく、リストに含まれていなければ追加する
+        if (selectedActivityName && !names.includes(selectedActivityName)) {
+            names.push(selectedActivityName);
+        }
+        return names;
+    }, [records, selectedCategory, selectedGroup, categories, selectedActivityName]);
 
     useEffect(() => {
         onFilterChange({
