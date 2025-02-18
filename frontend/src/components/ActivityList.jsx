@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import {
-  fetchActivities,
-  addActivity,
-  updateActivity,
-  deleteActivity,
-  fetchCategories,
-  createRecord
+    fetchActivities,
+    addActivity,
+    updateActivity,
+    deleteActivity,
+    fetchCategories,
+    createRecord
 } from '../services/api';
 import { DataGrid } from '@mui/x-data-grid';
 import {
-  Button,
-  Snackbar,
-  Alert,
-  Box
+    Button,
+    Snackbar,
+    Alert,
+    Box,
+    IconButton
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
 import ConfirmDialog from './ConfirmDialog';
@@ -247,21 +250,12 @@ function ActivityList({ onRecordUpdate, records }) {
             renderCell: (params) => {
                 return (
                     <>
-                        <Button
-                            variant="outlined"
-                            color="info"
-                            onClick={() => handleEditActivity(params.row)}
-                            sx={{ mr: 1 }}
-                        >
-                            Edit
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => handleDeleteButtonClick(params.row.id)}
-                        >
-                            Delete
-                        </Button>
+                        <IconButton onClick={() => handleEditActivity(params.row)} >
+                            <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => handleDeleteButtonClick(params.row.id)} >
+                            <DeleteIcon />
+                        </IconButton>
                     </>
                 );
             }
@@ -319,7 +313,7 @@ function ActivityList({ onRecordUpdate, records }) {
             console.error("Failed to create record:", err);
         }
     };
-    
+
     return (
         <div>
             {!showGrid && !stopwatchVisible && (<ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />)}

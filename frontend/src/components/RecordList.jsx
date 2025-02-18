@@ -3,7 +3,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
-import { Box, Button, Collapse } from '@mui/material';
+import { Box, Button, Collapse, IconButton } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
@@ -147,21 +149,12 @@ function RecordList({ records, categories, onRecordUpdate }) {
             filterable: false,
             renderCell: (params) => (
                 <>
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        onClick={() => handleDeleteRecordClick(params.row.id)}
-                    >
-                        Delete
-                    </Button>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() => handleEditRecordClick(params.row)}
-                        sx={{ mr: 1 }}
-                    >
-                        Edit
-                    </Button>
+                    <IconButton onClick={() => handleEditRecordClick(params.row)}>
+                        <EditIcon />
+                    </IconButton>
+                    <IconButton onClick={() => handleDeleteRecordClick(params.row.id)}>
+                        <DeleteIcon />
+                    </IconButton>
                 </>
             )
         }
