@@ -1,16 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography } from '@mui/material';
+import { DateTime } from 'luxon';
 
 function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, initialDate, isEdit }) {
     const [value, setValue] = useState(
         initialValue !== undefined && initialValue !== null ? String(initialValue) : ''
     );
-    const defaultDate = initialDate ? initialDate.substring(0, 16) : new Date().toISOString().substring(0, 16);
-    const [dateValue, setDateValue] = useState(defaultDate);
+    // 初期日時の設定
+    const getDefaultDate = () => {
+        if (initialDate) {
+            // サーバーから渡された日時はUTCである前提。Luxonでローカルに変換して表示形式にする。
+            return DateTime.fromISO(initialDate, { zone: 'utc' })
+                .setZone(DateTime.local().zoneName)
+                .toFormat("yyyy-MM-dd'T'HH:mm");
+        }
+        // 初回は現在のローカル日時
+        return DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm");
+    };
+    const [dateValue, setDateValue] = useState(getDefaultDate());
 
     useEffect(() => {
         setValue(initialValue !== undefined && initialValue !== null ? Number(initialValue).toFixed(1) : '');
     }, [initialValue]);
+
+    useEffect(() => {
+        setDateValue(getDefaultDate());
+    }, [initialDate]);
 
     const handleSubmit = () => {
         const numValue = parseFloat(value);
@@ -20,17 +35,20 @@ function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, init
         }
         const recordData = { activity_id: activity.id, value: numValue };
         if (dateValue) {
-            // "YYYY-MM-DDTHH:MM" 形式を Date オブジェクトに変換し ISO 形式にする
-            recordData.created_at = new Date(dateValue).toISOString();
+            // ユーザーが入力したローカル日時を、Luxon で UTC の ISO 形式に変換
+            const utcDate = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm", { zone: DateTime.local().zoneName })
+                .toUTC()
+                .toISO();
+            recordData.created_at = utcDate;
         }
         onSubmit(recordData);
         setValue('');
-        setDateValue(new Date().toISOString().substring(0, 16));
+        setDateValue(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
     };
 
     const handleClose = () => {
         setValue('');
-        setDateValue(new Date().toISOString().substring(0, 16));
+        setDateValue(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
         onClose();
     };
 
@@ -56,7 +74,7 @@ function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, init
                     margin="dense"
                 />
                 <TextField
-                    label="登録日時"
+                    label="記録日時"
                     type="datetime-local"
                     value={dateValue}
                     onChange={(e) => setDateValue(e.target.value)}

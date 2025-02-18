@@ -23,6 +23,7 @@ import ActivityStart from './ActivityStart';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import GroupManagementDialog from './GroupManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
+import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
 function ActivityList({ onRecordUpdate, records }) {
@@ -233,15 +234,9 @@ function ActivityList({ onRecordUpdate, records }) {
         { field: 'asset_key', headerName: 'Asset Key', width: 150 },
         {
             field: 'created_at',
-            headerName: '登録日',
+            headerName: '登録日時',
             width: 200,
-            valueFormatter: (params) => {
-                const date = new Date(params);
-                const year = date.getFullYear();
-                const month = ("0" + (date.getMonth() + 1)).slice(-2);
-                const day = ("0" + date.getDate()).slice(-2);
-                return `${year}年${month}月${day}日`;
-            }
+            valueFormatter: (params) => formatToLocal(params)
         },
         {
             field: 'actions',

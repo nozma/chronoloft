@@ -8,6 +8,7 @@ import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import AddRecordDialog from './AddRecordDialog';
+import { formatToLocal } from '../utils/dateUtils';
 
 
 function RecordList({ records, categories, onRecordUpdate }) {
@@ -106,15 +107,9 @@ function RecordList({ records, categories, onRecordUpdate }) {
     const columns = [
         {
             field: 'created_at',
-            headerName: '記録日',
+            headerName: '記録日時',
             width: 200,
-            valueFormatter: (params) => {
-                const date = new Date(params);
-                const year = date.getFullYear();
-                const month = ("0" + (date.getMonth() + 1)).slice(-2);
-                const day = ("0" + date.getDate()).slice(-2);
-                return `${year}年${month}月${day}日`;
-            }
+            valueFormatter: (params) => formatToLocal(params)
         },
         {
             field: 'activity_category',
