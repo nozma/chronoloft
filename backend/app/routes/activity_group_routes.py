@@ -18,6 +18,7 @@ def get_activity_groups():
                 'id': group.id,
                 'name': group.name,
                 'client_id': group.client_id
+                'icon_name': group.icon_name
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -34,7 +35,11 @@ def add_activity_group():
     if not data or 'name' not in data:
         return jsonify({'error': '必要な情報が不足しています。'}), 400
     try:
-        new_group = ActivityGroup(name=data['name'], client_id=data.get('client_id'))
+        new_group = ActivityGroup(
+            name=data['name'], 
+            client_id=data.get('client_id'),
+            icon_name=data.get('icon_name')
+        )
         db.session.add(new_group)
         db.session.commit()
         return jsonify({'message': 'Activity group created', 'id': new_group.id}), 201
@@ -61,6 +66,8 @@ def update_activity_group(group_id):
             group.name = data['name']
         if 'client_id' in data:
             group.client_id = data['client_id']
+        if 'icon_name' in data:
+            group.icon_name = data['icon_name']
         db.session.commit()
         return jsonify({'message': 'Activity group updated'}), 200
     except SQLAlchemyError as e:
