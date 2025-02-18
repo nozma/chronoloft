@@ -59,11 +59,15 @@ def update_record(record_id):
         return jsonify({'error': 'Record not found'}), 404
 
     try:
-        if 'value' in data: # valueのみ更新可能
+        if 'value' in data:  # value更新
             record.value = data['value']
+        if 'created_at' in data:  # 登録日時更新
+            import datetime
+            # ここでは ISO 8601 形式で送信されることを前提とする
+            record.created_at = datetime.datetime.fromisoformat(data['created_at'])
         db.session.commit()
         return jsonify({'message': 'Record updated'}), 200
-    except SQLAlchemyError as e:
+    except (SQLAlchemyError, ValueError) as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
