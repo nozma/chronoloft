@@ -1,34 +1,37 @@
-// frontend/src/components/RecordList.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
 import { Box, Button, Collapse } from '@mui/material';
+import ConfirmDialog from './ConfirmDialog';
 import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
-
+// API 関連
+import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
+// カスタムフック
+import useRecordListState from '../hooks/useRecordListState';
 
 function RecordList({ records, categories, onRecordUpdate }) {
+    // ----------------------------
+    // 状態管理
+    // ----------------------------
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
-    const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-    const [selectedRecordId, setSelectedRecordId] = useState(null);
-    const [filterCriteria, setFilterCriteria] = useState({
-        group: '',
-        category: '',
-        unit: '',
-        activityName: '',
-    });
-    const [groups, setGroups] = useState([]);
+    // useRecordListState で一元管理する
+    const { state, dispatch } = useRecordListState();
+    const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
+    
+    // ----------------------------
+    // Ref の宣言
+    // ----------------------------
     const dataGridRef = useRef(null);
-    const [showRecords, setShowRecords] = useState(false);
-
-    // RecordList 全体のコンテナ用 ref（Collapse を含む）
     const containerRef = useRef(null);
 
+    // ----------------------------
+    // 副作用（useEffect）
+    // ----------------------------
     // groups を API から取得する
+    const [groups, setGroups] = useState([]);
     useEffect(() => {
         fetchActivityGroups()
             .then(data => setGroups(data))
@@ -38,7 +41,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
             });
     }, []);
 
-    // フィルタ条件に応じて records を絞る
+    // filterCriteria に応じて records をフィルタリングする
     useEffect(() => {
         const { group, category, activityName } = filterCriteria;
         let filtered = records.filter((record) => {
@@ -55,10 +58,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
 
-    // 削除確認用のハンドラー
+    // ----------------------------
+    // イベントハンドラ
+    // ----------------------------
+    // 削除確認ダイアログ用
     const handleDeleteRecordClick = (recordId) => {
-        setSelectedRecordId(recordId);
-        setConfirmDialogOpen(true);
+        dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: recordId });
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: true });
     };
 
     const handleConfirmDelete = async () => {
@@ -68,13 +74,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
         } catch (err) {
             console.error("Failed to delete record:", err);
         }
-        setConfirmDialogOpen(false);
-        setSelectedRecordId(null);
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
+        dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
 
     const handleCancelDelete = () => {
-        setConfirmDialogOpen(false);
-        setSelectedRecordId(null);
+        dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
+        dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
 
     const processRowUpdate = async (newRow, oldRow) => {
@@ -87,6 +93,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
         }
     };
 
+    const handleFilterChange = useCallback((newCriteria) => {
+        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [dispatch]);
+
+    // ----------------------------
+    // DataGrid の列定義
+    // ----------------------------
     const columns = [
         {
             field: 'created_at',
@@ -116,8 +129,8 @@ function RecordList({ records, categories, onRecordUpdate }) {
             width: 150,
             editable: true,
             renderCell: (params) => {
-                const val = params.row.value; // 数値（例: 10, 75など）
-                const unit = params.row.unit; // "count" または "minutes"
+                const val = params.row.value;
+                const unit = params.row.unit;
                 if (unit === 'count') {
                     return `${val}回`;
                 } else if (unit === 'minutes') {
@@ -146,6 +159,9 @@ function RecordList({ records, categories, onRecordUpdate }) {
         }
     ];
 
+    // ----------------------------
+    // レンダリング部
+    // ----------------------------
     return (
         <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
@@ -153,7 +169,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 <RecordFilter
                     groups={groups}
                     categories={categories}
-                    onFilterChange={setFilterCriteria}
+                    onFilterChange={handleFilterChange}
                     records={records}
                 />
                 <RecordHeatmap
@@ -163,11 +179,11 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     unitFilter={filterCriteria.unit}
                 />
                 {showRecords ? (
-                    <Button variant="contained" onClick={() => setShowRecords(false)} sx={{ mb: 2 }}>
+                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: false })} sx={{ mb: 2 }}>
                         閉じる
                     </Button>
                 ) : (
-                    <Button variant="contained" onClick={() => setShowRecords(true)} sx={{ mb: 2 }}>
+                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: true })} sx={{ mb: 2 }}>
                         すべてのレコードを表示
                     </Button>
                 )}
@@ -175,7 +191,6 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     in={showRecords}
                     timeout={{ enter: 0, exit: 200 }}
                     onEntered={() => {
-                        // 展開後に DataGrid コンテナの下端までスクロールする
                         if (dataGridRef.current) {
                             dataGridRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
                         }
@@ -188,15 +203,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                             pageSize={5}
                             rowsPerPageOptions={[5]}
                             disableSelectionOnClick
-                            processRowUpdate={async (newRow, oldRow) => {
-                                try {
-                                    await updateRecord(newRow.id, newRow);
-                                    return newRow;
-                                } catch (error) {
-                                    console.error("Failed to update record:", error);
-                                    throw error;
-                                }
-                            }}
+                            processRowUpdate={processRowUpdate}
                             initialState={{
                                 sorting: {
                                     sortModel: [{ field: 'created_at', sort: 'desc' }],
