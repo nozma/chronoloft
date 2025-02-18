@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 from ..models import Activity, ActivityUnitType, Record
 from .. import db
 from sqlalchemy.exc import IntegrityError
@@ -43,7 +43,6 @@ def add_activity():
     data = request.get_json()
     if not data or 'name' not in data or 'category_id' not in data:
         return jsonify({'error': '必要な情報が不足しています'}), 400
-
     unit = data.get('unit')
     if unit:
         try:
@@ -52,21 +51,15 @@ def add_activity():
             return jsonify({'error': 'unit の値が不正です'}), 400
     else:
         unit = None
-
     new_activity = Activity(
         name=data['name'],
         category_id=data['category_id'],
         unit=unit,
         asset_key=data.get('asset_key')
     )
-    try:
-        db.session.add(new_activity)
-        db.session.commit()
-        return jsonify({'message': 'Activity created', 'id': new_activity.id}), 201
-    except SQLAlchemyError as e:
-        current_app.logger.error("Error in add_activity: %s", e, exc_info=True)
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    db.session.add(new_activity)
+    db.session.commit()
+    return jsonify({'message': 'Activity created', 'id': new_activity.id}), 201
 
 @activity_bp.route('/api/activities/<int:activity_id>', methods=['PUT'])
 def update_activity(activity_id):
@@ -76,19 +69,14 @@ def update_activity(activity_id):
     activity = Activity.query.get(activity_id)
     if activity is None:
         return jsonify({'error': 'Activity not found'}), 404
-
+    
     if 'name' in data:
         activity.name = data['name']
     if 'asset_key' in data:
         activity.asset_key = data['asset_key']
-
-    try:
-        db.session.commit()
-        return jsonify({'message': 'Activity updated'})
-    except SQLAlchemyError as e:
-        current_app.logger.error("Error in update_activity: %s", e, exc_info=True)
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    
+    db.session.commit()
+    return jsonify({'message': 'Activity updated'})
 
 @activity_bp.route('/api/activities/<int:activity_id>', methods=['DELETE'])
 def delete_activity(activity_id):
@@ -100,7 +88,6 @@ def delete_activity(activity_id):
         db.session.commit()
         return jsonify({'message': 'Activity deleted'}), 200
     except IntegrityError as e:
-        current_app.logger.error("Error in add_activity: %s", e, exc_info=True)
         db.session.rollback()
         # 外部キー制約により削除できない場合のエラーメッセージを返す
         return jsonify({'error': 'Cannot delete activity: associated records exist.'}), 400
