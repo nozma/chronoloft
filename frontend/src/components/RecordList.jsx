@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, Button, Collapse } from '@mui/material';
 import ConfirmDialog from './ConfirmDialog';
@@ -93,6 +93,10 @@ function RecordList({ records, categories, onRecordUpdate }) {
         }
     };
 
+    const handleFilterChange = useCallback((newCriteria) => {
+        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [dispatch]);
+
     // ----------------------------
     // DataGrid の列定義
     // ----------------------------
@@ -165,7 +169,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 <RecordFilter
                     groups={groups}
                     categories={categories}
-                    onFilterChange={(newCriteria) => dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria })}
+                    onFilterChange={handleFilterChange}
                     records={records}
                 />
                 <RecordHeatmap
