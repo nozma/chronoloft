@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from app.models import ActivityGroup
 from app import db
 from sqlalchemy.exc import SQLAlchemyError
@@ -21,6 +21,7 @@ def get_activity_groups():
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_activity_groups: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -38,6 +39,7 @@ def add_activity_group():
         db.session.commit()
         return jsonify({'message': 'Activity group created', 'id': new_group.id}), 201
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_activity_groups: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -62,6 +64,7 @@ def update_activity_group(group_id):
         db.session.commit()
         return jsonify({'message': 'Activity group updated'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_activity_groups: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -79,5 +82,6 @@ def delete_activity_group(group_id):
         db.session.commit()
         return jsonify({'message': 'Activity group deleted'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_activity_groups: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500

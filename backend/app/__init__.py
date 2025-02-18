@@ -1,7 +1,8 @@
 import os
 import secrets
 import sys
-from flask import Flask
+import logging
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -19,6 +20,12 @@ metadata = MetaData(naming_convention=naming_convention)
 db = SQLAlchemy(metadata=metadata)
 
 def create_app():
+    # ログ設定
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s'
+    )
+    
     if hasattr(sys, '_MEIPASS'):
         base_dir = sys._MEIPASS
         env_path = os.path.join(base_dir, 'backend', '.env')
@@ -59,6 +66,12 @@ def create_app():
 
     from .routes import register_routes
     register_routes(app)
+    
+    # エラーハンドラ
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error("Unhandled Exception: %s", str(e), exc_info=True)
+        return jsonify({"error": "An internal error occurred."}), 500
     
     @app.route("/")
     def index():
