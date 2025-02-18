@@ -50,12 +50,12 @@ class DiscordRPCManager:
 
 def get_discord_manager_for_group(group):
     global _instance
-    if _instance is None:
-        # ActivityGroup テーブルから該当するグループをクエリする
-        activity_group = ActivityGroup.query.filter_by(name=group).first()
-        if activity_group and activity_group.client_id:
+    # 指定された group に該当する ActivityGroup を取得
+    activity_group = ActivityGroup.query.filter_by(name=group).first()
+    if activity_group and activity_group.client_id:
+        if _instance is None or _instance.client_id != activity_group.client_id:
             _instance = DiscordRPCManager(activity_group.client_id)
-        else:
-            print(f"No Discord CLIENT_ID set for group {group}.")
-            return None
-    return _instance
+        return _instance
+    else:
+        print(f"No Discord CLIENT_ID set for group {group}.")
+        return None
