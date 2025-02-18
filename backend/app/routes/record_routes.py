@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from ..models import Record
 from .. import db
@@ -25,6 +25,7 @@ def get_records():
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -45,6 +46,7 @@ def create_record():
         db.session.commit()
         return jsonify({'message': 'Record created', 'id': new_record.id}), 201
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -64,6 +66,7 @@ def update_record(record_id):
         db.session.commit()
         return jsonify({'message': 'Record updated'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -78,5 +81,6 @@ def delete_record(record_id):
         db.session.commit()
         return jsonify({'message': 'Record deleted'}), 200
     except SQLAlchemyError as e:
+        current_app.logger.error("Error in get_records: %s", e, exc_info=True)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
