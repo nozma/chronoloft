@@ -17,8 +17,9 @@ def get_activity_groups():
             result.append({
                 'id': group.id,
                 'name': group.name,
-                'client_id': group.client_id
-                'icon_name': group.icon_name
+                'client_id': group.client_id,
+                'icon_name': group.icon_name,
+                'icon_color': group.icon_color
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -38,7 +39,8 @@ def add_activity_group():
         new_group = ActivityGroup(
             name=data['name'], 
             client_id=data.get('client_id'),
-            icon_name=data.get('icon_name')
+            icon_name=data.get('icon_name'),
+            icon_color=data.get('icon_color')
         )
         db.session.add(new_group)
         db.session.commit()
@@ -68,6 +70,8 @@ def update_activity_group(group_id):
             group.client_id = data['client_id']
         if 'icon_name' in data:
             group.icon_name = data['icon_name']
+        if 'icon_color' in data:
+            group.icon_color = data['icon_color']
         db.session.commit()
         return jsonify({'message': 'Activity group updated'}), 200
     except SQLAlchemyError as e:
