@@ -4,21 +4,22 @@ import { fetchActivityGroups } from '../services/api';
 const GroupContext = createContext([]);
 
 export function GroupProvider({ children }) {
-  const [groups, setGroups] = useState([]);
+    const [groups, setGroups] = useState([]);
 
-  useEffect(() => {
-    fetchActivityGroups()
-      .then(data => setGroups(data))
-      .catch(err => console.error("Failed to fetch groups:", err));
-  }, []);
+    useEffect(() => {
+        fetchActivityGroups()
+            .then(data => setGroups(data))
+            .catch(err => console.error("Failed to fetch groups:", err));
+    }, []);
 
-  return (
-    <GroupContext.Provider value={groups}>
-      {children}
-    </GroupContext.Provider>
-  );
+
+    return (
+        <GroupContext.Provider value={groups}>
+            {children}
+        </GroupContext.Provider>
+    );
 }
 
 export function useGroups() {
-  return useContext(GroupContext);
+    return useContext(GroupContext);
 }

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Autocomplete, TextField, Button, Box } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
+import { useGroups } from '../contexts/GroupContext';
 
 function ActivityStart({ activities, onStart }) {
     const [selectedActivity, setSelectedActivity] = useState(null);
+    const allGroups = useGroups();
 
     return (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -14,7 +16,7 @@ function ActivityStart({ activities, onStart }) {
                     const { key, ...rest } = props;
                     return (
                       <li key={key} {...rest}>
-                        {getIconForGroup(option.category_group)}
+                        {getIconForGroup(option.category_group, allGroups)}
                         {option.name}
                       </li>
                     );
@@ -29,7 +31,7 @@ function ActivityStart({ activities, onStart }) {
                             ...params.InputProps,
                             startAdornment: (
                                 <>
-                                    {selectedActivity ? getIconForGroup(selectedActivity.category_group) : null}
+                                    {selectedActivity ? getIconForGroup(selectedActivity.category_group, allGroups) : null}
                                     {params.InputProps.startAdornment}
                                 </>
                             ),

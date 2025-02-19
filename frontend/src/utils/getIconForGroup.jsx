@@ -1,9 +1,7 @@
 import React from 'react';
-import { useGroups } from '../contexts/GroupContext';
 import iconMapping from './iconMapping';
 
-const getIconForGroup = (group) => {
-  const groups = useGroups();
+const getIconForGroup = (group, groups) => {
   const currentGroup = groups.find(g => g.name === group);
   const customIconName = (currentGroup && currentGroup.icon_name) ? currentGroup.icon_name : 'HomeWorkIcon';
   const customIconColor = (currentGroup && currentGroup.icon_color) ? currentGroup.icon_color : 'gray';
