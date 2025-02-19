@@ -35,6 +35,7 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
+import { useFilter } from '../contexts/FilterContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -65,6 +66,9 @@ function ActivityList({ onRecordUpdate, records }) {
     const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
     const { showGrid, categoryDialogOpen, groupDialogOpen, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
     const { setActiveActivity } = useActiveActivity();
+
+    // フィルター状態
+    const { setFilterState } = useFilter();
 
     // -----------------------------------------------------------------
     // API 呼び出し: アクティビティとカテゴリの取得
@@ -142,6 +146,12 @@ function ActivityList({ onRecordUpdate, records }) {
         if (!activity) return;
         setSelectedActivity(activity);
         setActiveActivity(activity);
+        // ストップウォッチ開始時にフィルター状態を上書きする
+        setFilterState({
+            group: activity.category_group,
+            category: String(activity.activity_category_id),
+            activityName: activity.name,
+        });
         if (activity.unit === 'count') {
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
         } else if (activity.unit === 'minutes') {
@@ -174,7 +184,6 @@ function ActivityList({ onRecordUpdate, records }) {
             const res = await createRecord(recordData);
             console.log("Record created:", res);
             dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-            setSelectedActivity(null);
             setPreFilledValue(null);
             onRecordUpdate();
             fetchActivities()
@@ -369,7 +378,6 @@ function ActivityList({ onRecordUpdate, records }) {
                     }}
                     onCancel={() => {
                         setStopwatchVisible(false);
-                        setSelectedActivity(null);
                         setActiveActivity(null);
                     }}
                     discordData={discordData}
