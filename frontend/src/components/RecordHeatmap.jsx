@@ -85,10 +85,39 @@ function RecordHeatmap({ records, unitFilter }) {
 
     // heatmapData 全体の count 合計を算出
     const totalCount = heatmapData.reduce((sum, item) => sum + item.count, 0);
+
+    // 過去30日分、過去7日分の合計を計算する
+    const now = new Date();
+    const past30 = new Date(now);
+    past30.setDate(now.getDate() - 30);
+    const past7 = new Date(now);
+    past7.setDate(now.getDate() - 7);
+
+    const totalCount30 = heatmapData.reduce((sum, item) => {
+        const itemDate = new Date(item.date);
+        return itemDate >= past30 ? sum + item.count : sum;
+    }, 0);
+
+    const totalCount7 = heatmapData.reduce((sum, item) => {
+        const itemDate = new Date(item.date);
+        return itemDate >= past7 ? sum + item.count : sum;
+    }, 0);
+
+    // displayMode に応じた表示フォーマット
     const totalCountLabel =
         displayMode === 'time'
-            ? `${Math.floor(totalCount / 60)}時間${(totalCount % 60).toFixed(0)}分 / 年`
-            : `${totalCount.toFixed(0)} 回 / 年`;
+            ? `${Math.floor(totalCount / 60)}時間/年`
+            : `${totalCount.toFixed(0)} 回/年`;
+
+    const totalCountLabel30 =
+        displayMode === 'time'
+            ? `${Math.floor(totalCount30 / 60)}時間/30日`
+            : `${totalCount30.toFixed(0)} 回/30日`;
+
+    const totalCountLabel7 =
+        displayMode === 'time'
+            ? `${Math.floor(totalCount7 / 60)}時間${(totalCount7 % 60).toFixed(0)}分/7日`
+            : `${totalCount7.toFixed(0)} 回/7日`;
 
     return (
         <Box sx={{ mb: 4 }}>
@@ -110,7 +139,7 @@ function RecordHeatmap({ records, unitFilter }) {
                                 less: "少",
                                 more: "多"
                             },
-                            totalCount: totalCountLabel
+                            totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
                         }}
                         renderBlock={(block, activity) => {
                             let tooltipText;
