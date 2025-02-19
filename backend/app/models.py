@@ -14,11 +14,15 @@ class ActivityGroup(db.Model):
         id (int): 自動採番される主キー。
         name (str): グループ名。
         client_id (str): Discord連携に使うClient ID。
+        icon_name (str): アイコン名。
+        icon_color (str): アイコンの色。
     """
     __tablename__ = 'activity_group'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
     client_id = db.Column(db.String(50), unique=True)
+    icon_name = db.Column(db.String(50), nullable=True)
+    icon_color = db.Column(db.String(50), nullable=True)
     
     def __repr__(self):
         return f"<ActivityGroup name={self.name} client_id={self.client_id}>"

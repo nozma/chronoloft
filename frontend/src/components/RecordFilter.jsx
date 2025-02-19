@@ -116,7 +116,7 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
                 {groups.map((g) => (
                     <MenuItem key={g.id} value={g.name}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            {getIconForGroup(g.name)}
+                            {getIconForGroup(g.name, groups)}
                             {g.name}
                         </span>
                     </MenuItem>

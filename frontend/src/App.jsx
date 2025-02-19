@@ -7,6 +7,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { fetchRecords, fetchCategories } from './services/api';
 import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
+import { GroupProvider } from './contexts/GroupContext';
 
 function App() {
     // カラーテーマ対応
@@ -55,14 +56,16 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <ActiveActivityProvider>
-                <div>
-                    <h2>Activities</h2>
-                    <ActivityList onRecordUpdate={updateRecords} records={records} />
-                    <h2>Records</h2>
-                    <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
-                </div>
-            </ActiveActivityProvider>
+            <GroupProvider>
+                <ActiveActivityProvider>
+                    <div>
+                        <h2>Activities</h2>
+                        <ActivityList onRecordUpdate={updateRecords} records={records} />
+                        <h2>Records</h2>
+                        <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
+                    </div>
+                </ActiveActivityProvider>
+            </GroupProvider>
         </ThemeProvider>
     );
 }
