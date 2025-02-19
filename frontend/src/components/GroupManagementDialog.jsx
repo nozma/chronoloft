@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField, Table, TableHead, TableRow, TableCell, TableBody,
-    IconButton
+    IconButton, MenuItem
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -12,6 +12,7 @@ import {
     updateActivityGroup,
     deleteActivityGroup
 } from '../services/api';
+import iconMapping from '../utils/iconMapping';
 
 function GroupManagementDialog({ open, onClose }) {
     const [groups, setGroups] = useState([]);
@@ -109,13 +110,23 @@ function GroupManagementDialog({ open, onClose }) {
                         onChange={(e) => setNewClientId(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
-                    {/* 追加: アイコン名選択（候補をドロップダウンなどで選ぶか、自由入力） */}
                     <TextField
-                        label="アイコン名"
+                        label="アイコン"
+                        select
                         value={newIconName}
                         onChange={(e) => setNewIconName(e.target.value)}
-                        style={{ marginRight: '16px' }}
-                    />
+                        style={{ marginRight: '16px', minWidth: '120px' }}
+                    >
+                        <MenuItem value="">--デフォルト--</MenuItem>
+                        {Object.keys(iconMapping).map((key) => {
+                            const IconComponent = iconMapping[key];
+                            return (
+                                <MenuItem key={key} value={key}>
+                                    <IconComponent sx={{ mr: 1 }} />
+                                </MenuItem>
+                            );
+                        })}
+                    </TextField>
                     {/* 追加: アイコン色（テキスト入力またはカラーピッカー） */}
                     <TextField
                         label="アイコン色"
@@ -134,7 +145,7 @@ function GroupManagementDialog({ open, onClose }) {
                             <TableCell>ID</TableCell>
                             <TableCell>グループ名</TableCell>
                             <TableCell>Discord Client ID</TableCell>
-                            <TableCell>アイコン名</TableCell>
+                            <TableCell>アイコン</TableCell>
                             <TableCell>アイコン色</TableCell>
                             <TableCell align="right">操作</TableCell>
                         </TableRow>
@@ -166,11 +177,33 @@ function GroupManagementDialog({ open, onClose }) {
                                 <TableCell>
                                     {editGroupId === group.id ? (
                                         <TextField
+                                            select
+                                            label="アイコン"
                                             value={editIconName}
                                             onChange={(e) => setEditIconName(e.target.value)}
-                                        />
+                                            style={{ minWidth: '120px' }}
+                                        >
+                                            <MenuItem value="">--デフォルト--</MenuItem>
+                                            {Object.keys(iconMapping).map((key) => {
+                                                const IconComponent = iconMapping[key];
+                                                return (
+                                                    <MenuItem key={key} value={key}>
+                                                        <IconComponent sx={{ mr: 1 }} />
+                                                    </MenuItem>
+                                                );
+                                            })}
+                                        </TextField>
                                     ) : (
-                                        group.icon_name || ''
+                                        // 表示用：getIconForGroup を利用して、アイコンプレビューを表示
+                                        group.icon_name ? (
+                                            // ここでは直接 iconMapping を使って表示する例
+                                            (() => {
+                                                const IconComponent = iconMapping[group.icon_name] || iconMapping.HomeWorkIcon;
+                                                return <IconComponent sx={{ mr: 1, color: group.icon_color || 'gray' }} />;
+                                            })()
+                                        ) : (
+                                            ""
+                                        )
                                     )}
                                 </TableCell>
                                 <TableCell>
