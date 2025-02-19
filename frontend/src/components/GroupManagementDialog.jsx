@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField, Table, TableHead, TableRow, TableCell, TableBody,
-    IconButton, MenuItem
+    IconButton, MenuItem, Box
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -97,7 +97,7 @@ function GroupManagementDialog({ open, onClose }) {
             <DialogTitle>グループの管理</DialogTitle>
             <DialogContent>
                 {/* グループ追加フォーム */}
-                <div style={{ marginBottom: '16px' }}>
+                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                     <TextField
                         label="グループ名"
                         value={newGroupName}
@@ -127,17 +127,20 @@ function GroupManagementDialog({ open, onClose }) {
                             );
                         })}
                     </TextField>
-                    {/* 追加: アイコン色（テキスト入力またはカラーピッカー） */}
-                    <TextField
-                        label="アイコン色"
-                        value={newIconColor}
-                        onChange={(e) => setNewIconColor(e.target.value)}
-                        style={{ marginRight: '16px', width: '120px' }}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
+                        <input
+                            id="new-icon-color"
+                            type="color"
+                            value={newIconColor}
+                            onChange={(e) => setNewIconColor(e.target.value)}
+                            style={{ width: 40, height: 40, border: 'none', padding: 0 }}
+                        />
+                        <span>{newIconColor}</span>
+                    </Box>
                     <Button variant="contained" color="primary" onClick={handleAdd}>
                         追加
                     </Button>
-                </div>
+                </Box>
                 {/* グループ一覧のテーブル */}
                 <Table>
                     <TableHead>
@@ -196,7 +199,7 @@ function GroupManagementDialog({ open, onClose }) {
                                     ) : (
                                         // 表示用：getIconForGroup を利用して、アイコンプレビューを表示
                                         group.icon_name ? (
-                                            // ここでは直接 iconMapping を使って表示する例
+                                            // ここでは直接 iconMapping を使って表示する
                                             (() => {
                                                 const IconComponent = iconMapping[group.icon_name] || iconMapping.HomeWorkIcon;
                                                 return <IconComponent sx={{ mr: 1, color: group.icon_color || 'gray' }} />;
@@ -208,12 +211,33 @@ function GroupManagementDialog({ open, onClose }) {
                                 </TableCell>
                                 <TableCell>
                                     {editGroupId === group.id ? (
-                                        <TextField
-                                            value={editIconColor}
-                                            onChange={(e) => setEditIconColor(e.target.value)}
-                                        />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <input
+                                                id="edit-icon-color"
+                                                type="color"
+                                                value={editIconColor}
+                                                onChange={(e) => setEditIconColor(e.target.value)}
+                                                style={{ width: 40, height: 40, border: 'none', padding: 0 }}
+                                            />
+                                            <span>{editIconColor}</span>
+                                        </Box>
                                     ) : (
-                                        group.icon_color || ''
+                                        group.icon_color ? (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Box
+                                                    sx={{
+                                                        width: 24,
+                                                        height: 24,
+                                                        backgroundColor: group.icon_color,
+                                                        border: '1px solid #ccc',
+                                                        borderRadius: 1
+                                                    }}
+                                                />
+                                                <span>{group.icon_color}</span>
+                                            </Box>
+                                        ) : (
+                                            ''
+                                        )
                                     )}
                                 </TableCell>
                                 <TableCell align="right">
