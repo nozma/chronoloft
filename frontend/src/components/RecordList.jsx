@@ -55,9 +55,6 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 : true;
             return groupMatch && categoryMatch && nameMatch;
         });
-        if (activeActivity) {
-            filtered = filtered.filter(record => record.activity_id === activeActivity.id);
-        }
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
 

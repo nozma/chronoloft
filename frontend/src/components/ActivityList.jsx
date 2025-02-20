@@ -10,7 +10,8 @@ import {
     updateActivity,
     deleteActivity,
     fetchCategories,
-    createRecord
+    createRecord,
+    fetchActivityGroups
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -35,6 +36,7 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
+import { useFilter } from '../contexts/FilterContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -47,6 +49,7 @@ import { initialUIState, uiReducer } from '../reducers/uiReducer';
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
+    const [groups, setGroups] = useState([]);
     const [activities, setActivities] = useState([]);
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
@@ -66,8 +69,11 @@ function ActivityList({ onRecordUpdate, records }) {
     const { showGrid, categoryDialogOpen, groupDialogOpen, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
     const { setActiveActivity } = useActiveActivity();
 
+    // フィルター状態
+    const { setFilterState } = useFilter();
+
     // -----------------------------------------------------------------
-    // API 呼び出し: アクティビティとカテゴリの取得
+    // API 呼び出し: アクティビティとカテゴリ、グループの取得
     // -----------------------------------------------------------------
     useEffect(() => {
         fetchActivities()
@@ -79,6 +85,12 @@ function ActivityList({ onRecordUpdate, records }) {
         fetchCategories()
             .then(data => setCategories(data))
             .catch(err => console.error(err));
+    }, []);
+
+    useEffect(() => {
+        fetchActivityGroups()
+            .then(data => setGroups(data))
+            .catch(err => console.error('Error fetching groups:', err));
     }, []);
 
     if (error) return <div>Error: {error}</div>;
@@ -142,6 +154,12 @@ function ActivityList({ onRecordUpdate, records }) {
         if (!activity) return;
         setSelectedActivity(activity);
         setActiveActivity(activity);
+        // ストップウォッチ開始時にフィルター状態を上書きする
+        setFilterState({
+            group: activity.category_group,
+            category: String(activity.activity_category_id),
+            activityName: activity.name,
+        });
         if (activity.unit === 'count') {
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
         } else if (activity.unit === 'minutes') {
@@ -174,7 +192,6 @@ function ActivityList({ onRecordUpdate, records }) {
             const res = await createRecord(recordData);
             console.log("Record created:", res);
             dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-            setSelectedActivity(null);
             setPreFilledValue(null);
             onRecordUpdate();
             fetchActivities()
@@ -209,7 +226,7 @@ function ActivityList({ onRecordUpdate, records }) {
                 const groupName = params.row.category_group;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        {getIconForGroup(groupName)}
+                        {getIconForGroup(groupName, groups)}
                         <span>{params.value}</span>
                     </div>
                 );
@@ -369,7 +386,6 @@ function ActivityList({ onRecordUpdate, records }) {
                     }}
                     onCancel={() => {
                         setStopwatchVisible(false);
-                        setSelectedActivity(null);
                         setActiveActivity(null);
                     }}
                     discordData={discordData}
