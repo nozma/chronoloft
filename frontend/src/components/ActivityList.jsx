@@ -9,9 +9,7 @@ import {
     addActivity,
     updateActivity,
     deleteActivity,
-    fetchCategories,
     createRecord,
-    fetchActivityGroups
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -28,8 +26,6 @@ import ConfirmDialog from './ConfirmDialog';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 import ActivityStart from './ActivityStart';
-import CategoryManagementDialog from './CategoryManagementDialog';
-import GroupManagementDialog from './GroupManagementDialog';
 
 // ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
@@ -272,18 +268,10 @@ function ActivityList({ onRecordUpdate, records }) {
                 !showGrid ? (
                     <div>
                         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, gap: '8px' }}>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}>
-                                カテゴリの管理
-                            </Button>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}>
-                                グループの管理
-                            </Button>
                             <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}>
                                 アクティビティの管理
                             </Button>
                         </Box>
-                        <CategoryManagementDialog open={categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
-                        <GroupManagementDialog open={groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                     </div>
                 ) : (
                     <>
