@@ -37,6 +37,7 @@ import { calculateTimeDetails } from '../utils/timeUtils';
 import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
+import { useGroups } from '../contexts/GroupContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -49,7 +50,7 @@ import { initialUIState, uiReducer } from '../reducers/uiReducer';
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
-    const [groups, setGroups] = useState([]);
+    const groups = useGroups();
     const [activities, setActivities] = useState([]);
     const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
@@ -85,12 +86,6 @@ function ActivityList({ onRecordUpdate, records }) {
         fetchCategories()
             .then(data => setCategories(data))
             .catch(err => console.error(err));
-    }, []);
-
-    useEffect(() => {
-        fetchActivityGroups()
-            .then(data => setGroups(data))
-            .catch(err => console.error('Error fetching groups:', err));
     }, []);
 
     if (error) return <div>Error: {error}</div>;
