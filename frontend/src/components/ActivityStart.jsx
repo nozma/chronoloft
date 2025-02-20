@@ -23,7 +23,7 @@ import { styled } from '@mui/material/styles';
 function ActivityStart({ activities, onStart }) {
     const [shortcutGroupFilter, setShortcutGroupFilter] = useState('');
     const [shortcutCategoryFilter, setShortcutCategoryFilter] = useState('');
-    const groups = useGroups();
+    const { groups, setGroups } = useGroups();
     const { categories } = useCategories();
     const { state, dispatch } = useUI();
 

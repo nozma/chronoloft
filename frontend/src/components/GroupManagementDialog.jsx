@@ -6,6 +6,8 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import {
     fetchActivityGroups,
     addActivityGroup,
@@ -13,9 +15,10 @@ import {
     deleteActivityGroup
 } from '../services/api';
 import iconMapping from '../utils/iconMapping';
+import { useGroups } from '../contexts/GroupContext';
 
 function GroupManagementDialog({ open, onClose }) {
-    const [groups, setGroups] = useState([]);
+    const { groups, setGroups } = useGroups();
     const [newGroupName, setNewGroupName] = useState('');
     const [newClientId, setNewClientId] = useState('');
     const [newIconName, setNewIconName] = useState('');
@@ -25,15 +28,6 @@ function GroupManagementDialog({ open, onClose }) {
     const [editClientId, setEditClientId] = useState('');
     const [editIconName, setEditIconName] = useState('');
     const [editIconColor, setEditIconColor] = useState('');
-
-    // ActivityGroup の一覧を取得する
-    useEffect(() => {
-        if (open) {
-            fetchActivityGroups()
-                .then(data => setGroups(data))
-                .catch(err => console.error('Error fetching groups:', err));
-        }
-    }, [open]);
 
     const handleAdd = async () => {
         try {
@@ -92,6 +86,43 @@ function GroupManagementDialog({ open, onClose }) {
         }
     };
 
+    // グループを上に移動するハンドラー
+    const handleMoveUp = async (group, index) => {
+        if (index === 0) return; // 最上位なら何もしない
+
+        // コピーを作成
+        const newGroups = [...groups];
+        // 上のアイテムとスワップ
+        const prev = newGroups[index - 1];
+        const current = newGroups[index];
+        const temp = current.position;
+        current.position = prev.position;
+        prev.position = temp;
+        // 新しい順序でソート
+        newGroups.sort((a, b) => a.position - b.position);
+        setGroups(newGroups);
+
+        await updateActivityGroup(current.id, { position: current.position });
+        await updateActivityGroup(prev.id, { position: prev.position });
+    };
+
+    // グループを下に移動するハンドラー
+    const handleMoveDown = async (group, index) => {
+        if (index === groups.length - 1) return; // 最下位なら何もしない
+
+        const newGroups = [...groups];
+        const next = newGroups[index + 1];
+        const current = newGroups[index];
+        const temp = current.position;
+        current.position = next.position;
+        next.position = temp;
+        newGroups.sort((a, b) => a.position - b.position);
+        setGroups(newGroups);
+
+        await updateActivityGroup(current.id, { position: current.position });
+        await updateActivityGroup(next.id, { position: next.position });
+    };
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
             <DialogTitle>グループの管理</DialogTitle>
@@ -145,18 +176,16 @@ function GroupManagementDialog({ open, onClose }) {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>ID</TableCell>
                             <TableCell>グループ名</TableCell>
                             <TableCell>Discord Client ID</TableCell>
                             <TableCell>アイコン</TableCell>
                             <TableCell>アイコン色</TableCell>
-                            <TableCell align="right">操作</TableCell>
+                            <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {groups.map((group) => (
+                        {groups.map((group, index) => (
                             <TableRow key={group.id}>
-                                <TableCell>{group.id}</TableCell>
                                 <TableCell>
                                     {editGroupId === group.id ? (
                                         <TextField
@@ -197,9 +226,7 @@ function GroupManagementDialog({ open, onClose }) {
                                             })}
                                         </TextField>
                                     ) : (
-                                        // 表示用：getIconForGroup を利用して、アイコンプレビューを表示
                                         group.icon_name ? (
-                                            // ここでは直接 iconMapping を使って表示する
                                             (() => {
                                                 const IconComponent = iconMapping[group.icon_name] || iconMapping.HomeWorkIcon;
                                                 return <IconComponent sx={{ mr: 1, color: group.icon_color || 'gray' }} />;
@@ -240,7 +267,7 @@ function GroupManagementDialog({ open, onClose }) {
                                         )
                                     )}
                                 </TableCell>
-                                <TableCell align="right">
+                                <TableCell align="left">
                                     {editGroupId === group.id ? (
                                         <>
                                             <Button onClick={handleUpdate} color="primary">
@@ -257,6 +284,18 @@ function GroupManagementDialog({ open, onClose }) {
                                             </IconButton>
                                             <IconButton onClick={() => handleDelete(group.id)}>
                                                 <DeleteIcon />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => handleMoveUp(group, index)}
+                                                disabled={index === 0}
+                                            >
+                                                <ArrowUpwardIcon />
+                                            </IconButton>
+                                            <IconButton
+                                                onClick={() => handleMoveDown(group, index)}
+                                                disabled={index === groups.length - 1}
+                                            >
+                                                <ArrowDownwardIcon />
                                             </IconButton>
                                         </>
                                     )}

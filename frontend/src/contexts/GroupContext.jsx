@@ -14,7 +14,7 @@ export function GroupProvider({ children }) {
 
 
     return (
-        <GroupContext.Provider value={groups}>
+        <GroupContext.Provider value={{ groups, setGroups }}>
             {children}
         </GroupContext.Provider>
     );
