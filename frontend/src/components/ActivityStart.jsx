@@ -6,8 +6,10 @@ import {
     IconButton,
     TextField,
     ToggleButton,
-    ToggleButtonGroup
 } from '@mui/material';
+import ToggleButtonGroup, {
+    toggleButtonGroupClasses,
+  } from '@mui/material/ToggleButtonGroup';  
 import GroupManagementDialog from './GroupManagementDialog';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
@@ -15,6 +17,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { styled } from '@mui/material/styles';
 
 function ActivityStart({ activities, onStart }) {
     const [shortcutGroupFilter, setShortcutGroupFilter] = useState('');
@@ -60,6 +63,24 @@ function ActivityStart({ activities, onStart }) {
         }
     };
 
+    // トグルボタンのスタイル
+    const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
+        [`& .${toggleButtonGroupClasses.grouped}`]: {
+          margin: theme.spacing(0.5),
+          border: 0,
+          borderRadius: 10,
+          [`&.${toggleButtonGroupClasses.disabled}`]: {
+            border: 0,
+          },
+        },
+        [`& .${toggleButtonGroupClasses.middleButton},& .${toggleButtonGroupClasses.lastButton}`]:
+          {
+            marginLeft: -1,
+            borderLeft: '1px solid transparent',
+          },
+      }));
+      
+
     return (
         <>
             <Box sx={{ mb: 3 }}>
@@ -67,10 +88,10 @@ function ActivityStart({ activities, onStart }) {
                     <ToggleButtonGroup
                         value={shortcutGroupFilter}
                         exclusive
-                        size='small'
+                        size='medium'
                         onChange={handleGroupFilterChange}
                         aria-label="Group filter"
-                        sx={{ mb: 2, mr: 1 }}
+                        sx={{ mb: 0, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="すべて">
                             すべて
@@ -91,10 +112,10 @@ function ActivityStart({ activities, onStart }) {
                         }}>
                         <SettingsIcon />
                     </IconButton>
+                    <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
                 <Box>
-                    <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
-                    <ToggleButtonGroup
+                    <StyledToggleButtonGroup
                         value={shortcutCategoryFilter}
                         exclusive
                         size='small'
@@ -110,7 +131,7 @@ function ActivityStart({ activities, onStart }) {
                                 {category.name}
                             </ToggleButton>
                         ))}
-                    </ToggleButtonGroup>
+                    </StyledToggleButtonGroup>
                     <IconButton
                         variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
                         sx={{
