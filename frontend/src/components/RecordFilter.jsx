@@ -75,6 +75,7 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
       <TextField
         label="グループ"
         select
+        size='small'
         value={group}
         onChange={(e) => {
           setFilterState({
@@ -98,6 +99,7 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
       <TextField
         label="カテゴリ"
         select
+        size='small'
         value={category}
         onChange={(e) => {
           const newCatId = e.target.value;
@@ -119,6 +121,7 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
       <TextField
         label="アクティビティ"
         select
+        size='small'
         value={activityName}
         onChange={(e) => {
           setFilterState(prev => ({ ...prev, activityName: e.target.value }));

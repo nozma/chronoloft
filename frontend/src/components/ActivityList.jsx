@@ -9,9 +9,7 @@ import {
     addActivity,
     updateActivity,
     deleteActivity,
-    fetchCategories,
     createRecord,
-    fetchActivityGroups
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -28,8 +26,6 @@ import ConfirmDialog from './ConfirmDialog';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 import ActivityStart from './ActivityStart';
-import CategoryManagementDialog from './CategoryManagementDialog';
-import GroupManagementDialog from './GroupManagementDialog';
 
 // ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
@@ -37,6 +33,9 @@ import { calculateTimeDetails } from '../utils/timeUtils';
 import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useCategories } from '../contexts/CategoryContext';
+import { useUI } from '../contexts/UIContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -49,9 +48,9 @@ import { initialUIState, uiReducer } from '../reducers/uiReducer';
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
-    const [groups, setGroups] = useState([]);
+    const groups = useGroups();
+    const { categories } = useCategories();
     const [activities, setActivities] = useState([]);
-    const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
@@ -65,8 +64,9 @@ function ActivityList({ onRecordUpdate, records }) {
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
 
     // 複数のUI状態は reducer で一元管理
-    const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
-    const { showGrid, categoryDialogOpen, groupDialogOpen, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
+    //const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
+    //const { showGrid, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
+    const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
 
     // フィルター状態
@@ -79,18 +79,6 @@ function ActivityList({ onRecordUpdate, records }) {
         fetchActivities()
             .then(data => setActivities(data))
             .catch(err => setError(err.message));
-    }, []);
-
-    useEffect(() => {
-        fetchCategories()
-            .then(data => setCategories(data))
-            .catch(err => console.error(err));
-    }, []);
-
-    useEffect(() => {
-        fetchActivityGroups()
-            .then(data => setGroups(data))
-            .catch(err => console.error('Error fetching groups:', err));
     }, []);
 
     if (error) return <div>Error: {error}</div>;
@@ -274,50 +262,33 @@ function ActivityList({ onRecordUpdate, records }) {
     return (
         <div>
             {/* アクティビティ選択（ストップウォッチ表示前） */}
-            {!showGrid && !stopwatchVisible && (
+            {!state.showGrid && !stopwatchVisible && (
                 <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />
             )}
             {/* グリッド表示または管理画面 */}
-            {!stopwatchVisible && (
-                !showGrid ? (
-                    <div>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, gap: '8px' }}>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}>
-                                カテゴリの管理
-                            </Button>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}>
-                                グループの管理
-                            </Button>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}>
-                                アクティビティの管理
-                            </Button>
-                        </Box>
-                        <CategoryManagementDialog open={categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
-                        <GroupManagementDialog open={groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
+            {!stopwatchVisible && state.showGrid && (
+                <>
+                    <div style={{ height: 400, width: '100%', maxWidth: '800px' }}>
+                        <DataGrid
+                            rows={activities}
+                            columns={columns}
+                            pageSize={5}
+                            rowsPerPageOptions={[5]}
+                            disableSelectionOnClick
+                            processRowUpdate={processRowUpdate}
+                            slots={{ toolbar: CustomToolbar }}
+                            slotProps={{
+                                toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick }
+                            }}
+                        />
                     </div>
-                ) : (
-                    <>
-                        <div style={{ height: 400, width: '100%', maxWidth: '800px' }}>
-                            <DataGrid
-                                rows={activities}
-                                columns={columns}
-                                pageSize={5}
-                                rowsPerPageOptions={[5]}
-                                disableSelectionOnClick
-                                processRowUpdate={processRowUpdate}
-                                slots={{ toolbar: CustomToolbar }}
-                                slotProps={{
-                                    toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick }
-                                }}
-                            />
-                        </div>
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, mt: 1 }}>
-                            <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: false })} sx={{ mb: 2 }}>
-                                閉じる
-                            </Button>
-                        </Box>
-                    </>
-                )
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, mt: 1 }}>
+                        <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: false })} sx={{ mb: 2 }}>
+                            閉じる
+                        </Button>
+                    </Box>
+                </>
+
             )}
             <AddActivityDialog
                 open={dialogOpen}
@@ -326,7 +297,7 @@ function ActivityList({ onRecordUpdate, records }) {
                 categories={categories}
             />
             <ConfirmDialog
-                open={confirmDialogOpen}
+                open={state.confirmDialogOpen}
                 title="Confirm Deletion"
                 content="Are you sure you want to delete this activity?"
                 onConfirm={handleConfirmDelete}
@@ -341,9 +312,9 @@ function ActivityList({ onRecordUpdate, records }) {
                     {snackbarMessage}
                 </Alert>
             </Snackbar>
-            {editDialogOpen && selectedActivity && (
+            {state.editDialogOpen && selectedActivity && (
                 <AddActivityDialog
-                    open={editDialogOpen}
+                    open={state.editDialogOpen}
                     onClose={() => dispatch({ type: 'SET_EDIT_DIALOG', payload: false })}
                     onSubmit={async (activityData) => {
                         try {
@@ -360,18 +331,18 @@ function ActivityList({ onRecordUpdate, records }) {
                     categories={categories}
                 />
             )}
-            {recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
+            {state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
                 <AddRecordDialog
-                    open={recordDialogOpen}
+                    open={state.recordDialogOpen}
                     onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}
                     initialValue={null}
                 />
             )}
-            {recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
+            {state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <AddRecordDialog
-                    open={recordDialogOpen}
+                    open={state.recordDialogOpen}
                     onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
                     activity={selectedActivity}
                     onSubmit={handleRecordCreated}

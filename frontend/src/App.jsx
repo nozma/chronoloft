@@ -8,7 +8,9 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { fetchRecords, fetchCategories } from './services/api';
 import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
 import { GroupProvider } from './contexts/GroupContext';
+import { CategoryProvider } from './contexts/CategoryContext';
 import { FilterProvider } from './contexts/FilterContext';
+import { UIProvider } from './contexts/UIContext';
 
 function App() {
     // カラーテーマ対応
@@ -58,16 +60,20 @@ function App() {
         <ThemeProvider theme={theme}>
             <CssBaseline />
             <GroupProvider>
-                <FilterProvider>
-                    <ActiveActivityProvider>
-                        <div>
-                            <h2>Activities</h2>
-                            <ActivityList onRecordUpdate={updateRecords} records={records} />
-                            <h2>Records</h2>
-                            <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
-                        </div>
-                    </ActiveActivityProvider>
-                </FilterProvider>
+                <CategoryProvider>
+                    <UIProvider>
+                        <FilterProvider>
+                            <ActiveActivityProvider>
+                                <div>
+                                    <h2>Activity Tracker</h2>
+                                    <ActivityList onRecordUpdate={updateRecords} records={records} />
+                                    <h2>History</h2>
+                                    <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
+                                </div>
+                            </ActiveActivityProvider>
+                        </FilterProvider>
+                    </UIProvider>
+                </CategoryProvider>
             </GroupProvider>
         </ThemeProvider>
     );
