@@ -13,6 +13,7 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { fetchCategories, addCategory, updateCategory, deleteCategory, fetchActivityGroups } from '../services/api';
 import { useCategories } from '../contexts/CategoryContext';
 import { useGroups } from '../contexts/GroupContext';
+import getIconForGroup from '../utils/getIconForGroup';
 
 function CategoryManagementDialog({ open, onClose }) {
     const { categories, setCategories } = useCategories();
@@ -113,19 +114,21 @@ function CategoryManagementDialog({ open, onClose }) {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>カテゴリの管理</DialogTitle>
+            <DialogTitle>Edit Category</DialogTitle>
             <DialogContent>
                 {/* 追加フォーム */}
                 <div style={{ marginBottom: '16px' }}>
                     <TextField
-                        label="カテゴリ名"
+                        label="Category Name"
+                        size='small'
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
                     <TextField
-                        label="グループ"
+                        label="Group"
                         select
+                        size='small'
                         value={newCategoryGroup}
                         onChange={(e) => setNewCategoryGroup(e.target.value)}
                         style={{ marginRight: '16px', width: '160px' }}
@@ -133,6 +136,7 @@ function CategoryManagementDialog({ open, onClose }) {
                         <MenuItem value="">All</MenuItem>
                         {groups.map((g) => (
                             <MenuItem key={g.id} value={g.name}>
+                                {getIconForGroup(g.name, groups)}
                                 {g.name}
                             </MenuItem>
                         ))}
@@ -145,19 +149,18 @@ function CategoryManagementDialog({ open, onClose }) {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>ID</TableCell>
                             <TableCell>カテゴリ名</TableCell>
                             <TableCell>グループ</TableCell>
-                            <TableCell align="right">操作</TableCell>
+                            <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {categories.map((cat, index) => (
                             <TableRow key={cat.id}>
-                                <TableCell>{cat.id}</TableCell>
                                 <TableCell>
                                     {editCategoryId === cat.id ? (
                                         <TextField
+                                            size='small'
                                             value={editCategoryName}
                                             onChange={(e) => setEditCategoryName(e.target.value)}
                                         />
@@ -170,19 +173,23 @@ function CategoryManagementDialog({ open, onClose }) {
                                         <TextField
                                             label="グループ"
                                             select
+                                            size='small'
                                             value={editCategoryGroup}
                                             onChange={(e) => setEditCategoryGroup(e.target.value)}
                                             style={{ marginRight: '16px', width: '160px' }}
                                         >
                                             {groups.map((g) => (
                                                 <MenuItem key={g.id} value={g.name}>
+                                                    {getIconForGroup(g.name, groups)}
                                                     {g.name}
                                                 </MenuItem>
                                             ))}
                                         </TextField>
                                     ) : (
-                                        // ここも、バックエンドのAPIで返されるフィールド名に合わせる
-                                        cat.group_name
+                                        <>
+                                        {getIconForGroup(cat.group_name, groups)}
+                                        {cat.group_name}
+                                        </>
                                     )}
                                 </TableCell>
                                 <TableCell align="right">
