@@ -3,6 +3,7 @@ import {
     Autocomplete,
     Button,
     Box,
+    IconButton,
     TextField,
     ToggleButton,
     ToggleButtonGroup
@@ -12,17 +13,15 @@ import CategoryManagementDialog from './CategoryManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useCategories } from '../contexts/CategoryContext';
-import { initialUIState, uiReducer } from '../reducers/uiReducer';
+import { useUI } from '../contexts/UIContext';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 function ActivityStart({ activities, onStart }) {
-    const [selectedActivity, setSelectedActivity] = useState(null);
     const [shortcutGroupFilter, setShortcutGroupFilter] = useState('');
     const [shortcutCategoryFilter, setShortcutCategoryFilter] = useState('');
     const groups = useGroups();
     const { categories } = useCategories();
-    const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
-    const { categoryDialogOpen, groupDialogOpen } = uiState;
-
+    const { state, dispatch } = useUI();
 
     const handleGroupFilterChange = (event, newGroup) => {
         if (newGroup !== null) {
@@ -71,7 +70,7 @@ function ActivityStart({ activities, onStart }) {
                         size='small'
                         onChange={handleGroupFilterChange}
                         aria-label="Group filter"
-                        sx={{ mb: 2, mr: 2 }}
+                        sx={{ mb: 2, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="すべて">
                             すべて
@@ -83,12 +82,18 @@ function ActivityStart({ activities, onStart }) {
                             </ToggleButton>
                         ))}
                     </ToggleButtonGroup>
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}>
-                        グループの管理
-                    </Button>
+                    <IconButton
+                        onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                        sx={{
+                            opacity: 0,
+                            transition: 'opacity 0.2s',
+                            '&:hover': { opacity: 1 },
+                        }}>
+                        <SettingsIcon />
+                    </IconButton>
                 </Box>
                 <Box>
-                    <GroupManagementDialog open={groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
+                    <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                     <ToggleButtonGroup
                         value={shortcutCategoryFilter}
                         exclusive
@@ -106,12 +111,19 @@ function ActivityStart({ activities, onStart }) {
                             </ToggleButton>
                         ))}
                     </ToggleButtonGroup>
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}>
-                        カテゴリの管理
-                    </Button>
+                    <IconButton
+                        variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
+                        sx={{
+                            opacity: 0,
+                            transition: 'opacity 0.3s',
+                            '&:hover': { opacity: 1 },
+                        }}
+                    >
+                        <SettingsIcon />
+                    </IconButton>
                 </Box>
                 <Box>
-                    <CategoryManagementDialog open={categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
+                    <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
                     <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                         {recentActivities.map(activity => (
                             <Button
@@ -148,6 +160,16 @@ function ActivityStart({ activities, onStart }) {
                                 size='small'
                             />
                         )}
+                        <IconButton
+                            variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                            sx={{
+                                opacity: 0,
+                                transition: 'opacity 0.3s',
+                                '&:hover': { opacity: 1 },
+                            }}
+                        >
+                            <SettingsIcon />
+                        </IconButton>
                     </Box>
                 </Box>
             </Box>
