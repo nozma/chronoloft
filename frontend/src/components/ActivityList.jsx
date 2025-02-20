@@ -48,7 +48,7 @@ import { initialUIState, uiReducer } from '../reducers/uiReducer';
 // ---------------------------------------------------------------------
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
-    const groups = useGroups();
+    const { groups } = useGroups();
     const { categories } = useCategories();
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
