@@ -16,6 +16,7 @@ class ActivityGroup(db.Model):
         client_id (str): Discord連携に使うClient ID。
         icon_name (str): アイコン名。
         icon_color (str): アイコンの色。
+        position (int): UI側での表示順序。
     """
     __tablename__ = 'activity_group'
     id = db.Column(db.Integer, primary_key=True)
@@ -23,6 +24,7 @@ class ActivityGroup(db.Model):
     client_id = db.Column(db.String(50), unique=True)
     icon_name = db.Column(db.String(50), nullable=True)
     icon_color = db.Column(db.String(50), nullable=True)
+    position = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     
     def __repr__(self):
         return f"<ActivityGroup name={self.name} client_id={self.client_id}>"
@@ -62,11 +64,13 @@ class Category(db.Model):
         id (int): 自動採番される主キー。
         name (str): カテゴリーの名称(例: "英語", "数学")。
         group_id: アクティビティグループのid。
+        position (int): UI側での表示順序。
     """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey('activity_group.id'), nullable=False)
     group = db.relationship('ActivityGroup', backref='categories')
+    position = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     
     activities = db.relationship('Activity', back_populates='category', lazy=True)
 
