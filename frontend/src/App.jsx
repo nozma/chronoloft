@@ -65,9 +65,9 @@ function App() {
                         <FilterProvider>
                             <ActiveActivityProvider>
                                 <div>
-                                    <h2>Activities</h2>
+                                    <h2>Activity Tracker</h2>
                                     <ActivityList onRecordUpdate={updateRecords} records={records} />
-                                    <h2>Records</h2>
+                                    <h2>History</h2>
                                     <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
                                 </div>
                             </ActiveActivityProvider>

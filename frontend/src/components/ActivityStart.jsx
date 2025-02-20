@@ -6,6 +6,7 @@ import {
     IconButton,
     TextField,
     ToggleButton,
+    Typography
 } from '@mui/material';
 import ToggleButtonGroup, {
     toggleButtonGroupClasses,
@@ -84,6 +85,7 @@ function ActivityStart({ activities, onStart }) {
     return (
         <>
             <Box sx={{ mb: 3 }}>
+                <Typography variant='caption' color='#cccccc'>Group</Typography>
                 <Box>
                     <ToggleButtonGroup
                         value={shortcutGroupFilter}
@@ -91,7 +93,7 @@ function ActivityStart({ activities, onStart }) {
                         size='medium'
                         onChange={handleGroupFilterChange}
                         aria-label="Group filter"
-                        sx={{ mb: 0, mr: 1 }}
+                        sx={{ mb: 1, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="すべて">
                             すべて
@@ -114,6 +116,7 @@ function ActivityStart({ activities, onStart }) {
                     </IconButton>
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
+                <Typography variant='caption' color='#cccccc'>Category</Typography>
                 <Box>
                     <StyledToggleButtonGroup
                         value={shortcutCategoryFilter}
@@ -121,7 +124,7 @@ function ActivityStart({ activities, onStart }) {
                         size='small'
                         onChange={handleCategoryFilterChange}
                         aria-label="Group filter"
-                        sx={{ mb: 2, mr: 2 }}
+                        sx={{ mb: 1, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="すべて">
                             すべて
@@ -143,6 +146,7 @@ function ActivityStart({ activities, onStart }) {
                         <SettingsIcon />
                     </IconButton>
                 </Box>
+                <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
                 <Box>
                     <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
                     <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
