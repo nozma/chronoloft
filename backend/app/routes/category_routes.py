@@ -35,11 +35,11 @@ def add_category():
         group_value = ActivityGroup.query.filter_by(name=data['group']).first()
         if not group_value:
             return jsonify({'error': '指定されたグループが存在しません'}), 400
-
+        max_position = db.session.query(db.func.max(Category.position)).scalar() or 0
         new_category = Category(
             name=data['name'], 
             group=group_value,
-            position=data.get('position', 0)
+            position=max_position + 1
         )
         db.session.add(new_category)
         db.session.commit()

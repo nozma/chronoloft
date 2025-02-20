@@ -37,12 +37,13 @@ def add_activity_group():
     if not data or 'name' not in data:
         return jsonify({'error': '必要な情報が不足しています。'}), 400
     try:
+        max_position = db.session.query(db.func.max(ActivityGroup.position)).scalar() or 0
         new_group = ActivityGroup(
             name=data['name'], 
             client_id=data.get('client_id'),
             icon_name=data.get('icon_name'),
             icon_color=data.get('icon_color'),
-            position=data.get('position', 0)
+            position=max_position + 1
         )
         db.session.add(new_group)
         db.session.commit()
