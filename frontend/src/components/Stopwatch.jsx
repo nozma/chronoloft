@@ -5,7 +5,7 @@ import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
 
 function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
-    const allGroups = useGroups();
+    const { groups } = useGroups();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const { displayTime, isPaused, togglePause, complete, cancel } = useStopwatch(discordData, { onComplete, onCancel });
 
@@ -21,7 +21,7 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
     return (
         <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
             <Typography variant="h6" sx={{ mb: 1 }}>
-                {getIconForGroup(activityGroup, allGroups)}
+                {getIconForGroup(activityGroup, groups)}
                 {activityName}
             </Typography>
             <Typography variant="h4">{formatTime(displayTime)}</Typography>

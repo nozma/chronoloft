@@ -8,14 +8,15 @@ category_bp = Blueprint('category', __name__)
 @category_bp.route('/api/categories', methods=['GET'])
 def get_categories():
     try:
-        categories = Category.query.all()
+        categories = Category.query.order_by(Category.position).all()
         result = []
         for cat in categories:
             result.append({
                 'id': cat.id,
                 'name': cat.name,
                 'group_id': cat.group_id,
-                'group_name': cat.group.name if cat.group else None
+                'group_name': cat.group.name if cat.group else None,
+                'position': cat.position
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -34,8 +35,12 @@ def add_category():
         group_value = ActivityGroup.query.filter_by(name=data['group']).first()
         if not group_value:
             return jsonify({'error': '指定されたグループが存在しません'}), 400
-
-        new_category = Category(name=data['name'], group=group_value)
+        max_position = db.session.query(db.func.max(Category.position)).scalar() or 0
+        new_category = Category(
+            name=data['name'], 
+            group=group_value,
+            position=max_position + 1
+        )
         db.session.add(new_category)
         db.session.commit()
         return jsonify({'message': 'Category created', 'id': new_category.id}), 201
@@ -63,6 +68,8 @@ def update_category(category_id):
             if not group_value:
                 return jsonify({'error': '指定されたグループが存在しません'}), 400
             category.group = group_value
+        if 'position' in data:  # 追加
+            category.position = data['position']
         db.session.commit()
         return jsonify({'message': 'Category updated'}), 200
     except SQLAlchemyError as e:
