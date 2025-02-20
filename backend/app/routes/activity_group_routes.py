@@ -11,7 +11,7 @@ def get_activity_groups():
     ActivityGroup テーブルの全グループを取得して JSON で返す
     """
     try:
-        groups = ActivityGroup.query.all()
+        groups = ActivityGroup.query.order_by(ActivityGroup.position).all()
         result = []
         for group in groups:
             result.append({
@@ -19,7 +19,8 @@ def get_activity_groups():
                 'name': group.name,
                 'client_id': group.client_id,
                 'icon_name': group.icon_name,
-                'icon_color': group.icon_color
+                'icon_color': group.icon_color,
+                'position': group.position
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -40,7 +41,8 @@ def add_activity_group():
             name=data['name'], 
             client_id=data.get('client_id'),
             icon_name=data.get('icon_name'),
-            icon_color=data.get('icon_color')
+            icon_color=data.get('icon_color'),
+            position=data.get('position', 0)
         )
         db.session.add(new_group)
         db.session.commit()
@@ -72,6 +74,8 @@ def update_activity_group(group_id):
             group.icon_name = data['icon_name']
         if 'icon_color' in data:
             group.icon_color = data['icon_color']
+        if 'position' in data:
+            group.position = data['position']
         db.session.commit()
         return jsonify({'message': 'Activity group updated'}), 200
     except SQLAlchemyError as e:
