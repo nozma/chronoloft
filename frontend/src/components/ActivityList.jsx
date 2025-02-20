@@ -38,6 +38,7 @@ import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useGroups } from '../contexts/GroupContext';
+import { useCategories } from '../contexts/CategoryContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -51,8 +52,8 @@ import { initialUIState, uiReducer } from '../reducers/uiReducer';
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
     const groups = useGroups();
+    const { categories } = useCategories();
     const [activities, setActivities] = useState([]);
-    const [categories, setCategories] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
@@ -80,12 +81,6 @@ function ActivityList({ onRecordUpdate, records }) {
         fetchActivities()
             .then(data => setActivities(data))
             .catch(err => setError(err.message));
-    }, []);
-
-    useEffect(() => {
-        fetchCategories()
-            .then(data => setCategories(data))
-            .catch(err => console.error(err));
     }, []);
 
     if (error) return <div>Error: {error}</div>;
