@@ -12,7 +12,6 @@ import { fetchCategories, addCategory, updateCategory, deleteCategory, fetchActi
 
 function CategoryManagementDialog({ open, onClose }) {
   const [categories, setCategories] = useState([]);
-  // 追加: グループ一覧を管理する state
   const [groups, setGroups] = useState([]);
   
   const [newCategoryName, setNewCategoryName] = useState('');
