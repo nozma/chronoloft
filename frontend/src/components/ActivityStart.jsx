@@ -16,40 +16,30 @@ import CategoryManagementDialog from './CategoryManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useCategories } from '../contexts/CategoryContext';
+import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
-    const [shortcutGroupFilter, setShortcutGroupFilter] = useState('');
-    const [shortcutCategoryFilter, setShortcutCategoryFilter] = useState('');
     const { groups, setGroups } = useGroups();
     const { categories } = useCategories();
     const { state, dispatch } = useUI();
+    const { filterState, setFilterState } = useFilter();
+    const { groupFilter, categoryFilter, categoryFilterName } = filterState;
 
-    const handleGroupFilterChange = (event, newGroup) => {
-        if (newGroup !== null) {
-            setShortcutGroupFilter(newGroup);
-        }
-    };
-
-    const handleCategoryFilterChange = (event, newCategory) => {
-        if (newCategory !== null) {
-            setShortcutCategoryFilter(newCategory);
-        }
-    };
 
     // カテゴリーに対するフィルターの適用
-    const filterdCategories = shortcutGroupFilter
-        ? categories.filter((category) => category.group_name === shortcutGroupFilter)
+    const filterdCategories = groupFilter
+        ? categories.filter((category) => category.group_name === groupFilter)
         : categories
 
     // アクティビティに対するフィルターの適用
-    const groupFilteredActivities = shortcutGroupFilter
-        ? activities.filter((act) => act.category_group === shortcutGroupFilter)
+    const groupFilteredActivities = groupFilter
+        ? activities.filter((act) => act.category_group === groupFilter)
         : activities;
-    const filteredActivities = shortcutCategoryFilter
-        ? groupFilteredActivities.filter((act) => act.category_name === shortcutCategoryFilter)
+    const filteredActivities = categoryFilter
+        ? groupFilteredActivities.filter((act) => act.category_id === parseInt(categoryFilter))
         : groupFilteredActivities
 
 
@@ -88,10 +78,17 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                 <Typography variant='caption' color='#cccccc'>Group</Typography>
                 <Box>
                     <ToggleButtonGroup
-                        value={shortcutGroupFilter}
+                        value={groupFilter}
                         exclusive
                         size='medium'
-                        onChange={handleGroupFilterChange}
+                        onChange={(e) => {
+                            setFilterState({
+                              groupFilter: e.target.value,
+                              categoryFilter: ``,
+                              categoryFilterName: ``,
+                              activityNameFilter: ``,
+                            });
+                          }}
                         aria-label="Group filter"
                         sx={{ mb: 1, mr: 1 }}
                     >
@@ -121,18 +118,28 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                 <Typography variant='caption' color='#cccccc'>Category</Typography>
                 <Box>
                     <StyledToggleButtonGroup
-                        value={shortcutCategoryFilter}
+                        value={categoryFilterName}
                         exclusive
                         size='small'
-                        onChange={handleCategoryFilterChange}
-                        aria-label="Group filter"
+                        onChange={(e) => {
+                            const newCatId = e.currentTarget.dataset.id;
+                            const newCatName = e.target.value;
+                            console.log(e.target.id)
+                            setFilterState(prev => ({ 
+                                ...prev, 
+                                categoryFilter: newCatId, 
+                                categoryFilterName: newCatName,
+                                activityNameFilter: `` 
+                            }));
+                          }}
+                        aria-label="Category filter"
                         sx={{ mb: 1, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="すべて">
                             すべて
                         </ToggleButton>
                         {filterdCategories.map((category) => (
-                            <ToggleButton key={category.id} value={category.name} aria-label={category.name}>
+                            <ToggleButton key={category.id} value={category.name} aria-label={category.name} data-id={category.id}>
                                 {category.name}
                             </ToggleButton>
                         ))}

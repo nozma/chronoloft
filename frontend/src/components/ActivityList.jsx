@@ -140,9 +140,9 @@ function ActivityList({ onRecordUpdate, records }) {
         setActiveActivity(activity);
         // ストップウォッチ開始時にフィルター状態を上書きする
         setFilterState({
-            group: activity.category_group,
-            category: String(activity.activity_category_id),
-            activityName: activity.name,
+            groupFilter: activity.category_group,
+            categoryFilter: String(activity.activity_category_id),
+            activityNameFilter: activity.name,
         });
         if (activity.unit === 'count') {
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });

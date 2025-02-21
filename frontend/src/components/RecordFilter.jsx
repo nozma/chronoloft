@@ -8,25 +8,25 @@ import getIconForGroup from '../utils/getIconForGroup';
 
 function RecordFilter({ groups, categories, onFilterChange, records }) {
   const { filterState, setFilterState } = useFilter();
-  const { group, category, activityName } = filterState;
+  const { groupFilter, categoryFilter, activityNameFilter } = filterState;
 
   // グループ選択に応じたカテゴリの選択肢
-  const filteredCategories = group
-    ? categories.filter(cat => cat.group_name === group)
+  const filteredCategories = groupFilter
+    ? categories.filter(cat => cat.group_name === groupFilter)
     : categories;
 
   // カテゴリ選択に応じた項目の選択肢
   const filteredActivityNames = useMemo(() => {
     let recs;
-    if (category) {
+    if (categoryFilter) {
       // カテゴリが選択されている場合は、そのカテゴリに属するレコードを抽出
-      recs = records.filter(rec => String(rec.activity_category_id) === category);
-    } else if (group) {
+      recs = records.filter(rec => String(rec.activity_category_id) === categoryFilter);
+    } else if (groupFilter) {
       // グループが選択されている場合は、
       // categories から selectedGroup に属するカテゴリのIDリストを作成し、
       // そのIDに含まれるレコードを抽出する
       const groupCategoryIds = categories
-        .filter(cat => cat.group_name === group)
+        .filter(cat => cat.group_name === groupFilter)
         .map(cat => String(cat.id));
       recs = records.filter(rec => groupCategoryIds.includes(String(rec.activity_category_id)));
     } else {
@@ -34,39 +34,39 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
     }
     // records からユニークな activity_name を抽出
     let names = Array.from(new Set(recs.map(rec => rec.activity_name)));
-    // 現在の activityName が空でなく、リストに含まれていなければ追加する
-    if (activityName && !names.includes(activityName)) {
-      names.push(activityName);
+    // 現在の activityNameFilter が空でなく、リストに含まれていなければ追加する
+    if (activityNameFilter && !names.includes(activityNameFilter)) {
+      names.push(activityNameFilter);
     }
     return names;
-  }, [records, category, group, categories, activityName]);
+  }, [records, categoryFilter, groupFilter, categories, activityNameFilter]);
 
   // フィルター状態の変更を onFilterChange に通知
   useEffect(() => {
     onFilterChange(filterState);
   }, [filterState, onFilterChange]);
 
-  // activityName の変更時に、対応するカテゴリとグループを自動セット
+  // activityNameFilter の変更時に、対応するカテゴリとグループを自動セット
   useEffect(() => {
-    if (activityName) {
-      const rec = records.find(r => r.activity_name === activityName);
+    if (activityNameFilter) {
+      const rec = records.find(r => r.activity_name === activityNameFilter);
       if (rec) {
-        if (String(rec.activity_category_id) !== category) {
-          setFilterState(prev => ({ ...prev, category: String(rec.activity_category_id) }));
+        if (String(rec.activity_category_id) !== categoryFilter) {
+          setFilterState(prev => ({ ...prev, categoryFilter: String(rec.activity_category_id) }));
         }
-        if (rec.activity_group !== group) {
-          setFilterState(prev => ({ ...prev, group: rec.activity_group }));
+        if (rec.activity_group !== groupFilter) {
+          setFilterState(prev => ({ ...prev, groupFilter: rec.activity_group }));
         }
       }
     }
-  }, [activityName, records, category, group, setFilterState]);
+  }, [activityNameFilter, records, categoryFilter, groupFilter, setFilterState]);
 
   // リセットボタン用のハンドラー
   const handleReset = () => {
     setFilterState({
-      group: '',
-      category: '',
-      activityName: '',
+      groupFilter: ``,
+      categoryFilter: ``,
+      activityNameFilter: ``,
     });
   };
 
@@ -76,12 +76,12 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
         label="グループ"
         select
         size='small'
-        value={group}
+        value={groupFilter || ``}
         onChange={(e) => {
           setFilterState({
-            group: e.target.value,
-            category: '',
-            activityName: '',
+            groupFilter: e.target.value || ``,
+            categoryFilter: ``,
+            activityNameFilter: ``,
           });
         }}
         style={{ minWidth: 120 }}
@@ -100,13 +100,13 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
         label="カテゴリ"
         select
         size='small'
-        value={category}
+        value={categoryFilter || ``}
         onChange={(e) => {
           const newCatId = e.target.value;
-          setFilterState(prev => ({ ...prev, category: newCatId, activityName: '' }));
+          setFilterState(prev => ({ ...prev, categoryFilter: newCatId, activityNameFilter: `` }));
           const cat = categories.find(cat => String(cat.id) === newCatId);
           if (cat && cat.group_name) {
-            setFilterState(prev => ({ ...prev, group: cat.group_name }));
+            setFilterState(prev => ({ ...prev, groupFilter: cat.group_name }));
           }
         }}
         sx={{ minWidth: 180 }}
@@ -122,9 +122,9 @@ function RecordFilter({ groups, categories, onFilterChange, records }) {
         label="アクティビティ"
         select
         size='small'
-        value={activityName}
+        value={activityNameFilter}
         onChange={(e) => {
-          setFilterState(prev => ({ ...prev, activityName: e.target.value }));
+          setFilterState(prev => ({ ...prev, activityNameFilter: e.target.value }));
         }}
         sx={{ minWidth: 180 }}
       >
