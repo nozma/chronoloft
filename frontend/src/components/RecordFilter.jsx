@@ -4,18 +4,11 @@ import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import { Box } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
-import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
-import getIconForGroup from '../utils/getIconForGroup';
 
-function RecordFilter({ groups, categories, onFilterChange, records }) {
+function RecordFilter({ categories, onFilterChange, records }) {
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, categoryFilter, activityNameFilter } = filterState;
-
-    // グループ選択に応じたカテゴリの選択肢
-    const filteredCategories = groupFilter
-        ? categories.filter(cat => cat.group_name === groupFilter)
-        : categories;
 
     // カテゴリ選択に応じた項目の選択肢
     const filteredActivityNames = useMemo(() => {
