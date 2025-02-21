@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import ToggleButtonGroup, {
     toggleButtonGroupClasses,
-  } from '@mui/material/ToggleButtonGroup';  
+} from '@mui/material/ToggleButtonGroup';
 import GroupManagementDialog from './GroupManagementDialog';
 import CategoryManagementDialog from './CategoryManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
@@ -20,7 +20,7 @@ import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 
-function ActivityStart({ activities, onStart }) {
+function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const [shortcutGroupFilter, setShortcutGroupFilter] = useState('');
     const [shortcutCategoryFilter, setShortcutCategoryFilter] = useState('');
     const { groups, setGroups } = useGroups();
@@ -67,20 +67,20 @@ function ActivityStart({ activities, onStart }) {
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
         [`& .${toggleButtonGroupClasses.grouped}`]: {
-          margin: theme.spacing(0.5),
-          border: 0,
-          borderRadius: 10,
-          [`&.${toggleButtonGroupClasses.disabled}`]: {
+            margin: theme.spacing(0.5),
             border: 0,
-          },
+            borderRadius: 10,
+            [`&.${toggleButtonGroupClasses.disabled}`]: {
+                border: 0,
+            },
         },
         [`& .${toggleButtonGroupClasses.middleButton},& .${toggleButtonGroupClasses.lastButton}`]:
-          {
+        {
             marginLeft: -1,
             borderLeft: '1px solid transparent',
-          },
-      }));
-      
+        },
+    }));
+
 
     return (
         <>
@@ -105,15 +105,17 @@ function ActivityStart({ activities, onStart }) {
                             </ToggleButton>
                         ))}
                     </ToggleButtonGroup>
-                    <IconButton
-                        onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
-                        sx={{
-                            opacity: 0,
-                            transition: 'opacity 0.2s',
-                            '&:hover': { opacity: 1 },
-                        }}>
-                        <SettingsIcon />
-                    </IconButton>
+                    {!state.showGrid && !stopwatchVisible && (
+                        <IconButton
+                            onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                            sx={{
+                                opacity: 0,
+                                transition: 'opacity 0.2s',
+                                '&:hover': { opacity: 1 },
+                            }}>
+                            <SettingsIcon />
+                        </IconButton>
+                    )}
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
                 <Typography variant='caption' color='#cccccc'>Category</Typography>
@@ -135,16 +137,18 @@ function ActivityStart({ activities, onStart }) {
                             </ToggleButton>
                         ))}
                     </StyledToggleButtonGroup>
-                    <IconButton
-                        variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
-                        sx={{
-                            opacity: 0,
-                            transition: 'opacity 0.3s',
-                            '&:hover': { opacity: 1 },
-                        }}
-                    >
-                        <SettingsIcon />
-                    </IconButton>
+                    {!state.showGrid && !stopwatchVisible && (
+                        <IconButton
+                            variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
+                            sx={{
+                                opacity: 0,
+                                transition: 'opacity 0.3s',
+                                '&:hover': { opacity: 1 },
+                            }}
+                        >
+                            <SettingsIcon />
+                        </IconButton>
+                    )}
                 </Box>
                 <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
                 <Box>
@@ -185,16 +189,18 @@ function ActivityStart({ activities, onStart }) {
                                 size='small'
                             />
                         )}
-                        <IconButton
-                            variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
-                            sx={{
-                                opacity: 0,
-                                transition: 'opacity 0.3s',
-                                '&:hover': { opacity: 1 },
-                            }}
-                        >
-                            <SettingsIcon />
-                        </IconButton>
+                        {!state.showGrid && !stopwatchVisible && (
+                            <IconButton
+                                variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                sx={{
+                                    opacity: 0,
+                                    transition: 'opacity 0.3s',
+                                    '&:hover': { opacity: 1 },
+                                }}
+                            >
+                                <SettingsIcon />
+                            </IconButton>
+                        )}
                     </Box>
                 </Box>
             </Box>
