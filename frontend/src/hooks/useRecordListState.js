@@ -2,10 +2,10 @@ import { useReducer } from 'react';
 
 const initialState = {
   filterCriteria: {
-    group: '',
-    category: '',
+    groupFilter: '',
+    categoryFilter: '',
     unit: '',
-    activityName: '',
+    activityNameFilter: '',
   },
   confirmDialogOpen: false,
   selectedRecordId: null,

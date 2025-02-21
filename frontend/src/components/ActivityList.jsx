@@ -40,9 +40,6 @@ import { useUI } from '../contexts/UIContext';
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
-// UI 状態管理用 reducer
-import { initialUIState, uiReducer } from '../reducers/uiReducer';
-
 // ---------------------------------------------------------------------
 // ActivityList コンポーネント本体
 // ---------------------------------------------------------------------
@@ -63,9 +60,8 @@ function ActivityList({ onRecordUpdate, records }) {
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
 
-    // 複数のUI状態は reducer で一元管理
-    //const [uiState, dispatch] = useReducer(uiReducer, initialUIState);
-    //const { showGrid, editDialogOpen, confirmDialogOpen, recordDialogOpen } = uiState;
+    // UI状態
+
     const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
 
@@ -144,9 +140,10 @@ function ActivityList({ onRecordUpdate, records }) {
         setActiveActivity(activity);
         // ストップウォッチ開始時にフィルター状態を上書きする
         setFilterState({
-            group: activity.category_group,
-            category: String(activity.activity_category_id),
-            activityName: activity.name,
+            groupFilter: activity.category_group,
+            categoryFilter: String(activity.category_id),
+            categoryFilterName: activity.category_name,
+            activityNameFilter: activity.name,
         });
         if (activity.unit === 'count') {
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
@@ -262,8 +259,8 @@ function ActivityList({ onRecordUpdate, records }) {
     return (
         <div>
             {/* アクティビティ選択（ストップウォッチ表示前） */}
-            {!state.showGrid && !stopwatchVisible && (
-                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} />
+            {!state.showGrid && (
+                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} stopwatchVisible={stopwatchVisible}/>
             )}
             {/* グリッド表示または管理画面 */}
             {!stopwatchVisible && state.showGrid && (

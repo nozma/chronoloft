@@ -4,9 +4,10 @@ const FilterContext = createContext();
 
 export function FilterProvider({ children }) {
   const [filterState, setFilterState] = useState({
-    group: '',
-    category: '',
-    activityName: '',
+    groupFilter: ``,
+    categoryFilter: ``,
+    categoryFilterName: ``,
+    activityNameFilter: ``,
   });
 
   return (
