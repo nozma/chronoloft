@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useReducer } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -192,20 +192,13 @@ function ActivityList({ onRecordUpdate, records }) {
     // -----------------------------------------------------------------
     const columns = [
         {
-            field: 'category_group',
-            headerName: 'グループ',
-            width: 150,
-            valueFormatter: (params) => {
-                if (params === 'study') return "勉強";
-                else if (params === 'game') return "ゲーム";
-                else if (params === 'workout') return "運動";
-                else return params;
-            }
+            field: 'is_active',
+            headerName: 'State',
+            valueFormatter: (params) => { return (params ? "Active" : "Inactive") }
         },
-        { field: 'category_name', headerName: 'カテゴリ', width: 150 },
         {
             field: 'name',
-            headerName: '項目名',
+            headerName: 'Name',
             width: 200,
             renderCell: (params) => {
                 const groupName = params.row.category_group;
@@ -217,10 +210,10 @@ function ActivityList({ onRecordUpdate, records }) {
                 );
             }
         },
+        { field: 'category_name', headerName: 'Category', width: 150 },
         {
             field: 'unit',
-            headerName: '記録単位',
-            width: 100,
+            headerName: 'Unit',
             valueFormatter: (params) => {
                 if (params === 'minutes') return "分";
                 else if (params === 'count') return "回";
@@ -229,15 +222,8 @@ function ActivityList({ onRecordUpdate, records }) {
         },
         { field: 'asset_key', headerName: 'Asset Key', width: 150 },
         {
-            field: 'created_at',
-            headerName: '登録日時',
-            width: 200,
-            valueFormatter: (params) => formatToLocal(params)
-        },
-        {
             field: 'actions',
             headerName: 'Actions',
-            width: 240,
             sortable: false,
             filterable: false,
             renderCell: (params) => {
@@ -260,7 +246,7 @@ function ActivityList({ onRecordUpdate, records }) {
         <div>
             {/* アクティビティ選択（ストップウォッチ表示前） */}
             {!state.showGrid && (
-                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} stopwatchVisible={stopwatchVisible}/>
+                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} stopwatchVisible={stopwatchVisible} />
             )}
             {/* グリッド表示または管理画面 */}
             {!stopwatchVisible && state.showGrid && (

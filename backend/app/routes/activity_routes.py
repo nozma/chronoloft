@@ -81,6 +81,8 @@ def update_activity(activity_id):
         activity.name = data['name']
     if 'asset_key' in data:
         activity.asset_key = data['asset_key']
+    if 'is_active' in data:
+        activity.is_active = data['is_active']
 
     try:
         db.session.commit()

@@ -1,4 +1,3 @@
-import React, { useState, useReducer } from 'react';
 import {
     Autocomplete,
     Button,
@@ -34,9 +33,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
         : categories
 
     // アクティビティに対するフィルターの適用
+    const activeActivities = activities.filter((act) => act.is_active);
     const groupFilteredActivities = groupFilter
-        ? activities.filter((act) => act.category_group === groupFilter)
-        : activities;
+        ? activeActivities.filter((act) => act.category_group === groupFilter)
+        : activeActivities;
     const filteredActivities = categoryFilter
         ? groupFilteredActivities.filter((act) => act.category_id === parseInt(categoryFilter))
         : groupFilteredActivities
