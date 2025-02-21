@@ -22,7 +22,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
-    const { groups, setGroups } = useGroups();
+    const { groups } = useGroups();
     const { categories } = useCategories();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
