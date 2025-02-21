@@ -28,7 +28,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, categoryFilter, categoryFilterName } = filterState;
 
-
     // カテゴリーに対するフィルターの適用
     const filterdCategories = groupFilter
         ? categories.filter((category) => category.group_name === groupFilter)
@@ -83,17 +82,17 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         size='medium'
                         onChange={(e) => {
                             setFilterState({
-                              groupFilter: e.target.value,
-                              categoryFilter: ``,
-                              categoryFilterName: ``,
-                              activityNameFilter: ``,
+                                groupFilter: e.target.value,
+                                categoryFilter: ``,
+                                categoryFilterName: ``,
+                                activityNameFilter: ``,
                             });
-                          }}
+                        }}
                         aria-label="Group filter"
                         sx={{ mb: 1, mr: 1 }}
                     >
-                        <ToggleButton value="" aria-label="すべて">
-                            すべて
+                        <ToggleButton value="" aria-label="All">
+                            All
                         </ToggleButton>
                         {groups.map((group) => (
                             <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
@@ -125,18 +124,18 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                             const newCatId = e.currentTarget.dataset.id;
                             const newCatName = e.target.value;
                             console.log(e.target.id)
-                            setFilterState(prev => ({ 
-                                ...prev, 
-                                categoryFilter: newCatId, 
+                            setFilterState(prev => ({
+                                ...prev,
+                                categoryFilter: newCatId,
                                 categoryFilterName: newCatName,
-                                activityNameFilter: `` 
+                                activityNameFilter: ``
                             }));
-                          }}
+                        }}
                         aria-label="Category filter"
                         sx={{ mb: 1, mr: 1 }}
                     >
-                        <ToggleButton value="" aria-label="すべて">
-                            すべて
+                        <ToggleButton value="" aria-label="All">
+                            All
                         </ToggleButton>
                         {filterdCategories.map((category) => (
                             <ToggleButton key={category.id} value={category.name} aria-label={category.name} data-id={category.id}>
@@ -157,59 +156,61 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         </IconButton>
                     )}
                 </Box>
-                <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
-                <Box>
-                    <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
-                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                        {recentActivities.map(activity => (
-                            <Button
-                                key={activity.id}
-                                variant="outlined"
-                                color="primary"
-                                onClick={() => onStart(activity)}
-                                sx={{
-                                    display: 'flex',
-                                    textTransform: 'none',
-                                    borderRadius: 5,
-                                    boxShadow: 2,
-                                }}
-                                startIcon={getIconForGroup(activity.category_group, groups)}
-                            >
-                                {activity.name}
-                            </Button>
-                        ))}
-                        {remainingActivities.length > 0 && (
-                            <Autocomplete
-                                options={remainingActivities}
-                                getOptionLabel={(option) => option.name}
-                                onChange={handleAutocompleteChange}
-                                renderOption={(props, option) => (
-                                    <li {...props}>
-                                        {getIconForGroup(option.category_group, groups)}
-                                        {option.name}
-                                    </li>
+                {!state.showGrid && !stopwatchVisible && (
+                    <>
+                        <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
+                        <Box>
+                            <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
+                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                {recentActivities.map(activity => (
+                                    <Button
+                                        key={activity.id}
+                                        variant="outlined"
+                                        color="primary"
+                                        onClick={() => onStart(activity)}
+                                        sx={{
+                                            display: 'flex',
+                                            textTransform: 'none',
+                                            borderRadius: 5,
+                                            boxShadow: 2,
+                                        }}
+                                        startIcon={getIconForGroup(activity.category_group, groups)}
+                                    >
+                                        {activity.name}
+                                    </Button>
+                                ))}
+                                {remainingActivities.length > 0 && (
+                                    <Autocomplete
+                                        options={remainingActivities}
+                                        getOptionLabel={(option) => option.name}
+                                        onChange={handleAutocompleteChange}
+                                        renderOption={(props, option) => (
+                                            <li {...props}>
+                                                {getIconForGroup(option.category_group, groups)}
+                                                {option.name}
+                                            </li>
+                                        )}
+                                        renderInput={(params) => (
+                                            <TextField {...params} label="その他" variant="outlined" />
+                                        )}
+                                        sx={{ minWidth: 200 }}
+                                        size='small'
+                                    />
                                 )}
-                                renderInput={(params) => (
-                                    <TextField {...params} label="その他" variant="outlined" />
-                                )}
-                                sx={{ minWidth: 200 }}
-                                size='small'
-                            />
-                        )}
-                        {!state.showGrid && !stopwatchVisible && (
-                            <IconButton
-                                variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
-                                sx={{
-                                    opacity: 0,
-                                    transition: 'opacity 0.3s',
-                                    '&:hover': { opacity: 1 },
-                                }}
-                            >
-                                <SettingsIcon />
-                            </IconButton>
-                        )}
-                    </Box>
-                </Box>
+                                <IconButton
+                                    variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                    sx={{
+                                        opacity: 0,
+                                        transition: 'opacity 0.3s',
+                                        '&:hover': { opacity: 1 },
+                                    }}
+                                >
+                                    <SettingsIcon />
+                                </IconButton>
+                            </Box>
+                        </Box>
+                    </>
+                )}
             </Box>
         </>
     );
