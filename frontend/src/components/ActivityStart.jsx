@@ -156,7 +156,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         </IconButton>
                     )}
                 </Box>
-                {!state.showGrid && !stopwatchVisible && (
+                {!state.showGrid && (
                     <>
                         <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
                         <Box>
