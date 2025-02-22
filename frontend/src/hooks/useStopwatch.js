@@ -131,8 +131,39 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             totalElapsed += Date.now() - startTimeRef.current;
         }
         localStorage.removeItem(STORAGE_KEY);
+        startTimeRef.current = null;
+        offsetRef.current = 0;
+        setDisplayTime(0);
         if (onComplete) onComplete(totalElapsed / 60000); // 分単位に換算
+        return totalMinutes;  // 経過時間（分）を返す
     };
+
+    // 完了して別のストップウォッチを開始する
+    const finishAndReset = async () => {
+        // 停止処理
+        clearInterval(timerRef.current);
+        setIsRunning(false);
+        let totalElapsed = offsetRef.current;
+        if (startTimeRef.current !== null && isRunning) {
+          totalElapsed += Date.now() - startTimeRef.current;
+        }
+        try {
+          await stopDiscordPresence({ group: discordData.group });
+          console.log('Discord presence stopped');
+        } catch (error) {
+          console.error('Failed to stop Discord presence:', error);
+        }
+        // ここで complete() のように記録値を返す
+        const minutes = totalElapsed / 60000;
+        // その後、状態をリセットして新規記録に備える
+        startTimeRef.current = Date.now();
+        offsetRef.current = 0;
+        setDisplayTime(0);
+        setIsRunning(true);
+        timerRef.current = setInterval(updateDisplayTime, 1000);
+        return minutes;
+    };
+    
 
     const cancel = async () => {
         clearInterval(timerRef.current);
@@ -171,6 +202,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         cancel,
         updateStartTime,
         currentStartTime,
+        finishAndReset
     };
 }
 

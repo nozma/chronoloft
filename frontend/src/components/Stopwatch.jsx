@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { forwardRef, useImperativeHandle } from 'react';
 import { Button, Typography, Box, TextField } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
 import { DateTime } from 'luxon';
 
-function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
+const Stopwatch = forwardRef((props, ref) => {
+    //function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
     const { groups } = useGroups();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
@@ -13,10 +14,16 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
         isPaused,
         togglePause,
         complete,
+        finishAndReset,
         cancel,
         updateStartTime,
         currentStartTime,
-    } = useStopwatch(discordData, { onComplete, onCancel });
+    } = useStopwatch(props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
+
+    useImperativeHandle(ref, () => ({
+        complete,
+        finishAndReset
+    }));
 
     // 編集モード用の状態
     const [isEditingStartTime, setIsEditingStartTime] = React.useState(false);
@@ -69,38 +76,40 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
 
     return (
         <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
+            {/* アクティビティ名・アイコン表示 */}
             <Typography variant="h6" sx={{ mb: 1 }}>
-                {getIconForGroup(activityGroup, groups)}
-                {activityName}
+                {getIconForGroup(props.activityGroup, groups)}
+                {props.activityName}
             </Typography>
-            <Typography variant='h5'>{formatTime(displayTime)}</Typography>
+
             {/* 開始時刻表示と編集UI */}
-            <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                 {isEditingStartTime ? (
                     <>
                         <TextField
                             type="datetime-local"
                             value={editedStartTime}
                             onChange={(e) => setEditedStartTime(e.target.value)}
+                            InputLabelProps={{ shrink: true }}
                         />
-                        <Button onClick={handleSaveStartTime} variant="contained" color="primary" sx={{ ml: 1 }}>
+                        <Button onClick={handleSaveStartTime} variant="contained" color="primary">
                             保存
                         </Button>
-                        <Button onClick={handleCancelEditStartTime} variant="outlined" sx={{ ml: 1 }}>
+                        <Button onClick={handleCancelEditStartTime} variant="outlined">
                             キャンセル
                         </Button>
                     </>
                 ) : (
                     <>
-                        <Typography>
-                            Start time: {formattedStartTime}
-                        </Typography>
+                        <Typography variant="body2">開始時刻: {formattedStartTime}</Typography>
                         <Button onClick={handleEditStartTime} variant="text" size="small">
-                            Edit
+                            編集
                         </Button>
                     </>
                 )}
             </Box>
+
+            <Typography variant="h4">{formatTime(displayTime)}</Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
                 <Button variant="contained" onClick={togglePause}>
                     {isPaused ? 'Resume' : 'Pause'}
@@ -114,6 +123,6 @@ function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGr
             </Box>
         </Box>
     );
-}
+});
 
 export default Stopwatch;

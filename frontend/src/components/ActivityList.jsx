@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -54,6 +54,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [preFilledValue, setPreFilledValue] = useState(null);
+    const stopwatchRef = useRef(null);
 
     // ローカルストレージで管理する状態
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
@@ -61,7 +62,6 @@ function ActivityList({ onRecordUpdate, records }) {
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
 
     // UI状態
-
     const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
 
@@ -134,8 +134,15 @@ function ActivityList({ onRecordUpdate, records }) {
     };
 
     // activity を選択して開始する処理（分の場合は累計時間計算を利用）
-    const handleStartRecordFromSelect = (activity) => {
+    const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
+        // 起動中のストップウォッチがあれば停止し、記録を作成
+        if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
+            const minutes = await stopwatchRef.current.finishAndReset();
+            createRecord({ activity_id: selectedActivity.id, value: minutes });
+            onRecordUpdate();
+        }
+        // 新しいストップウォッチを作成
         setSelectedActivity(activity);
         setActiveActivity(activity);
         // ストップウォッチ開始時にフィルター状態を上書きする
@@ -327,15 +334,16 @@ function ActivityList({ onRecordUpdate, records }) {
             )}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
+                    ref={stopwatchRef} 
                     onComplete={(minutes) => {
                         createRecord({ activity_id: selectedActivity.id, value: minutes })
-                        .then((res) => {
-                            console.log("Record created:", res);
-                            onRecordUpdate();
-                        })
-                        .catch((err) => {
-                            console.error("Record creation failed:", err);
-                        });
+                            .then((res) => {
+                                console.log("Record created:", res);
+                                onRecordUpdate();
+                            })
+                            .catch((err) => {
+                                console.error("Record creation failed:", err);
+                            });
                         setStopwatchVisible(false);
                         setActiveActivity(null);
                     }}
