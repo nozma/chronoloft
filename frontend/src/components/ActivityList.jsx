@@ -165,13 +165,6 @@ function ActivityList({ onRecordUpdate, records }) {
         dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
 
-    const handleStopwatchComplete = (minutes) => {
-        console.log("Stopwatch completed. Elapsed minutes:", minutes);
-        setPreFilledValue(minutes);
-        setStopwatchVisible(false);
-        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-    };
-
     const handleRecordCreated = async (recordData) => {
         try {
             const res = await createRecord(recordData);
@@ -335,7 +328,15 @@ function ActivityList({ onRecordUpdate, records }) {
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
                     onComplete={(minutes) => {
-                        handleStopwatchComplete(minutes);
+                        createRecord({ activity_id: selectedActivity.id, value: minutes })
+                        .then((res) => {
+                            console.log("Record created:", res);
+                            onRecordUpdate();
+                        })
+                        .catch((err) => {
+                            console.error("Record creation failed:", err);
+                        });
+                        setStopwatchVisible(false);
                         setActiveActivity(null);
                     }}
                     onCancel={() => {
