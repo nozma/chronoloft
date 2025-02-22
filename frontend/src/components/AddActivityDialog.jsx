@@ -36,11 +36,13 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, categories })
             alert("Name と Category は必須です。");
             return;
         }
-        onSubmit({ name, category_id: parseInt(categoryId), unit, asset_key: assetKey, is_active: isActive });
+        console.log(categoryId)
+        onSubmit({ name: name, category_id: categoryId, unit: unit, asset_key: assetKey, is_active: (isActive === 'true') });
         setName('');
         setCategoryId('');
         setUnit('minutes');
         setAssetKey('');
+        setIsActive(true);
         onClose();
     };
 
@@ -53,7 +55,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, categories })
                     fullWidth
                     select
                     value={String(isActive)}
-                    onChange={(e) => setIsActive(e.target.value === "true")}
+                    onChange={(e) => setIsActive(e.target.value)}
                     >
                     <MenuItem key="true" value="true" >Active</MenuItem>
                     <MenuItem key="false" value="false" >Inactive</MenuItem>

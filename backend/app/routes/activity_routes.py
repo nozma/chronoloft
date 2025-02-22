@@ -79,8 +79,12 @@ def update_activity(activity_id):
 
     if 'name' in data:
         activity.name = data['name']
+    if 'category_id' in data:
+        activity.category_id = data['category_id']
     if 'asset_key' in data:
         activity.asset_key = data['asset_key']
+    if 'unit' in data:
+        activity.unit = ActivityUnitType(data['unit'])
     if 'is_active' in data:
         activity.is_active = data['is_active']
 
