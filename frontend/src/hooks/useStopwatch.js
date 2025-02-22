@@ -135,7 +135,6 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         offsetRef.current = 0;
         setDisplayTime(0);
         if (onComplete) onComplete(totalElapsed / 60000); // 分単位に換算
-        return totalMinutes;  // 経過時間（分）を返す
     };
 
     // 完了して別のストップウォッチを開始する
