@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Box from '@mui/material/Box';
 import ActivityList from './components/ActivityList';
 import RecordList from './components/RecordList';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -20,6 +21,12 @@ function App() {
             createTheme({
                 palette: {
                     mode: prefersDarkMode ? 'dark' : 'light',
+                },
+                breakpoints: {
+                    values: {
+                        xs: 0,
+                        md: 1100
+                    },
                 },
             }),
         [prefersDarkMode]
@@ -58,23 +65,32 @@ function App() {
 
     return (
         <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <GroupProvider>
-                <CategoryProvider>
-                    <UIProvider>
-                        <FilterProvider>
-                            <ActiveActivityProvider>
-                                <div>
-                                    <h2>Activity Tracker</h2>
-                                    <ActivityList onRecordUpdate={updateRecords} records={records} />
-                                    <h2>History</h2>
-                                    <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
-                                </div>
-                            </ActiveActivityProvider>
-                        </FilterProvider>
-                    </UIProvider>
-                </CategoryProvider>
-            </GroupProvider>
+            <Box
+                sx={{
+                    width: '100%',
+                    maxWidth: { xs: '800px', md: '980px' },
+                    mx: 'auto',
+                    px: 1,       // サイドパディング
+                }}
+            >
+                <CssBaseline />
+                <GroupProvider>
+                    <CategoryProvider>
+                        <UIProvider>
+                            <FilterProvider>
+                                <ActiveActivityProvider>
+                                    <div>
+                                        <h2>Activity Tracker</h2>
+                                        <ActivityList onRecordUpdate={updateRecords} records={records} />
+                                        <h2>History</h2>
+                                        <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
+                                    </div>
+                                </ActiveActivityProvider>
+                            </FilterProvider>
+                        </UIProvider>
+                    </CategoryProvider>
+                </GroupProvider>
+            </Box>
         </ThemeProvider>
     );
 }
