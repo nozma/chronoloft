@@ -138,7 +138,14 @@ function ActivityList({ onRecordUpdate, records }) {
         if (!activity) return;
         // 起動中のストップウォッチがあれば停止し、記録を作成
         if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
-            const minutes = await stopwatchRef.current.finishAndReset();
+            const details = calculateTimeDetails(activity.id, records);
+            const newDiscordData = {
+                group: activity.category_group,
+                activity_name: activity.name,
+                details: details,
+                asset_key: activity.asset_key || "default_image"
+            };
+            const minutes = await stopwatchRef.current.finishAndReset(newDiscordData);
             createRecord({ activity_id: selectedActivity.id, value: minutes });
             onRecordUpdate();
         }
@@ -334,7 +341,7 @@ function ActivityList({ onRecordUpdate, records }) {
             )}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
-                    ref={stopwatchRef} 
+                    ref={stopwatchRef}
                     onComplete={(minutes) => {
                         createRecord({ activity_id: selectedActivity.id, value: minutes })
                             .then((res) => {
