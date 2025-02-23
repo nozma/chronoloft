@@ -207,12 +207,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
                 >
                     <Box ref={dataGridRef} sx={{ height: 400, width: '100%', mb: 2 }}>
                         <DataGrid
-                            rows={filteredRecords}
+                            rows={records}
                             columns={columns}
                             pageSize={5}
                             rowsPerPageOptions={[5]}
                             disableSelectionOnClick
                             processRowUpdate={processRowUpdate}
+                            rowHeight={38}
                             initialState={{
                                 sorting: {
                                     sortModel: [{ field: 'created_at', sort: 'desc' }],
