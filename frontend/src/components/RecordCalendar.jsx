@@ -13,7 +13,7 @@ function RecordCalendar({ records }) {
     const { groups } = useGroups();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
-    const [currentView, setCurrentView] = useState('day');
+    const [currentView, setCurrentView] = useState('week');
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
@@ -61,19 +61,20 @@ function RecordCalendar({ records }) {
                 onView={(view) => setCurrentView(view)}
                 startAccessor="start"
                 endAccessor="end"
-                defaultView="day"
                 views={['day', 'week']}
-                step={10}
+                step={15}
                 timeslots={2}
                 style={{ height: 800 }}
                 titleAccessor="title"
                 components={{ eventWrapper: CustomEvent }}
+                dayLayoutAlgorithm={'no-overlap'}
                 eventPropGetter={(event) => ({
                     style: {
                         backgroundColor: event.groupColor || '#3174ad', // fallback color
                         borderRadius: '5px',
                         opacity: 0.8,
                         color: 'white',
+                        fontSize: '0.75em',
                     },
                 })}
             />
