@@ -55,6 +55,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [preFilledValue, setPreFilledValue] = useState(null);
     const stopwatchRef = useRef(null);
+    const [recordDialogActivity, setRecordDialogActivity] = useState(null);
 
     // ローカルストレージで管理する状態
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
@@ -136,32 +137,31 @@ function ActivityList({ onRecordUpdate, records }) {
     // activity を選択して開始する処理（分の場合は累計時間計算を利用）
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
-        // 起動中のストップウォッチがあれば停止し、記録を作成
-        if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
-            const details = calculateTimeDetails(activity.id, records);
-            const newDiscordData = {
-                group: activity.category_group,
-                activity_name: activity.name,
-                details: details,
-                asset_key: activity.asset_key || "default_image"
-            };
-            const minutes = await stopwatchRef.current.finishAndReset(newDiscordData);
-            createRecord({ activity_id: selectedActivity.id, value: minutes });
-            onRecordUpdate();
-        }
-        // 新しいストップウォッチを作成
-        setSelectedActivity(activity);
-        setActiveActivity(activity);
-        // ストップウォッチ開始時にフィルター状態を上書きする
-        setFilterState({
-            groupFilter: activity.category_group,
-            categoryFilter: String(activity.category_id),
-            categoryFilterName: activity.category_name,
-            activityNameFilter: activity.name,
-        });
-        if (activity.unit === 'count') {
-            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-        } else if (activity.unit === 'minutes') {
+        
+        if (activity.unit === 'minutes') {
+            // もし現在のストップウォッチが動いていて、かつ現在の selectedActivity が別の minutes アクティビティなら
+            // 既存記録を作成してストップウォッチとDiscord接続を一旦停止する。
+            if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
+                const details = calculateTimeDetails(activity.id, records);
+                const newDiscordData = {
+                    group: activity.category_group,
+                    activity_name: activity.name,
+                    details: details,
+                    asset_key: activity.asset_key || "default_image"
+                };
+                const minutes = await stopwatchRef.current.finishAndReset(newDiscordData);
+                createRecord({ activity_id: selectedActivity.id, value: minutes });
+                onRecordUpdate();
+            }
+            // ストップウォッチを起動し、Discord連携を開始する
+            setSelectedActivity(activity);
+            setActiveActivity(activity);
+            setFilterState({
+                groupFilter: activity.category_group,
+                categoryFilter: String(activity.category_id),
+                categoryFilterName: activity.category_name,
+                activityNameFilter: activity.name,
+            });
             const details = calculateTimeDetails(activity.id, records);
             const data = {
                 group: activity.category_group,
@@ -171,6 +171,13 @@ function ActivityList({ onRecordUpdate, records }) {
             };
             setDiscordData(data);
             setStopwatchVisible(true);
+        } else if (activity.unit === 'count') {
+            // count の場合は、ストップウォッチや Discord 連携はそのままにして、
+            // recordDialogActivity（新たな state）に新しいアクティビティをセットし、
+            // 記録用ダイアログを開く
+            setRecordDialogActivity(activity);
+            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
+            // ここでは selectedActivity/activeActivity は変更しない（既存のストップウォッチがあれば継続）
         }
     };
 
@@ -330,7 +337,16 @@ function ActivityList({ onRecordUpdate, records }) {
                     initialValue={null}
                 />
             )}
-            {state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
+            {state.recordDialogOpen && recordDialogActivity && recordDialogActivity.unit === 'count' && (
+                <AddRecordDialog
+                    open={state.recordDialogOpen}
+                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
+                    activity={recordDialogActivity}
+                    onSubmit={handleRecordCreated}
+                    initialValue={null}
+                />
+            )}
+            {!recordDialogActivity && state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <AddRecordDialog
                     open={state.recordDialogOpen}
                     onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
