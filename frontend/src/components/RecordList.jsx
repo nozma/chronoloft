@@ -11,6 +11,7 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
+import RecordCalendar from './RecordCalendar';
 
 function RecordList({ records, categories, onRecordUpdate }) {
     // ----------------------------
@@ -187,6 +188,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
                     categories={categories}
                     unitFilter={filterCriteria.unit}
                 />
+                <RecordCalendar records={records} />
                 {showRecords ? (
                     <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: false })} sx={{ mb: 2 }}>
                         閉じる
