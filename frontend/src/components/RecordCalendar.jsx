@@ -4,6 +4,7 @@ import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
 import { splitEvent } from '../utils/splitEvent';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '../styles/calendarOverrides.css';
 import { useGroups } from '../contexts/GroupContext';
 import CustomEvent from './CalendarCustomEvent';
 

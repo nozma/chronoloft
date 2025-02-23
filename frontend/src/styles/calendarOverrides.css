@@ -1,0 +1,34 @@
+@media (prefers-color-scheme: dark) {
+
+    /* 日付、時刻表示のテキスト色 */
+    .rbc-toolbar-label,
+    .rbc-header,
+    .rbc-time-label,
+    .rbc-label {
+        color: #999;
+    }
+
+    /* ツールバーのボタンの文字色を明るく */
+    .rbc-toolbar button {
+        color: #CCC !important;
+    }
+
+    /* ツールバーのボタンの背景色 */
+    .rbc-toolbar .rbc-btn-group button {
+        background-color: #333333;
+        border-color: #555555;
+    }
+    .rbc-toolbar .rbc-btn-group .rbc-active {
+        background-color: #666;
+    }
+
+    /* 今日を示すセルの背景色 */
+    .rbc-today {
+        background-color: #333333 !important;
+    }
+
+    /* 罫線 */
+    .rbc-calendar * {
+        border-color: #555555 !important;
+    }
+}
