@@ -4,12 +4,16 @@ import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
 import { splitEvent } from '../utils/splitEvent';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useGroups } from '../contexts/GroupContext';
+import CustomEvent from './CalendarCustomEvent';
 
 const localizer = luxonLocalizer(DateTime);
 
 function RecordCalendar({ records }) {
+    const { groups } = useGroups();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
+    const [currentView, setCurrentView] = useState('day');
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
@@ -20,12 +24,21 @@ function RecordCalendar({ records }) {
             const endDT = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
             // 開始時刻は終了時刻から rec.value 分を引く
             const startDT = endDT.minus({ minutes: rec.value });
+            // Retrieve group color from groups context using rec.activity_group (group name)
+            let groupColor = null;
+            if (rec.activity_group && groups && groups.length > 0) {
+                const groupObj = groups.find(g => g.name === rec.activity_group);
+                if (groupObj && groupObj.icon_color) {
+                    groupColor = groupObj.icon_color;
+                }
+            }
             const event = {
                 id: rec.id,
-                title: `${rec.activity_name} (${rec.value}分)`,
+                title: `${rec.activity_name} (${rec.value.toFixed(0)}分)`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
+                groupColor
             };
             // 複数日にまたがる場合は分割
             if (startDT.toJSDate().toDateString() !== endDT.toJSDate().toDateString()) {
@@ -35,23 +48,34 @@ function RecordCalendar({ records }) {
             }
         });
         setEvents(eventsData);
-    }, [records]);
+    }, [records, groups]);
 
     return (
-        <div style={{ height: '600px', margin: '20px' }}>
+        <div style={{ height: '800px', margin: '20px' }}>
             <Calendar
                 localizer={localizer}
                 events={events}
                 date={currentDate}
-                onNavigate={(date, view, action) => {
-                    setCurrentDate(date);
-                }}
+                view={currentView}
+                onNavigate={(date) => setCurrentDate(date)}
+                onView={(view) => setCurrentView(view)}
                 startAccessor="start"
                 endAccessor="end"
                 defaultView="day"
                 views={['day', 'week']}
-                style={{ height: 600 }}
+                step={10}
+                timeslots={2}
+                style={{ height: 800 }}
                 titleAccessor="title"
+                components={{ eventWrapper: CustomEvent }}
+                eventPropGetter={(event) => ({
+                    style: {
+                        backgroundColor: event.groupColor || '#3174ad', // fallback color
+                        borderRadius: '5px',
+                        opacity: 0.8,
+                        color: 'white',
+                    },
+                })}
             />
         </div>
     );
