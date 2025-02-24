@@ -209,11 +209,6 @@ function ActivityList({ onRecordUpdate, records }) {
         {
             field: 'group_name',
             headerName: 'Group',
-        },
-        {
-            field: 'name',
-            headerName: 'Name',
-            width: 200,
             renderCell: (params) => {
                 const groupName = params.row.group_name;
                 return (
@@ -223,6 +218,11 @@ function ActivityList({ onRecordUpdate, records }) {
                     </div>
                 );
             }
+        },
+        {
+            field: 'name',
+            headerName: 'Name',
+            width: 200,
         },
         {
             field: 'unit',
