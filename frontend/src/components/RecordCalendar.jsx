@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar } from 'react-big-calendar';
 import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
@@ -9,6 +9,38 @@ import { useGroups } from '../contexts/GroupContext';
 import CustomEvent from './CalendarCustomEvent';
 
 const localizer = luxonLocalizer(DateTime);
+
+function aggregateEventsForMonth(events) {
+    // month, agenda表示用の集計（同じ日のイベントをまとめる）
+    const aggregated = {};
+
+    events.forEach((event) => {
+        // 同じ日の同じイベントのvalue（経過時間）を合計する
+        const dayStr = event.start.toDateString();
+        const key = `${dayStr}_${event.activityName}`;
+        if (!aggregated[key]) {
+            aggregated[key] = { ...event, totalValue: 0 };
+        }
+        aggregated[key].totalValue += Number(event.value) || 0;
+    });
+
+    const aggregatedArray = Object.values(aggregated).map((agg) => ({
+        id: `${agg.id}-${agg.activityName}-${agg.start.toDateString()}`,
+        activityName: agg.activityName,
+        title: `(${Math.floor(Number(agg.totalValue / 60).toFixed(0))}:${String(Math.round(agg.totalValue % 60)).padStart(2, 0)}) ${agg.activityName}`,
+        // 全日イベントとして扱う
+        start: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate()),
+        end: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate() + 1),
+        allDay: true,
+        groupColor: agg.groupColor,
+        totalValue: agg.totalValue,
+    }));
+
+    // totalValue降順でソートする
+    aggregatedArray.sort((a, b) => b.totalValue - a.totalValue);
+
+    return aggregatedArray;
+}
 
 function RecordCalendar({ records }) {
     const { groups } = useGroups();
@@ -33,9 +65,14 @@ function RecordCalendar({ records }) {
                     groupColor = groupObj.icon_color;
                 }
             }
+            const hours = Math.floor(rec.value / 60);
+            const minutes = Math.round(rec.value % 60);
+            const formattedTime = `${String(hours)}:${String(minutes).padStart(2, '0')}`;
             const event = {
                 id: rec.id,
-                title: `${rec.activity_name} (${rec.value.toFixed(0)}分)`,
+                activityName: rec.activity_name,
+                value: rec.value,
+                title: `(${formattedTime}) ${rec.activity_name}`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
@@ -48,8 +85,23 @@ function RecordCalendar({ records }) {
                 eventsData.push(event);
             }
         });
-        setEvents(eventsData);
-    }, [records, groups]);
+        if (currentView === 'month' | currentView === 'agenda') {
+            setEvents(aggregateEventsForMonth(eventsData));
+        } else {
+            setEvents(eventsData);
+        }
+    }, [records, groups, currentView]);
+
+    const formats = useMemo(() => ({
+        dayHeaderFormat: 'yyyy/MM/dd (EEE)',
+        monthHeaderFormat: 'yyyy/M',
+        dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
+            localizer.format(start, 'M/d') +
+            ' - ' +
+            localizer.format(end, 'M/d'),
+        agendaDateFormat: 'M/d(EEE)',
+        eventTimeRangeFormat: () => ''
+    }), [])
 
     return (
         <div style={{ height: '800px', margin: '20px' }}>
@@ -62,13 +114,16 @@ function RecordCalendar({ records }) {
                 onView={(view) => setCurrentView(view)}
                 startAccessor="start"
                 endAccessor="end"
-                views={['day', 'week']}
-                step={15}
+                views={['day', 'week', 'month', 'agenda']}
+                step={30}
                 timeslots={2}
                 style={{ height: 800 }}
                 titleAccessor="title"
+                formats={formats}
                 components={{ eventWrapper: CustomEvent }}
                 dayLayoutAlgorithm={'no-overlap'}
+                showAllEvents
+                culture='ja'
                 eventPropGetter={(event) => ({
                     style: {
                         backgroundColor: event.groupColor || '#3174ad', // fallback color
