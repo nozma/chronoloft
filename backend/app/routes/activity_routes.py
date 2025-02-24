@@ -24,13 +24,16 @@ def get_activities():
                 'id': activity.id,
                 'name': activity.name,
                 'is_active': activity.is_active,
+                # category系は後で消す
                 'category_id': activity.category_id,
                 'category_name': activity.category.name if activity.category else None,
                 'category_group': activity.category.group.name if activity.category.group else None,
+                # ---
+                'group_id': activity.group_id,
+                'group_name': activity.group.name if activity.group else None,
                 'unit': activity.unit.value if activity.unit else None,
                 'asset_key': activity.asset_key,
                 'created_at': activity.created_at.isoformat(),
-                # 追加情報として最新レコードのタイムスタンプも渡す（必要なら）
                 'last_record': last_record.isoformat() if last_record else None,
             })
         return jsonify(result), 200
@@ -41,7 +44,7 @@ def get_activities():
 @activity_bp.route('/api/activities', methods=['POST'])
 def add_activity():
     data = request.get_json()
-    if not data or 'name' not in data or 'category_id' not in data:
+    if not data or 'name' not in data or 'group_id' not in data:
         return jsonify({'error': '必要な情報が不足しています'}), 400
 
     unit = data.get('unit')
@@ -55,9 +58,10 @@ def add_activity():
 
     new_activity = Activity(
         name=data['name'],
-        category_id=data['category_id'],
+        group_id=data['group_id'],
         unit=unit,
-        asset_key=data.get('asset_key')
+        asset_key=data.get('asset_key'),
+        is_active=True
     )
     try:
         db.session.add(new_activity)
@@ -79,8 +83,8 @@ def update_activity(activity_id):
 
     if 'name' in data:
         activity.name = data['name']
-    if 'category_id' in data:
-        activity.category_id = data['category_id']
+    if 'group_id' in data:
+        activity.group_id = data['group_id']
     if 'asset_key' in data:
         activity.asset_key = data['asset_key']
     if 'unit' in data:
