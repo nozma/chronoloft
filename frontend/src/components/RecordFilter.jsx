@@ -15,7 +15,7 @@ function RecordFilter({ onFilterChange, records }) {
         let recs;
         if (groupFilter) {
             // グループが選択されている場合は、そのグループに属するレコードを抽出
-            recs = records.filter(rec => String(rec.group_id) === groupFilter);
+            recs = records.filter(rec => String(rec.activity_group) === groupFilter);
         } else {
             recs = records;
         }
