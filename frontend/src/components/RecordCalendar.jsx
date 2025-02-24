@@ -27,7 +27,7 @@ function aggregateEventsForMonth(events) {
     const aggregatedArray = Object.values(aggregated).map((agg) => ({
         id: `${agg.id}-${agg.activityName}-${agg.start.toDateString()}`,
         activityName: agg.activityName,
-        title: `${agg.activityName} (${Math.floor(Number(agg.totalValue/60).toFixed(0))}時間${Math.round(agg.totalValue%60)}分)`,
+        title: `(${Math.floor(Number(agg.totalValue / 60).toFixed(0))}:${String(Math.round(agg.totalValue % 60)).padStart(2, 0)}) ${agg.activityName}`,
         // 全日イベントとして扱う
         start: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate()),
         end: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate() + 1),
@@ -65,11 +65,14 @@ function RecordCalendar({ records }) {
                     groupColor = groupObj.icon_color;
                 }
             }
+            const hours = Math.floor(rec.value / 60);
+            const minutes = Math.round(rec.value % 60);
+            const formattedTime = `${String(hours)}:${String(minutes).padStart(2, '0')}`;
             const event = {
                 id: rec.id,
                 activityName: rec.activity_name,
                 value: rec.value,
-                title: `${rec.activity_name} (${Math.floor(Number(rec.value/60).toFixed(0))}時間${Math.round(rec.value%60)}分)`,
+                title: `(${formattedTime}) ${rec.activity_name}`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
