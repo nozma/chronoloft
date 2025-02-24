@@ -25,7 +25,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { categories } = useCategories();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
-    const { groupFilter, categoryFilter, categoryFilterName } = filterState;
+    const { groupFilter } = filterState;
 
     // カテゴリーに対するフィルターの適用
     const filterdCategories = groupFilter
@@ -34,12 +34,9 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
 
     // アクティビティに対するフィルターの適用
     const activeActivities = activities.filter((act) => act.is_active);
-    const groupFilteredActivities = groupFilter
+    const filteredActivities = groupFilter
         ? activeActivities.filter((act) => act.category_group === groupFilter)
         : activeActivities;
-    const filteredActivities = categoryFilter
-        ? groupFilteredActivities.filter((act) => act.category_id === parseInt(categoryFilter))
-        : groupFilteredActivities
 
 
     // 最近使用した項目を取得
@@ -83,8 +80,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         onChange={(e) => {
                             setFilterState({
                                 groupFilter: e.target.value,
-                                categoryFilter: ``,
-                                categoryFilterName: ``,
                                 activityNameFilter: ``,
                             });
                         }}
@@ -114,35 +109,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                     )}
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
-                <Typography variant='caption' color='#cccccc'>Category</Typography>
                 <Box>
-                    <StyledToggleButtonGroup
-                        value={categoryFilterName}
-                        exclusive
-                        size='small'
-                        onChange={(e) => {
-                            const newCatId = e.currentTarget.dataset.id;
-                            const newCatName = e.target.value;
-                            console.log(e.target.id)
-                            setFilterState(prev => ({
-                                ...prev,
-                                categoryFilter: newCatId,
-                                categoryFilterName: newCatName,
-                                activityNameFilter: ``
-                            }));
-                        }}
-                        aria-label="Category filter"
-                        sx={{ mb: 1, mr: 1 }}
-                    >
-                        <ToggleButton value="" aria-label="All">
-                            All
-                        </ToggleButton>
-                        {filterdCategories.map((category) => (
-                            <ToggleButton key={category.id} value={category.name} aria-label={category.name} data-id={category.id}>
-                                {category.name}
-                            </ToggleButton>
-                        ))}
-                    </StyledToggleButtonGroup>
                     {!state.showGrid && !stopwatchVisible && (
                         <IconButton
                             variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}

@@ -3,7 +3,6 @@ import { useReducer } from 'react';
 const initialState = {
   filterCriteria: {
     groupFilter: '',
-    categoryFilter: '',
     unit: '',
     activityNameFilter: '',
   },

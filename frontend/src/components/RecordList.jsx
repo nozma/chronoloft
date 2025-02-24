@@ -47,14 +47,13 @@ function RecordList({ records, categories, onRecordUpdate }) {
 
     // filterCriteria に応じて records をフィルタリングする
     useEffect(() => {
-        const { groupFilter, categoryFilter, activityNameFilter } = filterCriteria;
+        const { groupFilter, activityNameFilter } = filterCriteria;
         let filtered = records.filter((record) => {
             const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
-            const categoryMatch = categoryFilter ? String(record.activity_category_id) === categoryFilter : true;
             const nameMatch = activityNameFilter
                 ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
                 : true;
-            return groupMatch && categoryMatch && nameMatch;
+            return groupMatch && nameMatch;
         });
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
