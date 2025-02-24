@@ -1,9 +1,8 @@
 from app import create_app, db
-from app.models import Category, Activity, Record, ActivityGroup, ActivityUnitType
+from app.models import Activity, Record, ActivityGroup, ActivityUnitType
 import datetime
 import os
 from dotenv import load_dotenv
-
 
 app = create_app()
 
@@ -12,50 +11,42 @@ with app.app_context():
     load_dotenv()
     db_file = os.environ.get("APP_DB_PATH", os.path.join(app.instance_path, 'app.db'))
     db_file = os.path.expanduser(db_file)
-    
+
     if os.path.exists(db_file):
         print("Database already exists. Skipping initialization.")
     else:
         # データベースが存在しない場合のみ、テーブル作成とサンプルデータの挿入を実行
         db.create_all()
-        
+
         # グループの生成
         study = ActivityGroup(name="study")
         game = ActivityGroup(name="game")
         workout = ActivityGroup(name="workout")
         db.session.add_all([study, game, workout])
         db.session.commit()
-        
-        # サンプルカテゴリーの作成
-        category1 = Category(name="英語", group_id=study.id)
-        category2 = Category(name="数学", group_id=study.id)
-        category3 = Category(name="シューティング", group_id=game.id)
-        category4 = Category(name="胸", group_id=workout.id)
-        db.session.add_all([category1, category2, category3, category4])
-        db.session.commit()  # カテゴリー登録後、IDが自動採番される
 
-        # サンプルアクティビティの作成
+        # サンプルアクティビティの作成（group_id を直接指定）
         activity1 = Activity(
             name="Duolingo",
-            category_id=category1.id,
+            group_id=study.id,
             unit=ActivityUnitType.MINUTES,
             asset_key="duolingo"
         )
         activity2 = Activity(
             name="現代数理統計学",
-            category_id=category2.id,
+            group_id=study.id,
             unit=ActivityUnitType.MINUTES,
             asset_key="mmtakemura"
         )
         activity3 = Activity(
             name="スプラトゥーン3",
-            category_id=category3.id,
+            group_id=game.id,
             unit=ActivityUnitType.MINUTES,
             asset_key="splatoon3"
         )
         activity4 = Activity(
             name="プッシュアップ",
-            category_id=category4.id,
+            group_id=workout.id,
             unit=ActivityUnitType.COUNT
         )
         db.session.add_all([activity1, activity2, activity3, activity4])
