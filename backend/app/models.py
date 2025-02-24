@@ -2,6 +2,12 @@ from . import db
 import datetime
 import enum
 
+activity_tags = db.Table(
+    'activity_tags',
+    db.Column('activity_id', db.Integer, db.ForeignKey('activity.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+)
+
 class ActivityUnitType(enum.Enum):
     COUNT = "count"
     MINUTES = "minutes"
@@ -51,10 +57,39 @@ class Activity(db.Model):
     records = db.relationship('Record', back_populates='activity', lazy=True)
     group_id = db.Column(db.Integer, db.ForeignKey('activity_group.id'), nullable=False)
     group = db.relationship('ActivityGroup', backref='activities')
+    tags = db.relationship(
+        "Tag",
+        secondary=activity_tags,
+        back_populates="activities"
+    )
 
     def __repr__(self):
         unit_value = self.unit.value if self.unit is not None else None
         return f"<Activity id={self.id} name={self.name} unit={unit_value}>"
+
+class Tag(db.Model):
+    """
+    タグを記録するモデル。
+    
+    Attributes:
+        id (int): 自動採番される主キー。
+        name (str): タグの名称。
+        color (str): UI表示などに用いるタグの色。
+    """
+    __tablename__ = 'tag'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False, unique=True)
+    color = db.Column(db.String(50), nullable=True)
+    
+    activities = db.relationship(
+        "Activity",
+        secondary=activity_tags,
+        back_populates="tags"
+    )
+
+    def __repr__(self):
+        return f"<Tag id={self.id} name={self.name}>"
+    
 
 class Record(db.Model):
     """
