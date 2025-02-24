@@ -8,17 +8,22 @@ import { useFilter } from '../contexts/FilterContext';
 
 function RecordFilter({ onFilterChange, records }) {
     const { filterState, setFilterState } = useFilter();
-    const { groupFilter, activityNameFilter } = filterState;
+    const { groupFilter, tagFilter, activityNameFilter } = filterState;
 
     // グループ選択に応じた項目の選択肢
     const filteredActivityNames = useMemo(() => {
-        let recs;
+        let recs = records;
         if (groupFilter) {
             // グループが選択されている場合は、そのグループに属するレコードを抽出
             recs = records.filter(rec => String(rec.activity_group) === groupFilter);
-        } else {
-            recs = records;
         }
+        if (tagFilter) {
+            recs = recs.filter(rec => {
+                if (!rec.tags || rec.tags.length === 0) return false;
+                return rec.tags.some(t => t.name === tagFilter);
+            });
+        }
+
         // records からユニークな activity_name を抽出
         let names = Array.from(new Set(recs.map(rec => rec.activity_name)));
         // 現在の activityNameFilter が空でなく、リストに含まれていなければ追加する
@@ -26,7 +31,7 @@ function RecordFilter({ onFilterChange, records }) {
             names.push(activityNameFilter);
         }
         return names;
-    }, [records, groupFilter, activityNameFilter]);
+    }, [records, groupFilter, tagFilter, activityNameFilter]);
 
     // フィルター状態の変更を onFilterChange に通知
     useEffect(() => {

@@ -24,7 +24,7 @@ function RecordList({ records, onRecordUpdate }) {
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
-    
+
     // ----------------------------
     // Ref の宣言
     // ----------------------------
@@ -47,13 +47,16 @@ function RecordList({ records, onRecordUpdate }) {
 
     // filterCriteria に応じて records をフィルタリングする
     useEffect(() => {
-        const { groupFilter, activityNameFilter } = filterCriteria;
+        const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
         let filtered = records.filter((record) => {
             const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
+            const tagMatch = tagFilter
+                ? record.tags && record.tags.some(tag => tag.name === tagFilter)
+                : true;
             const nameMatch = activityNameFilter
                 ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
                 : true;
-            return groupMatch && nameMatch;
+            return groupMatch && tagMatch && nameMatch;
         });
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
