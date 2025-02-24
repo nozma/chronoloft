@@ -41,6 +41,7 @@ class Activity(db.Model):
         unit (enum): アクティビティの記録単位(回数または経過時間)。
         asset_key (str): Discord Developer Portalで設定した画像に対応するアセットキー。
         created_at (datetime): アクティビティ作成日時。デフォルトは現在時刻。
+        group_id: アクティビティが所属するグループのID。
     """
     id = db.Column(db.Integer, primary_key=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
@@ -51,6 +52,8 @@ class Activity(db.Model):
     asset_key = db.Column(db.String(80))
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     records = db.relationship('Record', back_populates='activity', lazy=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('activity_group.id'), nullable=False)
+    group = db.relationship('ActivityGroup', backref='activities')
 
     def __repr__(self):
         unit_value = self.unit.value if self.unit is not None else None
