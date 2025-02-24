@@ -10,17 +10,23 @@
 
     /* ツールバーのボタンの文字色を明るく */
     .rbc-toolbar button {
-        color: #CCC !important;
-    }
+        color: #999 !important;
+    }    
 
     /* ツールバーのボタンの背景色 */
     .rbc-toolbar .rbc-btn-group button {
-        background-color: #333333;
+        background-color: #1a1a1a;
         border-color: #555555;
     }
     .rbc-toolbar .rbc-btn-group .rbc-active {
-        background-color: #666;
+        background-color: rgba(255, 255, 255, 0.16);
+        color: #ccc !important;
     }
+    .rbc-toolbar .rbc-btn-group button:hover {
+        background-color: #999;
+        color: #ccc !important;
+    }
+
 
     /* 今日を示すセルの背景色 */
     .rbc-today {
@@ -30,5 +36,10 @@
     /* 罫線 */
     .rbc-calendar * {
         border-color: #555555 !important;
+    }
+
+    /* 全日イベントは表示しない */
+    .rbc-allday-cell {
+        display: none;
     }
 }
