@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from ..models import Activity, ActivityUnitType, Record
+from ..models import Activity, ActivityUnitType, Record, Tag
 from .. import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError 

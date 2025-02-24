@@ -10,6 +10,7 @@ import {
     updateActivity,
     deleteActivity,
     createRecord,
+    setActivityTags
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -86,7 +87,16 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleActivityAdded = async (activityData) => {
         try {
-            await addActivity(activityData);
+            const newActivity = await addActivity({
+                name: activityData.name,
+                group_id: activityData.group_id,
+                unit: activityData.unit,
+                asset_key: activityData.asset_key,
+                is_active: activityData.is_active
+            });
+            if (activityData.tag_ids && activityData.tag_ids.length > 0) {
+                await setActivityTags(newActivity.id, activityData.tag_ids);
+            }
             fetchActivities()
                 .then(data => setActivities(data))
                 .catch(err => setError(err.message));
@@ -313,7 +323,16 @@ function ActivityList({ onRecordUpdate, records }) {
                     onClose={() => dispatch({ type: 'SET_EDIT_DIALOG', payload: false })}
                     onSubmit={async (activityData) => {
                         try {
-                            await updateActivity(selectedActivity.id, activityData);
+                            await updateActivity(selectedActivity.id, {
+                                name: activityData.name,
+                                group_id: activityData.group_id,
+                                unit: activityData.unit,
+                                asset_key: activityData.asset_key,
+                                is_active: activityData.is_active
+                            });
+                            if (activityData.tag_ids) {
+                                await setActivityTags(selectedActivity.id, activityData.tag_ids);
+                            }
                             const updatedActivities = await fetchActivities();
                             setActivities(updatedActivities);
                             dispatch({ type: 'SET_EDIT_DIALOG', payload: false });

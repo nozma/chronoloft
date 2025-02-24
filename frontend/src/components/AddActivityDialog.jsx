@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    TextField,
+    Autocomplete,
+    Chip,
+    MenuItem
+} from '@mui/material';
 import { useGroups } from '../contexts/GroupContext';
+import { useTags } from '../contexts/TagContext';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
     const { groups } = useGroups();
+    const { tags } = useTags();
     const [name, setName] = useState('');
     const [groupId, setGroupId] = useState('');
     const [unit, setUnit] = useState('count');
     const [assetKey, setAssetKey] = useState('');
     const [isActive, setIsActive] = useState(true);
+    const [selectedTags, setSelectedTags] = useState([]);
 
     // ダイアログが開いたとき、または initialData が更新されたときにフォームフィールドを初期化する
     useEffect(() => {
         if (initialData) {
+            console.log(initialData);
             setGroupId(initialData.group_id || '');
             setName(initialData.name || '');
             setUnit(initialData.unit || '');
             setAssetKey(initialData.asset_key || '');
             setIsActive(String(initialData.is_active) || '');
+            setSelectedTags(initialData.tags || []);
         } else {
             // 新規登録の場合は初期値にリセット
             setGroupId('');
@@ -30,6 +40,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
             setUnit('minutes');
             setAssetKey('');
             setIsActive(true);
+            setSelectedTags([]);
         }
     }, [initialData, open]);
 
@@ -38,7 +49,16 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
             alert("Group と Name は必須です。");
             return;
         }
-        onSubmit({ name: name, group_id: groupId, unit: unit, asset_key: assetKey, is_active: (isActive === 'true') });
+        const tagIds = selectedTags.map(t => t.id);
+        onSubmit({
+            name: name,
+            group_id: groupId,
+            unit: unit,
+            asset_key: assetKey,
+            is_active: (isActive === 'true'),
+            tag_ids: tagIds,
+        });
+        console.log(tagIds);
         setName('');
         setGroupId('');
         setUnit('minutes');
@@ -100,6 +120,33 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
                     fullWidth
                     value={assetKey}
                     onChange={(e) => setAssetKey(e.target.value)}
+                />
+                <Autocomplete
+                    multiple
+                    options={tags}
+                    getOptionLabel={(option) => option.name}
+                    value={selectedTags}
+                    onChange={(event, newValue) => {
+                        setSelectedTags(newValue);
+                    }}
+                    renderTags={(value, getTagProps) =>
+                        value.map((option, index) => {
+                            const tagProps = getTagProps({ index });
+                            const { key, ...other } = tagProps;
+                            return (
+                                <Chip
+                                    key={option.id}
+                                    {...other}
+                                    label={option.name}
+                                    style={{ backgroundColor: option.color || '#ccc' }}
+                                />
+                            );
+                        })
+                    }
+                    renderInput={(params) => (
+                        <TextField {...params} variant="outlined" label="Tags" placeholder="Select multiple tags" />
+                    )}
+                    sx={{ mt: 2 }}
                 />
             </DialogContent>
             <DialogActions>

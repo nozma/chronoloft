@@ -41,15 +41,9 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
             return false;
         }
         // タグフィルタ: activity に紐づくタグのIDが一つでも tagFilter に含まれていれば表示
-        if (tagFilter && tagFilter.length > 0) {
-            if (!act.tags || act.tags.length === 0) {
-                return false;
-            }
-            // act.tags は [{id, name, color}, ...] の想定
+        if (tagFilter) {
             const activityTagIds = act.tags.map(t => t.id);
-            // OR条件: tagFilterのいずれかがactivityTagIdsに含まれていればtrue
-            const matches = tagFilter.some(tagId => activityTagIds.includes(tagId));
-            return matches;
+            return activityTagIds.includes(Number(tagFilter));
         }
         return true;
     });
@@ -129,7 +123,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                             const tagFilter = e.currentTarget.value;
                             setFilterState(prev => ({
                                 ...prev,
-                                tagFilter: tagFilter || [],
+                                tagFilter: tagFilter || ``,
                             }));
                         }}
                         multiple
@@ -139,13 +133,14 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                             All
                         </ToggleButton>
                         {tags.map(tag => (
-                            <ToggleButton key={tag.id} value={tag.id}>
+                            <ToggleButton key={tag.id} value={tag.name}>
                                 {tag.name}
                             </ToggleButton>
                         ))}
                     </StyledToggleButtonGroup>
                     {!state.showGrid && !stopwatchVisible && (
                         <IconButton
+                            onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                             sx={{
                                 opacity: 0,
                                 transition: 'opacity 0.2s',
