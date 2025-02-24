@@ -5,8 +5,10 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import { useGroups } from '../contexts/GroupContext';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
+    const { groups } = useGroups();
     const [name, setName] = useState('');
     const [groupId, setGroupId] = useState('');
     const [unit, setUnit] = useState('count');
@@ -16,12 +18,14 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
     // ダイアログが開いたとき、または initialData が更新されたときにフォームフィールドを初期化する
     useEffect(() => {
         if (initialData) {
+            setGroupId(initialData.group_id || '');
             setName(initialData.name || '');
             setUnit(initialData.unit || '');
             setAssetKey(initialData.asset_key || '');
             setIsActive(String(initialData.is_active) || '');
         } else {
             // 新規登録の場合は初期値にリセット
+            setGroupId('');
             setName('');
             setUnit('minutes');
             setAssetKey('');
@@ -31,7 +35,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
 
     const handleSubmit = () => {
         if (!name || !groupId) {
-            alert("Name と Group は必須です。");
+            alert("Group と Name は必須です。");
             return;
         }
         onSubmit({ name: name, group_id: groupId, unit: unit, asset_key: assetKey, is_active: (isActive === 'true') });
@@ -53,9 +57,23 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
                     select
                     value={String(isActive)}
                     onChange={(e) => setIsActive(e.target.value)}
-                    >
+                >
                     <MenuItem key="true" value="true" >Active</MenuItem>
                     <MenuItem key="false" value="false" >Inactive</MenuItem>
+                </TextField>
+                <TextField
+                    select
+                    margin="dense"
+                    label="Group"
+                    fullWidth
+                    value={groupId}
+                    onChange={(e) => setGroupId(e.target.value)}
+                >
+                    {groups.map((g) => (
+                        <MenuItem key={g.id} value={g.id}>
+                            {g.name}
+                        </MenuItem>
+                    ))}
                 </TextField>
                 <TextField
                     autoFocus

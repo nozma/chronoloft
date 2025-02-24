@@ -68,7 +68,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const { setFilterState } = useFilter();
 
     // -----------------------------------------------------------------
-    // API 呼び出し: アクティビティとカテゴリ、グループの取得
+    // API 呼び出し: アクティビティとグループの取得
     // -----------------------------------------------------------------
     useEffect(() => {
         fetchActivities()
@@ -135,7 +135,7 @@ function ActivityList({ onRecordUpdate, records }) {
     // activity を選択して開始する処理（分の場合は累計時間計算を利用）
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
-        
+
         if (activity.unit === 'minutes') {
             // もし現在のストップウォッチが動いていて、かつ現在の selectedActivity が別の minutes アクティビティなら
             // 既存記録を作成してストップウォッチとDiscord接続を一旦停止する。
@@ -205,6 +205,10 @@ function ActivityList({ onRecordUpdate, records }) {
             field: 'is_active',
             headerName: 'State',
             valueFormatter: (params) => { return (params ? "Active" : "Inactive") }
+        },
+        {
+            field: 'group_name',
+            headerName: 'Group',
         },
         {
             field: 'name',
