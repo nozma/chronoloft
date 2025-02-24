@@ -58,7 +58,8 @@ function RecordCalendar({ records }) {
             localizer.format(start, 'M/d') +
             ' - ' +
             localizer.format(end, 'M/d'),
-        agendaDateFormat: 'M/d(EEE)'
+        agendaDateFormat: 'M/d(EEE)',
+        eventTimeRangeFormat: () => ''
     }), [])
 
     return (
