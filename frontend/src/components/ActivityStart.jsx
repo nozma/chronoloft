@@ -40,10 +40,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
         if (groupFilter && act.group_name !== groupFilter) {
             return false;
         }
-        // タグフィルタ: activity に紐づくタグのIDが一つでも tagFilter に含まれていれば表示
+        // タグフィルタ
         if (tagFilter) {
-            const activityTagIds = act.tags.map(t => t.id);
-            return activityTagIds.includes(Number(tagFilter));
+            const activityTag = act.tags.map(t => t.name);
+            return activityTag.includes(tagFilter);
         }
         return true;
     });
