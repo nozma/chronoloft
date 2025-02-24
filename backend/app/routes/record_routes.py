@@ -18,10 +18,13 @@ def get_records():
                 'value': rec.value,
                 'created_at': rec.created_at.isoformat(),
                 'unit': rec.activity.unit.value if rec.activity and rec.activity.unit else None,
+                # カテゴリは後で消す
                 'activity_category': rec.activity.category.name if rec.activity and rec.activity.category else None,
                 'activity_category_id': rec.activity.category.id if rec.activity and rec.activity.category else None,
+                # ---
                 'activity_name': rec.activity.name if rec.activity else None,
-                'activity_group': rec.activity.category.group.name if rec.activity.category.group else None,
+                'activity_group': rec.activity.group.name if rec.activity and rec.activity.group else None,
+                'activity_group_id': rec.activity.group_id if rec.activity else None,
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
