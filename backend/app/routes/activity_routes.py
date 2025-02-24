@@ -20,9 +20,17 @@ def get_activities():
 
         result = []
         for activity, last_record in activities_with_last:
+            tag_list = []
+            for t in activity.tags:
+                tag_list.append({
+                    'id': t.id,
+                    'name': t.name,
+                    'color': t.color
+                })
             result.append({
                 'id': activity.id,
                 'name': activity.name,
+                'tags': tag_list,  # ここで付与
                 'is_active': activity.is_active,
                 'group_id': activity.group_id,
                 'group_name': activity.group.name if activity.group else None,
@@ -109,3 +117,30 @@ def delete_activity(activity_id):
         db.session.rollback()
         # 外部キー制約により削除できない場合のエラーメッセージを返す
         return jsonify({'error': 'Cannot delete activity: associated records exist.'}), 400
+
+# タグの管理
+@activity_bp.route('/api/activities/<int:activity_id>/tags', methods=['PUT'])
+def set_activity_tags(activity_id):
+    """ リクエストボディ: {'tag_ids': [1, 3, 5]} など """
+    data = request.get_json()
+    if not data or 'tag_ids' not in data:
+        return jsonify({'error': 'tag_ids is required'}), 400
+
+    activity = Activity.query.get(activity_id)
+    if not activity:
+        return jsonify({'error': 'Activity not found'}), 404
+
+    # 受け取ったタグIDリストを元にタグを再構築
+    new_tag_ids = data['tag_ids']
+    new_tags = Tag.query.filter(Tag.id.in_(new_tag_ids)).all()
+
+    # アクティビティに紐づけるタグを上書き (一旦全部クリアして追加)
+    activity.tags.clear()
+    activity.tags.extend(new_tags)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'Tags updated successfully'}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500    
