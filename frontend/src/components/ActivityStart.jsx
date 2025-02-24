@@ -11,28 +11,21 @@ import ToggleButtonGroup, {
     toggleButtonGroupClasses,
 } from '@mui/material/ToggleButtonGroup';
 import GroupManagementDialog from './GroupManagementDialog';
+import TagManagementDialog from './TagManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
+import { useTags } from '../contexts/TagContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
+    const { tags } = useTags();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
-    const { groupFilter } = filterState;
-
-    // アクティビティに対するフィルターの適用
-    const activeActivities = activities.filter((act) => act.is_active);
-    const filteredActivities = groupFilter
-        ? activeActivities.filter((act) => act.group_name === groupFilter)
-        : activeActivities;
-
-    // 最近使用した項目を取得
-    const recentActivities = filteredActivities.slice(0, 5);
-    const remainingActivities = filteredActivities.slice(5);
+    const { groupFilter, tagFilter } = filterState;
 
     const handleAutocompleteChange = (event, newValue) => {
         if (newValue) {
@@ -40,6 +33,29 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
             setShowAutocomplete(false);
         }
     };
+
+    // アクティビティに対するフィルターの適用
+    const filteredActivities = activities.filter(act => {
+        // グループフィルタ
+        if (groupFilter && act.group_name !== groupFilter) {
+            return false;
+        }
+        // タグフィルタ: activity に紐づくタグのIDが一つでも tagFilter に含まれていれば表示
+        if (tagFilter && tagFilter.length > 0) {
+            if (!act.tags || act.tags.length === 0) {
+                return false;
+            }
+            // act.tags は [{id, name, color}, ...] の想定
+            const activityTagIds = act.tags.map(t => t.id);
+            // OR条件: tagFilterのいずれかがactivityTagIdsに含まれていればtrue
+            const matches = tagFilter.some(tagId => activityTagIds.includes(tagId));
+            return matches;
+        }
+        return true;
+    });
+    // 最近使用した項目を取得
+    const recentActivities = filteredActivities.slice(0, 5);
+    const remainingActivities = filteredActivities.slice(5);
 
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
@@ -62,6 +78,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     return (
         <>
             <Box sx={{ mb: 3 }}>
+                {/* グループフィルタ */}
                 <Typography variant='caption' color='#cccccc'>Group</Typography>
                 <Box>
                     <ToggleButtonGroup
@@ -100,6 +117,47 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                     )}
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
+
+                {/* タグフィルタ */}
+                <Typography variant='caption' color='#cccccc'>Tags</Typography>
+                <Box>
+                    <StyledToggleButtonGroup
+                        value={tagFilter}
+                        exclusive
+                        size='small'
+                        onChange={(e) => {
+                            const tagFilter = e.currentTarget.value;
+                            setFilterState(prev => ({
+                                ...prev,
+                                tagFilter: tagFilter || [],
+                            }));
+                        }}
+                        multiple
+                        sx={{ mb: 1, mr: 1 }}
+                    >
+                        <ToggleButton value="" aria-label="All">
+                            All
+                        </ToggleButton>
+                        {tags.map(tag => (
+                            <ToggleButton key={tag.id} value={tag.id}>
+                                {tag.name}
+                            </ToggleButton>
+                        ))}
+                    </StyledToggleButtonGroup>
+                    {!state.showGrid && !stopwatchVisible && (
+                        <IconButton
+                            sx={{
+                                opacity: 0,
+                                transition: 'opacity 0.2s',
+                                '&:hover': { opacity: 1 },
+                            }}>
+                            <SettingsIcon />
+                        </IconButton>
+                    )}
+                    <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
+                </Box>
+
+                {/* アクティビティ表示 */}
                 {!state.showGrid && (
                     <>
                         <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>

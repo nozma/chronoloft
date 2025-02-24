@@ -4,6 +4,7 @@ export const initialUIState = {
     editDialogOpen: false,
     confirmDialogOpen: false,
     recordDialogOpen: false,
+    tagDialogOpen: false,
   };
   
   export function uiReducer(state, action) {
@@ -12,6 +13,8 @@ export const initialUIState = {
         return { ...state, showGrid: action.payload };
       case 'SET_GROUP_DIALOG':
         return { ...state, groupDialogOpen: action.payload };
+      case 'SET_TAG_DIALOG':
+        return { ...state, tagDialogOpen: action.payload };
       case 'SET_EDIT_DIALOG':
         return { ...state, editDialogOpen: action.payload };
       case 'SET_CONFIRM_DIALOG':

@@ -11,6 +11,7 @@ import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
 import { GroupProvider } from './contexts/GroupContext';
 import { FilterProvider } from './contexts/FilterContext';
 import { UIProvider } from './contexts/UIContext';
+import { TagProvider } from './contexts/TagContext';
 
 function App() {
     // カラーテーマ対応
@@ -62,18 +63,20 @@ function App() {
             >
                 <CssBaseline />
                 <GroupProvider>
-                    <UIProvider>
-                        <FilterProvider>
-                            <ActiveActivityProvider>
-                                <div>
-                                    <h2>Activity Tracker</h2>
-                                    <ActivityList onRecordUpdate={updateRecords} records={records} />
-                                    <h2>History</h2>
-                                    <RecordList records={records} onRecordUpdate={updateRecords} />
-                                </div>
-                            </ActiveActivityProvider>
-                        </FilterProvider>
-                    </UIProvider>
+                    <TagProvider>
+                        <UIProvider>
+                            <FilterProvider>
+                                <ActiveActivityProvider>
+                                    <div>
+                                        <h2>Activity Tracker</h2>
+                                        <ActivityList onRecordUpdate={updateRecords} records={records} />
+                                        <h2>History</h2>
+                                        <RecordList records={records} onRecordUpdate={updateRecords} />
+                                    </div>
+                                </ActiveActivityProvider>
+                            </FilterProvider>
+                        </UIProvider>
+                    </TagProvider>
                 </GroupProvider>
             </Box>
         </ThemeProvider>

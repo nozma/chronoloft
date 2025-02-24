@@ -173,3 +173,77 @@ export async function stopDiscordPresence(data) {
     return response.json();
 }
 
+/**
+ * タグ一覧を取得
+ */
+export async function fetchTags() {
+    const response = await fetch('/api/tags');
+    if (!response.ok) {
+        throw new Error(`Failed to fetch tags: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
+ * 新規タグを作成
+ * @param {Object} tagData - { name: string, color?: string }
+ */
+export async function createTag(tagData) {
+    const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tagData),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to create tag: ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
+ * タグを更新
+ * @param {number} tagId
+ * @param {Object} updateData - { name?: string, color?: string }
+ */
+export async function updateTag(tagId, updateData) {
+    const response = await fetch(`/api/tags/${tagId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to update tag (id=${tagId}): ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
+ * タグを削除
+ * @param {number} tagId
+ */
+export async function deleteTag(tagId) {
+    const response = await fetch(`/api/tags/${tagId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to delete tag (id=${tagId}): ${response.statusText}`);
+    }
+    return response.json();
+}
+
+/**
+ * アクティビティに対するタグのセット・更新
+ * @param {number} activityId
+ * @param {number[]} tagIds
+ */
+export async function setActivityTags(activityId, tagIds) {
+    const response = await fetch(`/api/activities/${activityId}/tags`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tag_ids: tagIds }),
+    });
+    if (!response.ok) {
+        throw new Error(`Failed to set tags for activity (id=${activityId}): ${response.statusText}`);
+    }
+    return response.json();
+}

@@ -6,6 +6,7 @@ export function FilterProvider({ children }) {
   const [filterState, setFilterState] = useState({
     groupFilter: ``,
     activityNameFilter: ``,
+    tagFilter: [],
   });
 
   return (
