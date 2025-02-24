@@ -27,7 +27,6 @@ const CustomEventWrapper = ({ event, children }) => {
             title={tooltipContent}
             arrow
             followCursor
-            disablePortal  
             placement="top"
         >
             <div>{children}</div>
