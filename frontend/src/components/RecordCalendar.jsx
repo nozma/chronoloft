@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar } from 'react-big-calendar';
 import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
@@ -51,6 +51,16 @@ function RecordCalendar({ records }) {
         setEvents(eventsData);
     }, [records, groups]);
 
+    const formats = useMemo(() => ({
+        dayHeaderFormat: 'yyyy/MM/dd (EEE)',
+        monthHeaderFormat: 'yyyy/M',
+        dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
+            localizer.format(start, 'M/d') +
+            ' - ' +
+            localizer.format(end, 'M/d'),
+        agendaDateFormat: 'M/d(EEE)'
+    }), [])
+
     return (
         <div style={{ height: '800px', margin: '20px' }}>
             <Calendar
@@ -62,13 +72,16 @@ function RecordCalendar({ records }) {
                 onView={(view) => setCurrentView(view)}
                 startAccessor="start"
                 endAccessor="end"
-                views={['day', 'week']}
-                step={15}
+                views={['day', 'week', 'month', 'agenda']}
+                step={30}
                 timeslots={2}
                 style={{ height: 800 }}
                 titleAccessor="title"
+                formats={formats}
                 components={{ eventWrapper: CustomEvent }}
                 dayLayoutAlgorithm={'no-overlap'}
+                showAllEvents
+                culture='ja'
                 eventPropGetter={(event) => ({
                     style: {
                         backgroundColor: event.groupColor || '#3174ad', // fallback color
