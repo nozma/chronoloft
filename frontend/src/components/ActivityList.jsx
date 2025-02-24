@@ -34,7 +34,6 @@ import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useGroups } from '../contexts/GroupContext';
-import { useCategories } from '../contexts/CategoryContext';
 import { useUI } from '../contexts/UIContext';
 
 // カスタムフック
@@ -46,7 +45,6 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
     const { groups } = useGroups();
-    const { categories } = useCategories();
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -144,7 +142,7 @@ function ActivityList({ onRecordUpdate, records }) {
             if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
                 const details = calculateTimeDetails(activity.id, records);
                 const newDiscordData = {
-                    group: activity.category_group,
+                    group: activity.group_name,
                     activity_name: activity.name,
                     details: details,
                     asset_key: activity.asset_key || "default_image"
@@ -157,14 +155,12 @@ function ActivityList({ onRecordUpdate, records }) {
             setSelectedActivity(activity);
             setActiveActivity(activity);
             setFilterState({
-                groupFilter: activity.category_group,
-                categoryFilter: String(activity.category_id),
-                categoryFilterName: activity.category_name,
+                groupFilter: activity.group_name,
                 activityNameFilter: activity.name,
             });
             const details = calculateTimeDetails(activity.id, records);
             const data = {
-                group: activity.category_group,
+                group: activity.group_name,
                 activity_name: activity.name,
                 details: details,
                 asset_key: activity.asset_key || "default_image"
@@ -215,7 +211,7 @@ function ActivityList({ onRecordUpdate, records }) {
             headerName: 'Name',
             width: 200,
             renderCell: (params) => {
-                const groupName = params.row.category_group;
+                const groupName = params.row.group_name;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         {getIconForGroup(groupName, groups)}
@@ -224,7 +220,6 @@ function ActivityList({ onRecordUpdate, records }) {
                 );
             }
         },
-        { field: 'category_name', headerName: 'Category', width: 150 },
         {
             field: 'unit',
             headerName: 'Unit',
@@ -291,7 +286,6 @@ function ActivityList({ onRecordUpdate, records }) {
                 open={dialogOpen}
                 onClose={handleDialogClose}
                 onSubmit={handleActivityAdded}
-                categories={categories}
             />
             <ConfirmDialog
                 open={state.confirmDialogOpen}
@@ -325,7 +319,6 @@ function ActivityList({ onRecordUpdate, records }) {
                         }
                     }}
                     initialData={selectedActivity}
-                    categories={categories}
                 />
             )}
             {state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
@@ -376,7 +369,7 @@ function ActivityList({ onRecordUpdate, records }) {
                     }}
                     discordData={discordData}
                     activityName={selectedActivity.name}
-                    activityGroup={selectedActivity.category_group}
+                    activityGroup={selectedActivity.group_name}
                 />
             )}
         </div>

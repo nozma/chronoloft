@@ -6,7 +6,7 @@ import { Box } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useFilter } from '../contexts/FilterContext';
 
-function RecordFilter({ categories, onFilterChange, records }) {
+function RecordFilter({ onFilterChange, records }) {
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, activityNameFilter } = filterState;
 
@@ -26,7 +26,7 @@ function RecordFilter({ categories, onFilterChange, records }) {
             names.push(activityNameFilter);
         }
         return names;
-    }, [records, groupFilter, categories, activityNameFilter]);
+    }, [records, groupFilter, activityNameFilter]);
 
     // フィルター状態の変更を onFilterChange に通知
     useEffect(() => {

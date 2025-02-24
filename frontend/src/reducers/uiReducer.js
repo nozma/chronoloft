@@ -1,6 +1,5 @@
 export const initialUIState = {
     showGrid: false,
-    categoryDialogOpen: false,
     groupDialogOpen: false,
     editDialogOpen: false,
     confirmDialogOpen: false,
@@ -11,8 +10,6 @@ export const initialUIState = {
     switch (action.type) {
       case 'SET_SHOW_GRID':
         return { ...state, showGrid: action.payload };
-      case 'SET_CATEGORY_DIALOG':
-        return { ...state, categoryDialogOpen: action.payload };
       case 'SET_GROUP_DIALOG':
         return { ...state, groupDialogOpen: action.payload };
       case 'SET_EDIT_DIALOG':

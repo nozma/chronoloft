@@ -24,11 +24,6 @@ def get_activities():
                 'id': activity.id,
                 'name': activity.name,
                 'is_active': activity.is_active,
-                # category系は後で消す
-                'category_id': activity.category_id,
-                'category_name': activity.category.name if activity.category else None,
-                'category_group': activity.category.group.name if activity.category.group else None,
-                # ---
                 'group_id': activity.group_id,
                 'group_name': activity.group.name if activity.group else None,
                 'unit': activity.unit.value if activity.unit else None,

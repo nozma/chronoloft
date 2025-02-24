@@ -28,7 +28,7 @@ def discord_presence_start():
         DISCORD_MANAGERS[group] = manager
         return jsonify({'message': 'Discord presence started'}), 200
     except Exception as e:
-        current_app.logger.error("Error in add_category: %s", e, exc_info=True)
+        current_app.logger.error("Error in discord_presence: %s", e, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @discord_bp.route('/api/discord_presence/stop', methods=['POST'])
@@ -45,6 +45,6 @@ def discord_presence_stop():
             del DISCORD_MANAGERS[group]
             return jsonify({'message': 'Discord presence stopped'}), 200
         except Exception as e:
-            current_app.logger.error("Error in add_category: %s", e, exc_info=True)
+            current_app.logger.error("Error in discord_presence: %s", e, exc_info=True)
             return jsonify({'error': str(e)}), 500
     return jsonify({'error': 'No manager found'}), 400

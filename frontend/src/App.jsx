@@ -6,10 +6,9 @@ import RecordList from './components/RecordList';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { fetchRecords, fetchCategories } from './services/api';
+import { fetchRecords } from './services/api';
 import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
 import { GroupProvider } from './contexts/GroupContext';
-import { CategoryProvider } from './contexts/CategoryContext';
 import { FilterProvider } from './contexts/FilterContext';
 import { UIProvider } from './contexts/UIContext';
 
@@ -33,7 +32,6 @@ function App() {
     );
 
     const [records, setRecords] = useState([]);
-    const [categories, setCategories] = useState([]);
 
 
     // 初回または更新時に最新のレコード一覧を取得する関数
@@ -47,20 +45,9 @@ function App() {
         }
     };
 
-    // カテゴリ一覧を取得する関数
-    const updateCategories = async () => {
-        try {
-            const data = await fetchCategories();
-            setCategories([...data]);
-        } catch (error) {
-            console.error("Failed to fetch categories:", error);
-        }
-    };
-
     // 初回取得
     useEffect(() => {
         updateRecords();
-        updateCategories();
     }, []);
 
     return (
@@ -75,20 +62,18 @@ function App() {
             >
                 <CssBaseline />
                 <GroupProvider>
-                    <CategoryProvider>
-                        <UIProvider>
-                            <FilterProvider>
-                                <ActiveActivityProvider>
-                                    <div>
-                                        <h2>Activity Tracker</h2>
-                                        <ActivityList onRecordUpdate={updateRecords} records={records} />
-                                        <h2>History</h2>
-                                        <RecordList records={records} categories={categories} onRecordUpdate={updateRecords} />
-                                    </div>
-                                </ActiveActivityProvider>
-                            </FilterProvider>
-                        </UIProvider>
-                    </CategoryProvider>
+                    <UIProvider>
+                        <FilterProvider>
+                            <ActiveActivityProvider>
+                                <div>
+                                    <h2>Activity Tracker</h2>
+                                    <ActivityList onRecordUpdate={updateRecords} records={records} />
+                                    <h2>History</h2>
+                                    <RecordList records={records} onRecordUpdate={updateRecords} />
+                                </div>
+                            </ActiveActivityProvider>
+                        </FilterProvider>
+                    </UIProvider>
                 </GroupProvider>
             </Box>
         </ThemeProvider>

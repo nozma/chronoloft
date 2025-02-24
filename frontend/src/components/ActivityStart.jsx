@@ -11,10 +11,8 @@ import ToggleButtonGroup, {
     toggleButtonGroupClasses,
 } from '@mui/material/ToggleButtonGroup';
 import GroupManagementDialog from './GroupManagementDialog';
-import CategoryManagementDialog from './CategoryManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
-import { useCategories } from '../contexts/CategoryContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -22,22 +20,15 @@ import { styled } from '@mui/material/styles';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
-    const { categories } = useCategories();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter } = filterState;
 
-    // カテゴリーに対するフィルターの適用
-    const filterdCategories = groupFilter
-        ? categories.filter((category) => category.group_name === groupFilter)
-        : categories
-
     // アクティビティに対するフィルターの適用
     const activeActivities = activities.filter((act) => act.is_active);
     const filteredActivities = groupFilter
-        ? activeActivities.filter((act) => act.category_group === groupFilter)
+        ? activeActivities.filter((act) => act.group_name === groupFilter)
         : activeActivities;
-
 
     // 最近使用した項目を取得
     const recentActivities = filteredActivities.slice(0, 5);
@@ -109,25 +100,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                     )}
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
-                <Box>
-                    {!state.showGrid && !stopwatchVisible && (
-                        <IconButton
-                            variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
-                            sx={{
-                                opacity: 0,
-                                transition: 'opacity 0.3s',
-                                '&:hover': { opacity: 1 },
-                            }}
-                        >
-                            <SettingsIcon />
-                        </IconButton>
-                    )}
-                </Box>
                 {!state.showGrid && (
                     <>
                         <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
                         <Box>
-                            <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
                             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                 {recentActivities.map(activity => (
                                     <Button
@@ -141,7 +117,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                             borderRadius: 5,
                                             boxShadow: 2,
                                         }}
-                                        startIcon={getIconForGroup(activity.category_group, groups)}
+                                        startIcon={getIconForGroup(activity.group_name, groups)}
                                     >
                                         {activity.name}
                                     </Button>
@@ -153,7 +129,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                         onChange={handleAutocompleteChange}
                                         renderOption={(props, option) => (
                                             <li {...props}>
-                                                {getIconForGroup(option.category_group, groups)}
+                                                {getIconForGroup(option.group_name, groups)}
                                                 {option.name}
                                             </li>
                                         )}
@@ -164,16 +140,18 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                         size='small'
                                     />
                                 )}
-                                <IconButton
-                                    variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
-                                    sx={{
-                                        opacity: 0,
-                                        transition: 'opacity 0.3s',
-                                        '&:hover': { opacity: 1 },
-                                    }}
-                                >
-                                    <SettingsIcon />
-                                </IconButton>
+                                {!state.showGrid && !stopwatchVisible && (
+                                    <IconButton
+                                        variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                        sx={{
+                                            opacity: 0,
+                                            transition: 'opacity 0.3s',
+                                            '&:hover': { opacity: 1 },
+                                        }}
+                                    >
+                                        <SettingsIcon />
+                                    </IconButton>
+                                )}
                             </Box>
                         </Box>
                     </>

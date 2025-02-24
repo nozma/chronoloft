@@ -6,9 +6,9 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 
-function AddActivityDialog({ open, onClose, onSubmit, initialData, categories }) {
+function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
     const [name, setName] = useState('');
-    const [categoryId, setCategoryId] = useState('');
+    const [groupId, setGroupId] = useState('');
     const [unit, setUnit] = useState('count');
     const [assetKey, setAssetKey] = useState('');
     const [isActive, setIsActive] = useState(true);
@@ -17,14 +17,12 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, categories })
     useEffect(() => {
         if (initialData) {
             setName(initialData.name || '');
-            setCategoryId(initialData.category_id || '');
             setUnit(initialData.unit || '');
             setAssetKey(initialData.asset_key || '');
             setIsActive(String(initialData.is_active) || '');
         } else {
             // 新規登録の場合は初期値にリセット
             setName('');
-            setCategoryId('');
             setUnit('minutes');
             setAssetKey('');
             setIsActive(true);
@@ -32,14 +30,13 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, categories })
     }, [initialData, open]);
 
     const handleSubmit = () => {
-        if (!name || !categoryId) {
-            alert("Name と Category は必須です。");
+        if (!name || !groupId) {
+            alert("Name と Group は必須です。");
             return;
         }
-        console.log(categoryId)
-        onSubmit({ name: name, category_id: categoryId, unit: unit, asset_key: assetKey, is_active: (isActive === 'true') });
+        onSubmit({ name: name, group_id: groupId, unit: unit, asset_key: assetKey, is_active: (isActive === 'true') });
         setName('');
-        setCategoryId('');
+        setGroupId('');
         setUnit('minutes');
         setAssetKey('');
         setIsActive(true);
@@ -68,20 +65,6 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, categories })
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                 />
-                <TextField
-                    select
-                    margin="dense"
-                    label="Category"
-                    fullWidth
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                >
-                    {categories.map((cat) => (
-                        <MenuItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                        </MenuItem>
-                    ))}
-                </TextField>
                 <TextField
                     select
                     margin="dense"
