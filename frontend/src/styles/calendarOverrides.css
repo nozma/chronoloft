@@ -1,4 +1,20 @@
+/* 全日イベントは表示しない */
+.rbc-allday-cell {
+    display: none;
+}
+
+/* Agenda ビューの日付部分の背景色と文字色をリセット */
+.rbc-agenda-date-cell {
+    background-color: #fff !important;
+    color: #1a1a1a !important;
+}
+
 @media (prefers-color-scheme: dark) {
+    /* Agenda ビューの日付部分の背景色と文字色をリセット */
+    .rbc-agenda-date-cell {
+        background-color: #1a1a1a !important;
+        color: inherit !important;
+    }
 
     /* 日付、時刻表示のテキスト色 */
     .rbc-toolbar-label,
@@ -11,17 +27,19 @@
     /* ツールバーのボタンの文字色を明るく */
     .rbc-toolbar button {
         color: #999 !important;
-    }    
+    }
 
     /* ツールバーのボタンの背景色 */
     .rbc-toolbar .rbc-btn-group button {
         background-color: #1a1a1a;
         border-color: #555555;
     }
+
     .rbc-toolbar .rbc-btn-group .rbc-active {
         background-color: rgba(255, 255, 255, 0.16);
         color: #ccc !important;
     }
+
     .rbc-toolbar .rbc-btn-group button:hover {
         background-color: #999;
         color: #ccc !important;
@@ -36,10 +54,5 @@
     /* 罫線 */
     .rbc-calendar * {
         border-color: #555555 !important;
-    }
-
-    /* 全日イベントは表示しない */
-    .rbc-allday-cell {
-        display: none;
     }
 }
