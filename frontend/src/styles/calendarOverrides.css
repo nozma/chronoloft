@@ -1,5 +1,9 @@
 /* 全日イベントは表示しない */
-.rbc-allday-cell {
+.rbc-allday-cell,
+/* Agenda表示のTimeカラムは表示しない */
+.rbc-agenda-time-cell,
+.rbc-agenda-view > table > thead > tr > th:nth-child(2) 
+{
     display: none;
 }
 
