@@ -165,10 +165,10 @@ function ActivityList({ onRecordUpdate, records }) {
             // ストップウォッチを起動し、Discord連携を開始する
             setSelectedActivity(activity);
             setActiveActivity(activity);
-            setFilterState({
-                groupFilter: activity.group_name,
+            setFilterState(prev => ({
+                ...prev,
                 activityNameFilter: activity.name,
-            });
+            }))
             const details = calculateTimeDetails(activity.id, records);
             const data = {
                 group: activity.group_name,
