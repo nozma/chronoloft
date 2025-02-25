@@ -12,16 +12,23 @@ def get_records():
         records = Record.query.all()
         result = []
         for rec in records:
+            tag_list = []
+            if rec.activity and rec.activity.tags:
+                tag_list = [{
+                    "id": t.id,
+                    "name": t.name,
+                    "color": t.color
+                } for t in rec.activity.tags]
             result.append({
                 'id': rec.id,
                 'activity_id': rec.activity_id,
                 'value': rec.value,
                 'created_at': rec.created_at.isoformat(),
                 'unit': rec.activity.unit.value if rec.activity and rec.activity.unit else None,
-                'activity_category': rec.activity.category.name if rec.activity and rec.activity.category else None,
-                'activity_category_id': rec.activity.category.id if rec.activity and rec.activity.category else None,
                 'activity_name': rec.activity.name if rec.activity else None,
-                'activity_group': rec.activity.category.group.name if rec.activity.category.group else None,
+                'activity_group': rec.activity.group.name if rec.activity and rec.activity.group else None,
+                'activity_group_id': rec.activity.group_id if rec.activity else None,
+                'tags': tag_list
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:

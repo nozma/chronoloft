@@ -13,7 +13,7 @@ import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import RecordCalendar from './RecordCalendar';
 
-function RecordList({ records, categories, onRecordUpdate }) {
+function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 状態管理
     // ----------------------------
@@ -24,7 +24,7 @@ function RecordList({ records, categories, onRecordUpdate }) {
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
-    
+
     // ----------------------------
     // Ref の宣言
     // ----------------------------
@@ -47,14 +47,16 @@ function RecordList({ records, categories, onRecordUpdate }) {
 
     // filterCriteria に応じて records をフィルタリングする
     useEffect(() => {
-        const { groupFilter, categoryFilter, activityNameFilter } = filterCriteria;
+        const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
         let filtered = records.filter((record) => {
             const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
-            const categoryMatch = categoryFilter ? String(record.activity_category_id) === categoryFilter : true;
+            const tagMatch = tagFilter
+                ? record.tags && record.tags.some(tag => tag.name === tagFilter)
+                : true;
             const nameMatch = activityNameFilter
                 ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
                 : true;
-            return groupMatch && categoryMatch && nameMatch;
+            return groupMatch && tagMatch && nameMatch;
         });
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
@@ -123,8 +125,8 @@ function RecordList({ records, categories, onRecordUpdate }) {
             valueFormatter: (params) => formatToLocal(params)
         },
         {
-            field: 'activity_category',
-            headerName: 'カテゴリ',
+            field: 'group_name',
+            headerName: 'グループ',
             width: 150,
         },
         {
@@ -178,14 +180,12 @@ function RecordList({ records, categories, onRecordUpdate }) {
             <div style={{ width: '100%' }}>
                 <RecordFilter
                     groups={groups}
-                    categories={categories}
                     onFilterChange={handleFilterChange}
                     records={records}
                 />
                 <RecordHeatmap
                     records={filteredRecords}
                     groups={groups}
-                    categories={categories}
                     unitFilter={filterCriteria.unit}
                 />
                 <RecordCalendar records={records} />

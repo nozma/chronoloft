@@ -11,40 +11,20 @@ import ToggleButtonGroup, {
     toggleButtonGroupClasses,
 } from '@mui/material/ToggleButtonGroup';
 import GroupManagementDialog from './GroupManagementDialog';
-import CategoryManagementDialog from './CategoryManagementDialog';
+import TagManagementDialog from './TagManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
-import { useCategories } from '../contexts/CategoryContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
+import { useMemo } from 'react';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
-    const { categories } = useCategories();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
-    const { groupFilter, categoryFilter, categoryFilterName } = filterState;
-
-    // カテゴリーに対するフィルターの適用
-    const filterdCategories = groupFilter
-        ? categories.filter((category) => category.group_name === groupFilter)
-        : categories
-
-    // アクティビティに対するフィルターの適用
-    const activeActivities = activities.filter((act) => act.is_active);
-    const groupFilteredActivities = groupFilter
-        ? activeActivities.filter((act) => act.category_group === groupFilter)
-        : activeActivities;
-    const filteredActivities = categoryFilter
-        ? groupFilteredActivities.filter((act) => act.category_id === parseInt(categoryFilter))
-        : groupFilteredActivities
-
-
-    // 最近使用した項目を取得
-    const recentActivities = filteredActivities.slice(0, 5);
-    const remainingActivities = filteredActivities.slice(5);
+    const { groupFilter, tagFilter } = filterState;
 
     const handleAutocompleteChange = (event, newValue) => {
         if (newValue) {
@@ -52,6 +32,42 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
             setShowAutocomplete(false);
         }
     };
+
+    // アクティビティに対するフィルターの適用
+    const filteredActivities = activities.filter(act => {
+        // グループフィルタ
+        if (groupFilter && act.group_name !== groupFilter) {
+            return false;
+        }
+        // タグフィルタ
+        if (tagFilter) {
+            const activityTag = act.tags.map(t => t.name);
+            return activityTag.includes(tagFilter);
+        }
+        return true;
+    });
+    // タグに対するフィルターの適用
+    const filteredTags = useMemo(() => {
+        const encountered = new Set();
+        const result = [];
+
+        for (const act of filteredActivities) {
+            if (!act.tags) continue;
+            for (const t of act.tags) {
+                // 初めて出現したタグだけ追加 => 先頭のアクティビティほど最近
+                if (!encountered.has(t.name)) {
+                    encountered.add(t.name);
+                    result.push(t.name);
+                }
+            }
+        }
+        return result;
+    }, [filteredActivities]);
+
+
+    // 最近使用した項目を取得
+    const recentActivities = filteredActivities.slice(0, 5);
+    const remainingActivities = filteredActivities.slice(5);
 
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
@@ -74,6 +90,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     return (
         <>
             <Box sx={{ mb: 3 }}>
+                {/* グループフィルタ */}
                 <Typography variant='caption' color='#cccccc'>Group</Typography>
                 <Box>
                     <ToggleButtonGroup
@@ -83,8 +100,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         onChange={(e) => {
                             setFilterState({
                                 groupFilter: e.target.value,
-                                categoryFilter: ``,
-                                categoryFilterName: ``,
                                 activityNameFilter: ``,
                             });
                         }}
@@ -114,53 +129,52 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                     )}
                     <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                 </Box>
-                <Typography variant='caption' color='#cccccc'>Category</Typography>
+
+                {/* タグフィルタ */}
+                <Typography variant='caption' color='#cccccc'>Tag</Typography>
                 <Box>
                     <StyledToggleButtonGroup
-                        value={categoryFilterName}
+                        value={tagFilter}
                         exclusive
                         size='small'
                         onChange={(e) => {
-                            const newCatId = e.currentTarget.dataset.id;
-                            const newCatName = e.target.value;
-                            console.log(e.target.id)
+                            const tagFilter = e.currentTarget.value;
                             setFilterState(prev => ({
                                 ...prev,
-                                categoryFilter: newCatId,
-                                categoryFilterName: newCatName,
-                                activityNameFilter: ``
+                                tagFilter: tagFilter || ``,
                             }));
                         }}
-                        aria-label="Category filter"
+                        multiple
                         sx={{ mb: 1, mr: 1 }}
                     >
                         <ToggleButton value="" aria-label="All">
                             All
                         </ToggleButton>
-                        {filterdCategories.map((category) => (
-                            <ToggleButton key={category.id} value={category.name} aria-label={category.name} data-id={category.id}>
-                                {category.name}
+                        {filteredTags.map(tagName => (
+                            <ToggleButton key={tagName} value={tagName}>
+                                {tagName}
                             </ToggleButton>
                         ))}
                     </StyledToggleButtonGroup>
                     {!state.showGrid && !stopwatchVisible && (
                         <IconButton
-                            variant="contained" onClick={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: true })}
+                            onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                             sx={{
                                 opacity: 0,
-                                transition: 'opacity 0.3s',
+                                transition: 'opacity 0.2s',
                                 '&:hover': { opacity: 1 },
-                            }}
-                        >
+                            }}>
                             <SettingsIcon />
                         </IconButton>
                     )}
+                    <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
                 </Box>
+
+                {/* アクティビティ表示 */}
                 {!state.showGrid && (
                     <>
                         <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
                         <Box>
-                            <CategoryManagementDialog open={state.categoryDialogOpen} onClose={() => dispatch({ type: 'SET_CATEGORY_DIALOG', payload: false })} />
                             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                                 {recentActivities.map(activity => (
                                     <Button
@@ -174,7 +188,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                             borderRadius: 5,
                                             boxShadow: 2,
                                         }}
-                                        startIcon={getIconForGroup(activity.category_group, groups)}
+                                        startIcon={getIconForGroup(activity.group_name, groups)}
                                     >
                                         {activity.name}
                                     </Button>
@@ -186,7 +200,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                         onChange={handleAutocompleteChange}
                                         renderOption={(props, option) => (
                                             <li {...props}>
-                                                {getIconForGroup(option.category_group, groups)}
+                                                {getIconForGroup(option.group_name, groups)}
                                                 {option.name}
                                             </li>
                                         )}
@@ -197,16 +211,18 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                         size='small'
                                     />
                                 )}
-                                <IconButton
-                                    variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
-                                    sx={{
-                                        opacity: 0,
-                                        transition: 'opacity 0.3s',
-                                        '&:hover': { opacity: 1 },
-                                    }}
-                                >
-                                    <SettingsIcon />
-                                </IconButton>
+                                {!state.showGrid && !stopwatchVisible && (
+                                    <IconButton
+                                        variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                        sx={{
+                                            opacity: 0,
+                                            transition: 'opacity 0.3s',
+                                            '&:hover': { opacity: 1 },
+                                        }}
+                                    >
+                                        <SettingsIcon />
+                                    </IconButton>
+                                )}
                             </Box>
                         </Box>
                     </>

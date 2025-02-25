@@ -10,6 +10,7 @@ import {
     updateActivity,
     deleteActivity,
     createRecord,
+    setActivityTags
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -18,7 +19,8 @@ import {
     Snackbar,
     Alert,
     Box,
-    IconButton
+    IconButton,
+    Chip
 } from '@mui/material';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
@@ -30,11 +32,9 @@ import ActivityStart from './ActivityStart';
 // ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
-import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useGroups } from '../contexts/GroupContext';
-import { useCategories } from '../contexts/CategoryContext';
 import { useUI } from '../contexts/UIContext';
 
 // カスタムフック
@@ -46,7 +46,6 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
     const { groups } = useGroups();
-    const { categories } = useCategories();
     const [activities, setActivities] = useState([]);
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -70,7 +69,7 @@ function ActivityList({ onRecordUpdate, records }) {
     const { setFilterState } = useFilter();
 
     // -----------------------------------------------------------------
-    // API 呼び出し: アクティビティとカテゴリ、グループの取得
+    // API 呼び出し: アクティビティとグループの取得
     // -----------------------------------------------------------------
     useEffect(() => {
         fetchActivities()
@@ -88,7 +87,16 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleActivityAdded = async (activityData) => {
         try {
-            await addActivity(activityData);
+            const newActivity = await addActivity({
+                name: activityData.name,
+                group_id: activityData.group_id,
+                unit: activityData.unit,
+                asset_key: activityData.asset_key,
+                is_active: activityData.is_active
+            });
+            if (activityData.tag_ids && activityData.tag_ids.length > 0) {
+                await setActivityTags(newActivity.id, activityData.tag_ids);
+            }
             fetchActivities()
                 .then(data => setActivities(data))
                 .catch(err => setError(err.message));
@@ -124,7 +132,7 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleSnackbarClose = () => setSnackbarOpen(false);
 
-    const processRowUpdate = async (newRow, oldRow) => {
+    const processRowUpdate = async (newRow) => {
         try {
             await updateActivity(newRow.id, newRow);
             return newRow;
@@ -137,14 +145,14 @@ function ActivityList({ onRecordUpdate, records }) {
     // activity を選択して開始する処理（分の場合は累計時間計算を利用）
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
-        
+
         if (activity.unit === 'minutes') {
             // もし現在のストップウォッチが動いていて、かつ現在の selectedActivity が別の minutes アクティビティなら
             // 既存記録を作成してストップウォッチとDiscord接続を一旦停止する。
             if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
                 const details = calculateTimeDetails(activity.id, records);
                 const newDiscordData = {
-                    group: activity.category_group,
+                    group: activity.group_name,
                     activity_name: activity.name,
                     details: details,
                     asset_key: activity.asset_key || "default_image"
@@ -156,15 +164,13 @@ function ActivityList({ onRecordUpdate, records }) {
             // ストップウォッチを起動し、Discord連携を開始する
             setSelectedActivity(activity);
             setActiveActivity(activity);
-            setFilterState({
-                groupFilter: activity.category_group,
-                categoryFilter: String(activity.category_id),
-                categoryFilterName: activity.category_name,
+            setFilterState(prev => ({
+                ...prev,
                 activityNameFilter: activity.name,
-            });
+            }))
             const details = calculateTimeDetails(activity.id, records);
             const data = {
-                group: activity.category_group,
+                group: activity.group_name,
                 activity_name: activity.name,
                 details: details,
                 asset_key: activity.asset_key || "default_image"
@@ -211,11 +217,10 @@ function ActivityList({ onRecordUpdate, records }) {
             valueFormatter: (params) => { return (params ? "Active" : "Inactive") }
         },
         {
-            field: 'name',
-            headerName: 'Name',
-            width: 200,
+            field: 'group_name',
+            headerName: 'Group',
             renderCell: (params) => {
-                const groupName = params.row.category_group;
+                const groupName = params.row.group_name;
                 return (
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         {getIconForGroup(groupName, groups)}
@@ -224,7 +229,11 @@ function ActivityList({ onRecordUpdate, records }) {
                 );
             }
         },
-        { field: 'category_name', headerName: 'Category', width: 150 },
+        {
+            field: 'name',
+            headerName: 'Name',
+            width: 200,
+        },
         {
             field: 'unit',
             headerName: 'Unit',
@@ -235,6 +244,31 @@ function ActivityList({ onRecordUpdate, records }) {
             }
         },
         { field: 'asset_key', headerName: 'Asset Key', width: 150 },
+        {
+            field: 'tags',
+            headerName: 'Tags',
+            width: 200,
+            renderCell: (params) => {
+                const tags = params.row.tags || [];
+                if (!tags.length) return null;
+                return (
+                    <div>
+                        {tags.map(tag => (
+                            <Chip
+                                key={tag.id}
+                                label={tag.name}
+                                size="small"
+                                sx={{
+                                    backgroundColor: tag.color || '#ccc',
+                                    color: '#fff',
+                                    mr: 1
+                                }}
+                            />
+                        ))}
+                    </div>
+                );
+            }
+        },
         {
             field: 'actions',
             headerName: 'Actions',
@@ -291,7 +325,6 @@ function ActivityList({ onRecordUpdate, records }) {
                 open={dialogOpen}
                 onClose={handleDialogClose}
                 onSubmit={handleActivityAdded}
-                categories={categories}
             />
             <ConfirmDialog
                 open={state.confirmDialogOpen}
@@ -315,7 +348,16 @@ function ActivityList({ onRecordUpdate, records }) {
                     onClose={() => dispatch({ type: 'SET_EDIT_DIALOG', payload: false })}
                     onSubmit={async (activityData) => {
                         try {
-                            await updateActivity(selectedActivity.id, activityData);
+                            await updateActivity(selectedActivity.id, {
+                                name: activityData.name,
+                                group_id: activityData.group_id,
+                                unit: activityData.unit,
+                                asset_key: activityData.asset_key,
+                                is_active: activityData.is_active
+                            });
+                            if (activityData.tag_ids) {
+                                await setActivityTags(selectedActivity.id, activityData.tag_ids);
+                            }
                             const updatedActivities = await fetchActivities();
                             setActivities(updatedActivities);
                             dispatch({ type: 'SET_EDIT_DIALOG', payload: false });
@@ -325,7 +367,6 @@ function ActivityList({ onRecordUpdate, records }) {
                         }
                     }}
                     initialData={selectedActivity}
-                    categories={categories}
                 />
             )}
             {state.recordDialogOpen && selectedActivity && selectedActivity.unit === 'count' && (
@@ -376,7 +417,7 @@ function ActivityList({ onRecordUpdate, records }) {
                     }}
                     discordData={discordData}
                     activityName={selectedActivity.name}
-                    activityGroup={selectedActivity.category_group}
+                    activityGroup={selectedActivity.group_name}
                 />
             )}
         </div>

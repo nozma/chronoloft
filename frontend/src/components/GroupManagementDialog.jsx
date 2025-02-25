@@ -34,8 +34,8 @@ function GroupManagementDialog({ open, onClose }) {
             await addActivityGroup({
                 name: newGroupName,
                 client_id: newClientId,
-                icon_name: newIconName,    // 追加
-                icon_color: newIconColor,  // 追加
+                icon_name: newIconName,
+                icon_color: newIconColor,
             });
             const updated = await fetchActivityGroups();
             setGroups(updated);
