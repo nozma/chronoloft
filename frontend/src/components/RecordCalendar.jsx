@@ -7,7 +7,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 import { useGroups } from '../contexts/GroupContext';
 import CustomEvent from './CalendarCustomEvent';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Collapse } from '@mui/material';
+import { useUI } from '../contexts/UIContext';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -48,6 +50,7 @@ function RecordCalendar({ records }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState('week');
+    const { state: uiState, dispatch: uiDispatch } = useUI();
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
@@ -105,8 +108,24 @@ function RecordCalendar({ records }) {
     }), [])
 
     return (
-        <>
-            <Typography variant='caption' color='#cccccc'>Calendar</Typography>
+        <Box sx={{mb:1}}>
+            <Typography
+                variant='caption'
+                color='#cccccc'
+                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                onClick={() => uiDispatch({ type: 'SET_CALENDAR_OPEN', payload: !uiState.calendarOpen })}
+            >
+                Calendar
+                <KeyboardArrowRightIcon
+                    fontSize='small'
+                    sx={{
+                        transition: 'transform 0.15s linear',
+                        transform: uiState.calendarOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                        marginLeft: '4px'
+                    }}
+                />
+            </Typography>
+            <Collapse in={uiState.calendarOpen}>
             <Box sx={{ height: '800px', margin: '20px' }}>
                 <Calendar
                     localizer={localizer}
@@ -138,7 +157,8 @@ function RecordCalendar({ records }) {
                     })}
                 />
             </Box>
-        </>
+            </Collapse>
+        </Box>
     );
 }
 
