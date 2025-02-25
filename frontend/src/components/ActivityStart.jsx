@@ -16,14 +16,12 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
-import { useTags } from '../contexts/TagContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
 import { useMemo } from 'react';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
-    const { tags } = useTags();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
@@ -50,14 +48,22 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     });
     // タグに対するフィルターの適用
     const filteredTags = useMemo(() => {
-        const tagSet = new Set();
-        filteredActivities.forEach(act => {
-            if (act.tags) {
-                act.tags.forEach(tag => tagSet.add(tag.name));
+        const encountered = new Set();
+        const result = [];
+
+        for (const act of filteredActivities) {
+            if (!act.tags) continue;
+            for (const t of act.tags) {
+                // 初めて出現したタグだけ追加 => 先頭のアクティビティほど最近
+                if (!encountered.has(t.name)) {
+                    encountered.add(t.name);
+                    result.push(t.name);
+                }
             }
-        });
-        return Array.from(tagSet); // 配列化
+        }
+        return result;
     }, [filteredActivities]);
+    console.log(filteredActivities)
     console.log(filteredTags)
 
 
