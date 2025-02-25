@@ -1,29 +1,28 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
 import { Box, Button, Collapse, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import RecordFilter from './RecordFilter';
 import RecordHeatmap from './RecordHeatmap';
-import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import RecordCalendar from './RecordCalendar';
+import { useGroups } from '../contexts/GroupContext';
 
 function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 状態管理
     // ----------------------------
-    const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
+    const { groups } = useGroups();
 
     // ----------------------------
     // Ref の宣言
@@ -34,32 +33,6 @@ function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 副作用（useEffect）
     // ----------------------------
-    // groups を API から取得する
-    const [groups, setGroups] = useState([]);
-    useEffect(() => {
-        fetchActivityGroups()
-            .then(data => setGroups(data))
-            .catch(err => {
-                console.error("Failed to fetch groups:", err);
-                setError("グループの取得に失敗しました。");
-            });
-    }, []);
-
-    // filterCriteria に応じて records をフィルタリングする
-    useEffect(() => {
-        const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
-        let filtered = records.filter((record) => {
-            const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
-            const tagMatch = tagFilter
-                ? record.tags && record.tags.some(tag => tag.name === tagFilter)
-                : true;
-            const nameMatch = activityNameFilter
-                ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
-                : true;
-            return groupMatch && tagMatch && nameMatch;
-        });
-        setFilteredRecords(filtered);
-    }, [filterCriteria, records, activeActivity]);
 
     // ----------------------------
     // イベントハンドラ
@@ -109,10 +82,6 @@ function RecordList({ records, onRecordUpdate }) {
             throw error;
         }
     };
-
-    const handleFilterChange = useCallback((newCriteria) => {
-        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
-    }, [dispatch]);
 
     // ----------------------------
     // DataGrid の列定義
@@ -178,13 +147,8 @@ function RecordList({ records, onRecordUpdate }) {
         <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
             <div style={{ width: '100%' }}>
-                <RecordFilter
-                    groups={groups}
-                    onFilterChange={handleFilterChange}
-                    records={records}
-                />
                 <RecordHeatmap
-                    records={filteredRecords}
+                    records={records}
                     groups={groups}
                     unitFilter={filterCriteria.unit}
                 />

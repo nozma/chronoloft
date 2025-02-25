@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { format } from 'date-fns';
+import RecordFilter from './RecordFilter';
+import useRecordListState from '../hooks/useRecordListState';
+import { useGroups } from '../contexts/GroupContext';
+import { useActiveActivity } from '../contexts/ActiveActivityContext';
 
-function RecordHeatmap({ records, unitFilter }) {
+function RecordHeatmap({ records }) {
     const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
+    const { state, dispatch } = useRecordListState();
+    const { filterCriteria } = state;
+    const { groups } = useGroups();
+    const { activeActivity } = useActiveActivity();
+    const [filteredRecords, setFilteredRecords] = useState([]);
 
     // UI用: モード切替用ハンドラー
     const handleModeChange = (event, newMode) => {
@@ -16,11 +25,31 @@ function RecordHeatmap({ records, unitFilter }) {
         }
     };
 
+    const handleFilterChange = useCallback((newCriteria) => {
+        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [dispatch]);
+
+    // filterCriteria に応じて records をフィルタリングする
+    useEffect(() => {
+        const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
+        let filtered = records.filter((record) => {
+            const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
+            const tagMatch = tagFilter
+                ? record.tags && record.tags.some(tag => tag.name === tagFilter)
+                : true;
+            const nameMatch = activityNameFilter
+                ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
+                : true;
+            return groupMatch && tagMatch && nameMatch;
+        });
+        setFilteredRecords(filtered);
+    }, [filterCriteria, records, activeActivity]);
+
     useEffect(() => {
         // 過去365日分に絞り込む
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 365);
-        const recentRecords = records.filter(rec => new Date(rec.created_at) >= cutoff);
+        const recentRecords = filteredRecords.filter(rec => new Date(rec.created_at) >= cutoff);
 
         // 日別にレコードを集計する
         const grouped = {};
@@ -81,7 +110,7 @@ function RecordHeatmap({ records, unitFilter }) {
             return { ...item, level };
         });
         setHeatmapData(dataWithLevel);
-    }, [records, displayMode]);
+    }, [filteredRecords, displayMode]);
 
     // heatmapData 全体の count 合計を算出
     const totalCount = heatmapData.reduce((sum, item) => sum + item.count, 0);
@@ -123,6 +152,11 @@ function RecordHeatmap({ records, unitFilter }) {
         <Box sx={{ mb: 4 }}>
             {heatmapData.length > 0 ? (
                 <>
+                    <RecordFilter
+                        groups={groups}
+                        onFilterChange={handleFilterChange}
+                        records={records}
+                    />
                     <ActivityCalendar
                         data={heatmapData}
                         blockSize={15}
