@@ -18,7 +18,7 @@ function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 状態管理
     // ----------------------------
-    const [error, setError] = useState(null);
+    const [error] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
