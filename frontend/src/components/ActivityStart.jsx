@@ -19,6 +19,7 @@ import { useUI } from '../contexts/UIContext';
 import { useTags } from '../contexts/TagContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { styled } from '@mui/material/styles';
+import { useMemo } from 'react';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
@@ -47,6 +48,19 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
         }
         return true;
     });
+    // タグに対するフィルターの適用
+    const filteredTags = useMemo(() => {
+        const tagSet = new Set();
+        filteredActivities.forEach(act => {
+            if (act.tags) {
+                act.tags.forEach(tag => tagSet.add(tag.name));
+            }
+        });
+        return Array.from(tagSet); // 配列化
+    }, [filteredActivities]);
+    console.log(filteredTags)
+
+
     // 最近使用した項目を取得
     const recentActivities = filteredActivities.slice(0, 5);
     const remainingActivities = filteredActivities.slice(5);
@@ -132,9 +146,9 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         <ToggleButton value="" aria-label="All">
                             All
                         </ToggleButton>
-                        {tags.map(tag => (
-                            <ToggleButton key={tag.id} value={tag.name}>
-                                {tag.name}
+                        {filteredTags.map(tagName => (
+                            <ToggleButton key={tagName} value={tagName}>
+                                {tagName}
                             </ToggleButton>
                         ))}
                     </StyledToggleButtonGroup>
