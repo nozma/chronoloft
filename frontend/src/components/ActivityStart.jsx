@@ -63,8 +63,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
         }
         return result;
     }, [filteredActivities]);
-    console.log(filteredActivities)
-    console.log(filteredTags)
 
 
     // 最近使用した項目を取得
