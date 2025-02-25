@@ -7,6 +7,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 import { useGroups } from '../contexts/GroupContext';
 import CustomEvent from './CalendarCustomEvent';
+import { Box, Typography } from '@mui/material';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -104,37 +105,40 @@ function RecordCalendar({ records }) {
     }), [])
 
     return (
-        <div style={{ height: '800px', margin: '20px' }}>
-            <Calendar
-                localizer={localizer}
-                events={events}
-                date={currentDate}
-                view={currentView}
-                onNavigate={(date) => setCurrentDate(date)}
-                onView={(view) => setCurrentView(view)}
-                startAccessor="start"
-                endAccessor="end"
-                views={['day', 'week', 'month', 'agenda']}
-                step={30}
-                timeslots={2}
-                style={{ height: 800 }}
-                titleAccessor="title"
-                formats={formats}
-                components={{ eventWrapper: CustomEvent }}
-                dayLayoutAlgorithm={'no-overlap'}
-                showAllEvents
-                culture='ja'
-                eventPropGetter={(event) => ({
-                    style: {
-                        backgroundColor: event.groupColor || '#3174ad', // fallback color
-                        borderRadius: '5px',
-                        opacity: 0.8,
-                        color: 'white',
-                        fontSize: '0.75em',
-                    },
-                })}
-            />
-        </div>
+        <>
+            <Typography variant='caption' color='#cccccc'>Calendar</Typography>
+            <Box sx={{ height: '800px', margin: '20px' }}>
+                <Calendar
+                    localizer={localizer}
+                    events={events}
+                    date={currentDate}
+                    view={currentView}
+                    onNavigate={(date) => setCurrentDate(date)}
+                    onView={(view) => setCurrentView(view)}
+                    startAccessor="start"
+                    endAccessor="end"
+                    views={['day', 'week', 'month', 'agenda']}
+                    step={30}
+                    timeslots={2}
+                    style={{ height: 800 }}
+                    titleAccessor="title"
+                    formats={formats}
+                    components={{ eventWrapper: CustomEvent }}
+                    dayLayoutAlgorithm={'no-overlap'}
+                    showAllEvents
+                    culture='ja'
+                    eventPropGetter={(event) => ({
+                        style: {
+                            backgroundColor: event.groupColor || '#3174ad', // fallback color
+                            borderRadius: '5px',
+                            opacity: 0.8,
+                            color: 'white',
+                            fontSize: '0.75em',
+                        },
+                    })}
+                />
+            </Box>
+        </>
     );
 }
 
