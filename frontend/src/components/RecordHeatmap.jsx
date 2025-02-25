@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import {
+    Box,
+    ToggleButton,
+    ToggleButtonGroup,
+    Typography,
+    Collapse
+} from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -8,15 +14,19 @@ import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import { useUI } from '../contexts/UIContext';
 
 function RecordHeatmap({ records }) {
     const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
-    const { state, dispatch } = useRecordListState();
-    const { filterCriteria } = state;
+    const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
+    const { filterCriteria } = recordListState;
     const { groups } = useGroups();
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
+    const [expandedHeatmap, setExpandedHeatmap] = useState(true);
+    const { state: uiState, dispatch: uiDispatch } = useUI();
 
     // UI用: モード切替用ハンドラー
     const handleModeChange = (event, newMode) => {
@@ -26,8 +36,8 @@ function RecordHeatmap({ records }) {
     };
 
     const handleFilterChange = useCallback((newCriteria) => {
-        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
-    }, [dispatch]);
+        recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [recordListDispatch]);
 
     // filterCriteria に応じて records をフィルタリングする
     useEffect(() => {
@@ -150,64 +160,81 @@ function RecordHeatmap({ records }) {
 
     return (
         <Box sx={{ mb: 4 }}>
-            <Typography variant='caption' color='#cccccc'>Heatmap</Typography>
-            {heatmapData.length > 0 ? (
-                <>
-                    <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <RecordFilter
-                            groups={groups}
-                            onFilterChange={handleFilterChange}
-                            records={records}
+            <Typography
+                variant='caption'
+                color='#cccccc'
+                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                onClick={() => uiDispatch({ type: 'SET_HEATMAP_OPEN', payload: !uiState.heatmapOpen })}
+            >
+                Heatmap
+                <KeyboardArrowRightIcon
+                    fontSize='small'
+                    sx={{
+                        transition: 'transform 0.15s linear',
+                        transform: uiState.heatmapOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                        marginLeft: '4px'
+                    }}
+                />
+            </Typography>
+            <Collapse in={uiState.heatmapOpen}>
+                {heatmapData.length > 0 ? (
+                    <>
+                        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <RecordFilter
+                                groups={groups}
+                                onFilterChange={handleFilterChange}
+                                records={records}
+                            />
+                            <ToggleButtonGroup
+                                value={displayMode}
+                                exclusive
+                                onChange={handleModeChange}
+                                size='small'
+                            >
+                                <ToggleButton value="time">Time</ToggleButton>
+                                <ToggleButton value="count">Count</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+                        <ActivityCalendar
+                            data={heatmapData}
+                            blockSize={14}
+                            blockMargin={2}
+                            fontSize={14}
+                            theme={{
+                                light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
+                                dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
+                            }}
+                            hideMonthLabels={false}
+                            showWeekdayLabels={["Mon", "Wed", "Fri"]}
+                            labels={{
+                                legend: {
+                                    less: "少",
+                                    more: "多"
+                                },
+                                totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
+                            }}
+                            renderBlock={(block, activity) => {
+                                let tooltipText;
+                                if (displayMode === 'time') {
+                                    const totalMinutes = Number(activity.count);
+                                    const hours = Math.floor(totalMinutes / 60);
+                                    const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
+                                    tooltipText = `${hours}:${minutes} on ${activity.date}`;
+                                } else {
+                                    tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
+                                }
+                                return React.cloneElement(block, {
+                                    'data-tooltip-id': 'react-tooltip',
+                                    'data-tooltip-html': tooltipText
+                                });
+                            }}
                         />
-                        <ToggleButtonGroup
-                            value={displayMode}
-                            exclusive
-                            onChange={handleModeChange}
-                            size='small'
-                        >
-                            <ToggleButton value="time">Time</ToggleButton>
-                            <ToggleButton value="count">Count</ToggleButton>
-                        </ToggleButtonGroup>
-                    </Box>
-                    <ActivityCalendar
-                        data={heatmapData}
-                        blockSize={14}
-                        blockMargin={2}
-                        fontSize={14}
-                        theme={{
-                            light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
-                            dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
-                        }}
-                        hideMonthLabels={false}
-                        showWeekdayLabels={["Mon", "Wed", "Fri"]}
-                        labels={{
-                            legend: {
-                                less: "少",
-                                more: "多"
-                            },
-                            totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
-                        }}
-                        renderBlock={(block, activity) => {
-                            let tooltipText;
-                            if (displayMode === 'time') {
-                                const totalMinutes = Number(activity.count);
-                                const hours = Math.floor(totalMinutes / 60);
-                                const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
-                                tooltipText = `${hours}:${minutes} on ${activity.date}`;
-                            } else {
-                                tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
-                            }
-                            return React.cloneElement(block, {
-                                'data-tooltip-id': 'react-tooltip',
-                                'data-tooltip-html': tooltipText
-                            });
-                        }}
-                    />
-                    <ReactTooltip id="react-tooltip" />
-                </>
-            ) : (
-                <Box>表示する記録データがありません。</Box>
-            )}
+                        <ReactTooltip id="react-tooltip" />
+                    </>
+                ) : (
+                    <Box>表示する記録データがありません。</Box>
+                )}
+            </Collapse>
         </Box>
     );
 }
