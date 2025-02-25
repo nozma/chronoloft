@@ -19,7 +19,8 @@ import {
     Snackbar,
     Alert,
     Box,
-    IconButton
+    IconButton,
+    Chip
 } from '@mui/material';
 import CustomToolbar from './CustomToolbar';
 import AddActivityDialog from './AddActivityDialog';
@@ -244,6 +245,31 @@ function ActivityList({ onRecordUpdate, records }) {
             }
         },
         { field: 'asset_key', headerName: 'Asset Key', width: 150 },
+        {
+            field: 'tags',
+            headerName: 'Tags',
+            width: 200,
+            renderCell: (params) => {
+                const tags = params.row.tags || [];
+                if (!tags.length) return null;
+                return (
+                    <div>
+                        {tags.map(tag => (
+                            <Chip
+                                key={tag.id}
+                                label={tag.name}
+                                size="small"
+                                sx={{
+                                    backgroundColor: tag.color || '#ccc',
+                                    color: '#fff',
+                                    mr: 1
+                                }}
+                            />
+                        ))}
+                    </div>
+                );
+            }
+        },
         {
             field: 'actions',
             headerName: 'Actions',

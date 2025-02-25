@@ -133,7 +133,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                 </Box>
 
                 {/* タグフィルタ */}
-                <Typography variant='caption' color='#cccccc'>Tags</Typography>
+                <Typography variant='caption' color='#cccccc'>Tag</Typography>
                 <Box>
                     <StyledToggleButtonGroup
                         value={tagFilter}
