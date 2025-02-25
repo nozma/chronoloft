@@ -32,7 +32,6 @@ import ActivityStart from './ActivityStart';
 // ユーティリティとコンテキスト
 import getIconForGroup from '../utils/getIconForGroup';
 import { calculateTimeDetails } from '../utils/timeUtils';
-import { formatToLocal } from '../utils/dateUtils';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useGroups } from '../contexts/GroupContext';
@@ -133,7 +132,7 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleSnackbarClose = () => setSnackbarOpen(false);
 
-    const processRowUpdate = async (newRow, oldRow) => {
+    const processRowUpdate = async (newRow) => {
         try {
             await updateActivity(newRow.id, newRow);
             return newRow;
