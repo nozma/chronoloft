@@ -29,7 +29,9 @@ export function uiReducer(state, action) {
         case 'SET_CALENDAR_OPEN':
             return { ...state, calendarOpen: action.payload };
         case 'SET_RECORDS_OPEN':
-            return { ...state, recordsOpen: action.payload};
+            return { ...state, recordsOpen: action.payload };
+        case 'UPDATE_UI':
+            return { ...state, ...action.payload };
         default:
             return state;
     }

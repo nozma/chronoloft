@@ -145,6 +145,42 @@ function RecordList({ records, onRecordUpdate }) {
         <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
             <div style={{ width: '100%' }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                    <Typography
+                        variant='caption'
+                        color='#ccc'
+                        onClick={() =>
+                            uiDispatch({
+                                type: 'UPDATE_UI',
+                                payload: {
+                                    recordsOpen: true,
+                                    heatmapOpen: true,
+                                    calendarOpen: true,
+                                }
+                            })
+                        }
+                        sx={{cursor: 'pointer'}}
+                    >
+                        Open All
+                    </Typography>
+                    <Typography
+                        variant='caption'
+                        color='#ccc'
+                        onClick={() =>
+                            uiDispatch({
+                                type: 'UPDATE_UI',
+                                payload: {
+                                    recordsOpen: false,
+                                    heatmapOpen: false,
+                                    calendarOpen: false,
+                                }
+                            })
+                        }
+                        sx={{cursor: 'pointer'}}
+                    >
+                        Close All
+                    </Typography>
+                </Box>
                 <RecordHeatmap
                     records={records}
                     groups={groups}
