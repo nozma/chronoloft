@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
+import { updateRecord, deleteRecord } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
-import { Box, Button, Collapse, IconButton } from '@mui/material';
+import { Box, Button, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RecordHeatmap from './RecordHeatmap';
@@ -11,28 +11,25 @@ import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import RecordCalendar from './RecordCalendar';
 import { useGroups } from '../contexts/GroupContext';
+import { useUI } from '../contexts/UIContext';
 
 function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 状態管理
     // ----------------------------
-    const [filteredRecords, setFilteredRecords] = useState([]);
     const [error, setError] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { groups } = useGroups();
+    const { state: uiState, dispatch: uiDispatch } = useUI();
 
     // ----------------------------
     // Ref の宣言
     // ----------------------------
     const dataGridRef = useRef(null);
     const containerRef = useRef(null);
-
-    // ----------------------------
-    // 副作用（useEffect）
-    // ----------------------------
 
     // ----------------------------
     // イベントハンドラ
@@ -202,11 +199,9 @@ function RecordList({ records, onRecordUpdate }) {
                     open={true}
                     onClose={() => setRecordToEdit(null)}
                     onSubmit={handleEditRecordSubmit}
-                    activity={recordToEdit}  // recordToEdit自体を渡す
+                    activity={recordToEdit}
                     initialValue={recordToEdit.value}
-                    // 追加：編集用の場合、登録日時（created_at）の編集フィールドを表示するため、初期値として recordToEdit.created_at を渡す
                     initialDate={recordToEdit.created_at}
-                    // ここで isEdit フラグを渡すなど、ダイアログ側で編集モードと判断できるようにする
                     isEdit={true}
                 />
             )}
