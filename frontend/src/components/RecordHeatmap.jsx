@@ -25,7 +25,6 @@ function RecordHeatmap({ records }) {
     const { groups } = useGroups();
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
-    const [expandedHeatmap, setExpandedHeatmap] = useState(true);
     const { state: uiState, dispatch: uiDispatch } = useUI();
 
     // UI用: モード切替用ハンドラー
