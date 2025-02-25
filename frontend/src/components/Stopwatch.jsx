@@ -111,14 +111,11 @@ const Stopwatch = forwardRef((props, ref) => {
 
             <Typography variant="h4">{formatTime(displayTime)}</Typography>
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                <Button variant="contained" onClick={togglePause}>
-                    {isPaused ? 'Resume' : 'Pause'}
-                </Button>
                 <Button variant="contained" color="primary" onClick={complete}>
-                    完了
+                    Done
                 </Button>
                 <Button variant="outlined" color="error" onClick={cancel}>
-                    キャンセル
+                    Cancel
                 </Button>
             </Box>
         </Box>
