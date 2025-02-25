@@ -126,7 +126,7 @@ function RecordCalendar({ records }) {
                 />
             </Typography>
             <Collapse in={uiState.calendarOpen}>
-            <Box sx={{ height: '800px', margin: '20px' }}>
+            <Box sx={{ height: '800px', m: 2 }}>
                 <Calendar
                     localizer={localizer}
                     events={events}
