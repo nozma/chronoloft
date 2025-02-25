@@ -11,8 +11,6 @@ const Stopwatch = forwardRef((props, ref) => {
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
         displayTime,
-        isPaused,
-        togglePause,
         complete,
         finishAndReset,
         cancel,
