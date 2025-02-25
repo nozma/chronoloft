@@ -7,6 +7,7 @@ export const initialUIState = {
     tagDialogOpen: false,
     heatmapOpen: true,
     calendarOpen: true,
+    recordsOpen: true,
 };
 
 export function uiReducer(state, action) {
@@ -27,6 +28,8 @@ export function uiReducer(state, action) {
             return { ...state, heatmapOpen: action.payload };
         case 'SET_CALENDAR_OPEN':
             return { ...state, calendarOpen: action.payload };
+        case 'SET_RECORDS_OPEN':
+            return { ...state, recordsOpen: action.payload};
         default:
             return state;
     }

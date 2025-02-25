@@ -2,9 +2,10 @@ import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { updateRecord, deleteRecord } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
-import { Box, Button, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import RecordHeatmap from './RecordHeatmap';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
@@ -150,17 +151,24 @@ function RecordList({ records, onRecordUpdate }) {
                     unitFilter={filterCriteria.unit}
                 />
                 <RecordCalendar records={records} />
-                {showRecords ? (
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: false })} sx={{ mb: 2 }}>
-                        閉じる
-                    </Button>
-                ) : (
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: true })} sx={{ mb: 2 }}>
-                        すべてのレコードを表示
-                    </Button>
-                )}
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_RECORDS_OPEN', payload: !uiState.recordsOpen })}
+                >
+                    Records
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.recordsOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
                 <Collapse
-                    in={showRecords}
+                    in={uiState.recordsOpen}
                     timeout={{ enter: 0, exit: 200 }}
                     onEntered={() => {
                         if (dataGridRef.current) {
@@ -168,7 +176,7 @@ function RecordList({ records, onRecordUpdate }) {
                         }
                     }}
                 >
-                    <Box ref={dataGridRef} sx={{ height: 400, width: '100%', mb: 2 }}>
+                    <Box ref={dataGridRef} sx={{ height: 800, m: 2 }}>
                         <DataGrid
                             rows={records}
                             columns={columns}
