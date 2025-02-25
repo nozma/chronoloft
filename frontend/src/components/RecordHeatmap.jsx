@@ -158,7 +158,7 @@ function RecordHeatmap({ records }) {
             : `${totalCount7.toFixed(0)} times / 7d`;
 
     return (
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 1 }}>
             <Typography
                 variant='caption'
                 color='#cccccc'
@@ -177,7 +177,7 @@ function RecordHeatmap({ records }) {
             </Typography>
             <Collapse in={uiState.heatmapOpen}>
                 {heatmapData.length > 0 ? (
-                    <>
+                    <Box sx={{ mb: 2}}>
                         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <RecordFilter
                                 groups={groups}
@@ -229,7 +229,7 @@ function RecordHeatmap({ records }) {
                             }}
                         />
                         <ReactTooltip id="react-tooltip" />
-                    </>
+                    </Box>
                 ) : (
                     <Box>表示する記録データがありません。</Box>
                 )}
