@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
@@ -135,31 +135,43 @@ function RecordHeatmap({ records }) {
     // displayMode に応じた表示フォーマット
     const totalCountLabel =
         displayMode === 'time'
-            ? `${Math.floor(totalCount / 60)}時間/年`
-            : `${totalCount.toFixed(0)} 回/年`;
+            ? `${Math.floor(totalCount / 60)} h / year`
+            : `${totalCount.toFixed(0)} times / year`;
 
     const totalCountLabel30 =
         displayMode === 'time'
-            ? `${Math.floor(totalCount30 / 60)}時間/30日`
-            : `${totalCount30.toFixed(0)} 回/30日`;
+            ? `${Math.floor(totalCount30 / 60)} h / 30d`
+            : `${totalCount30.toFixed(0)} times / 30d`;
 
     const totalCountLabel7 =
         displayMode === 'time'
-            ? `${Math.floor(totalCount7 / 60)}時間${(totalCount7 % 60).toFixed(0)}分/7日`
-            : `${totalCount7.toFixed(0)} 回/7日`;
+            ? `${Math.floor(totalCount7 / 60)}:${(totalCount7 % 60).toFixed(0)} / 7d`
+            : `${totalCount7.toFixed(0)} times / 7d`;
 
     return (
         <Box sx={{ mb: 4 }}>
+            <Typography variant='caption' color='#cccccc'>Heatmap</Typography>
             {heatmapData.length > 0 ? (
                 <>
-                    <RecordFilter
-                        groups={groups}
-                        onFilterChange={handleFilterChange}
-                        records={records}
-                    />
+                    <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <RecordFilter
+                            groups={groups}
+                            onFilterChange={handleFilterChange}
+                            records={records}
+                        />
+                        <ToggleButtonGroup
+                            value={displayMode}
+                            exclusive
+                            onChange={handleModeChange}
+                            size='small'
+                        >
+                            <ToggleButton value="time">Time</ToggleButton>
+                            <ToggleButton value="count">Count</ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
                     <ActivityCalendar
                         data={heatmapData}
-                        blockSize={15}
+                        blockSize={14}
                         blockMargin={2}
                         fontSize={14}
                         theme={{
@@ -180,10 +192,10 @@ function RecordHeatmap({ records }) {
                             if (displayMode === 'time') {
                                 const totalMinutes = Number(activity.count);
                                 const hours = Math.floor(totalMinutes / 60);
-                                const minutes = Math.round(totalMinutes % 60);
-                                tooltipText = `${hours}時間${minutes}分 on ${activity.date}`;
+                                const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
+                                tooltipText = `${hours}:${minutes} on ${activity.date}`;
                             } else {
-                                tooltipText = `${Number(activity.count).toFixed(0)} 回 on ${activity.date}`;
+                                tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
                             }
                             return React.cloneElement(block, {
                                 'data-tooltip-id': 'react-tooltip',
@@ -192,17 +204,6 @@ function RecordHeatmap({ records }) {
                         }}
                     />
                     <ReactTooltip id="react-tooltip" />
-                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                        <ToggleButtonGroup
-                            value={displayMode}
-                            exclusive
-                            onChange={handleModeChange}
-                            sx={{ height: 30 }}
-                        >
-                            <ToggleButton value="time">時間で表示</ToggleButton>
-                            <ToggleButton value="count">回数で表示</ToggleButton>
-                        </ToggleButtonGroup>
-                    </Box>
                 </>
             ) : (
                 <Box>表示する記録データがありません。</Box>

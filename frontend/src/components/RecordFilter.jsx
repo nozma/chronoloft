@@ -47,11 +47,13 @@ function RecordFilter({ onFilterChange, records }) {
     };
 
     return (
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mt: 1 }}>
             <TextField
                 label="Activity"
                 select
+                variant='outlined'
                 size='small'
+                color='primary'
                 value={activityNameFilter}
                 onChange={(e) => {
                     setFilterState(prev => ({ ...prev, activityNameFilter: e.target.value }));
