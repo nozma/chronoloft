@@ -89,9 +89,43 @@ function RecordingInterface({ onRecordUpdate, records }) {
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
-            <Typography variant="h5" sx={{ mb: 2 }}>
-                Record Your Activity
-            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'baseline' }}>
+                <Typography variant="h5" sx={{ mr: 2 }}>
+                    Record Your Activity
+                </Typography>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: true,
+                                tagOpen: true,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Open All
+                </Typography>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: false,
+                                tagOpen: false,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Close All
+                </Typography>
+            </Box>
             <ActivityStart
                 activities={activities}
                 onStart={handleStartRecordFromSelect}

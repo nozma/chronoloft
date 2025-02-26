@@ -91,40 +91,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
 
     return (
         <>
-            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: true,
-                                tagOpen: true,
-                            }
-                        })
-                    }
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Open All
-                </Typography>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: false,
-                                tagOpen: false,
-                            }
-                        })
-                    }
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Close All
-                </Typography>
-            </Box>
             <Box sx={{ mb: 3 }}>
                 {/* グループフィルタ */}
                 <Typography
