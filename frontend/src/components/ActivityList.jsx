@@ -5,12 +5,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 // API 関連
 import {
-    fetchActivities,
-    addActivity,
-    updateActivity,
-    deleteActivity,
-    createRecord,
-    setActivityTags
+    createRecord
 } from '../services/api';
 
 // カスタムコンポーネント
@@ -34,6 +29,7 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
+import { useActivities } from '../contexts/ActivityContext';
 
 // カスタムフック
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -44,8 +40,13 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 function ActivityList({ onRecordUpdate, records }) {
     // 通常の状態管理
     const { groups } = useGroups();
-    const [activities, setActivities] = useState([]);
-    const [error, setError] = useState(null);
+    const {
+        activities,
+        createActivity,
+        modifyActivity,
+        removeActivity,
+        refreshActivities
+    } = useActivities();
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [preFilledValue, setPreFilledValue] = useState(null);
@@ -65,17 +66,6 @@ function ActivityList({ onRecordUpdate, records }) {
     const { setFilterState } = useFilter();
 
     // -----------------------------------------------------------------
-    // API 呼び出し: アクティビティとグループの取得
-    // -----------------------------------------------------------------
-    useEffect(() => {
-        fetchActivities()
-            .then(data => setActivities(data))
-            .catch(err => setError(err.message));
-    }, []);
-
-    if (error) return <div>Error: {error}</div>;
-
-    // -----------------------------------------------------------------
     // イベントハンドラ
     // -----------------------------------------------------------------
     const handleAddClick = () => setDialogOpen(true);
@@ -83,19 +73,7 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleActivityAdded = async (activityData) => {
         try {
-            const newActivity = await addActivity({
-                name: activityData.name,
-                group_id: activityData.group_id,
-                unit: activityData.unit,
-                asset_key: activityData.asset_key,
-                is_active: activityData.is_active
-            });
-            if (activityData.tag_ids && activityData.tag_ids.length > 0) {
-                await setActivityTags(newActivity.id, activityData.tag_ids);
-            }
-            fetchActivities()
-                .then(data => setActivities(data))
-                .catch(err => setError(err.message));
+            await createActivity(activityData);
         } catch (err) {
             console.error("Failed to add activity:", err);
         }
@@ -108,33 +86,30 @@ function ActivityList({ onRecordUpdate, records }) {
 
     const handleConfirmDelete = async () => {
         try {
-            await deleteActivity(selectedActivityId);
-            fetchActivities()
-                .then(data => setActivities(data))
-                .catch(err => setError(err.message));
+            await removeActivity(selectedActivityId);
         } catch (err) {
             console.error("Failed to delete activity:", err);
-            setSnackbarMessage(err.message);
-            setSnackbarOpen(true);
         }
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         setSelectedActivityId(null);
     };
+
 
     const handleCancelDelete = () => {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         setSelectedActivityId(null);
     };
 
-    const processRowUpdate = async (newRow) => {
+    const processRowUpdate = async (newRow, oldRow) => {
         try {
-            await updateActivity(newRow.id, newRow);
+            await modifyActivity(newRow.id, newRow);
             return newRow;
         } catch (error) {
             console.error("Failed to update activity:", error);
             throw error;
         }
     };
+
 
     // activity を選択して開始する処理（分の場合は累計時間計算を利用）
     const handleStartRecordFromSelect = async (activity) => {
@@ -193,9 +168,7 @@ function ActivityList({ onRecordUpdate, records }) {
             dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
             setPreFilledValue(null);
             onRecordUpdate();
-            fetchActivities()
-                .then(data => setActivities(data))
-                .catch(err => setError(err.message));
+            refreshActivities();
         } catch (err) {
             console.error("Failed to create record:", err);
         }
@@ -288,7 +261,11 @@ function ActivityList({ onRecordUpdate, records }) {
         <div>
             {/* アクティビティ選択（ストップウォッチ表示前） */}
             {!state.showGrid && (
-                <ActivityStart activities={activities} onStart={handleStartRecordFromSelect} stopwatchVisible={stopwatchVisible} />
+                <ActivityStart
+                    activities={activities}
+                    onStart={handleStartRecordFromSelect}
+                    stopwatchVisible={stopwatchVisible}
+                />
             )}
             {/* グリッド表示または管理画面 */}
             {!stopwatchVisible && state.showGrid && (
