@@ -16,8 +16,6 @@ import {
 // カスタムコンポーネント
 import {
     Button,
-    Snackbar,
-    Alert,
     Box,
     IconButton,
     Chip
@@ -50,8 +48,6 @@ function ActivityList({ onRecordUpdate, records }) {
     const [error, setError] = useState(null);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
-    const [snackbarMessage, setSnackbarMessage] = useState('');
     const [preFilledValue, setPreFilledValue] = useState(null);
     const stopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = useState(null);
@@ -129,8 +125,6 @@ function ActivityList({ onRecordUpdate, records }) {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         setSelectedActivityId(null);
     };
-
-    const handleSnackbarClose = () => setSnackbarOpen(false);
 
     const processRowUpdate = async (newRow) => {
         try {
@@ -333,15 +327,6 @@ function ActivityList({ onRecordUpdate, records }) {
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />
-            <Snackbar
-                open={snackbarOpen}
-                autoHideDuration={6000}
-                onClose={handleSnackbarClose}
-            >
-                <Alert onClose={handleSnackbarClose} severity="error" sx={{ width: '100%' }}>
-                    {snackbarMessage}
-                </Alert>
-            </Snackbar>
             {state.editDialogOpen && selectedActivity && (
                 <AddActivityDialog
                     open={state.editDialogOpen}

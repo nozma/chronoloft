@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Box from '@mui/material/Box';
-import ActivityList from './components/ActivityList';
+import RecordingInterface from './components/RecordingInterface';
 import RecordList from './components/RecordList';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -68,8 +68,7 @@ function App() {
                             <FilterProvider>
                                 <ActiveActivityProvider>
                                     <div>
-                                        <h2>Activity Tracker</h2>
-                                        <ActivityList onRecordUpdate={updateRecords} records={records} />
+                                        <RecordingInterface onRecordUpdate={updateRecords} records={records} />
                                         <h2>History</h2>
                                         <RecordList records={records} onRecordUpdate={updateRecords} />
                                     </div>
