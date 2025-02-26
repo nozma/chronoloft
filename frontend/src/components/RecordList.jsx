@@ -1,65 +1,36 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { updateRecord, deleteRecord, fetchActivityGroups } from '../services/api';
+import { updateRecord, deleteRecord } from '../services/api';
 import ConfirmDialog from './ConfirmDialog';
-import { Box, Button, Collapse, IconButton } from '@mui/material';
+import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import RecordFilter from './RecordFilter';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import RecordHeatmap from './RecordHeatmap';
-import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import RecordCalendar from './RecordCalendar';
+import { useGroups } from '../contexts/GroupContext';
+import { useUI } from '../contexts/UIContext';
 
 function RecordList({ records, onRecordUpdate }) {
     // ----------------------------
     // 状態管理
     // ----------------------------
-    const { activeActivity } = useActiveActivity();
-    const [filteredRecords, setFilteredRecords] = useState([]);
-    const [error, setError] = useState(null);
+    const [error] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
+    const { groups } = useGroups();
+    const { state: uiState, dispatch: uiDispatch } = useUI();
 
     // ----------------------------
     // Ref の宣言
     // ----------------------------
     const dataGridRef = useRef(null);
     const containerRef = useRef(null);
-
-    // ----------------------------
-    // 副作用（useEffect）
-    // ----------------------------
-    // groups を API から取得する
-    const [groups, setGroups] = useState([]);
-    useEffect(() => {
-        fetchActivityGroups()
-            .then(data => setGroups(data))
-            .catch(err => {
-                console.error("Failed to fetch groups:", err);
-                setError("グループの取得に失敗しました。");
-            });
-    }, []);
-
-    // filterCriteria に応じて records をフィルタリングする
-    useEffect(() => {
-        const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
-        let filtered = records.filter((record) => {
-            const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
-            const tagMatch = tagFilter
-                ? record.tags && record.tags.some(tag => tag.name === tagFilter)
-                : true;
-            const nameMatch = activityNameFilter
-                ? record.activity_name.toLowerCase() === activityNameFilter.toLowerCase()
-                : true;
-            return groupMatch && tagMatch && nameMatch;
-        });
-        setFilteredRecords(filtered);
-    }, [filterCriteria, records, activeActivity]);
 
     // ----------------------------
     // イベントハンドラ
@@ -109,10 +80,6 @@ function RecordList({ records, onRecordUpdate }) {
             throw error;
         }
     };
-
-    const handleFilterChange = useCallback((newCriteria) => {
-        dispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
-    }, [dispatch]);
 
     // ----------------------------
     // DataGrid の列定義
@@ -178,28 +145,66 @@ function RecordList({ records, onRecordUpdate }) {
         <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
             <div style={{ width: '100%' }}>
-                <RecordFilter
-                    groups={groups}
-                    onFilterChange={handleFilterChange}
-                    records={records}
-                />
+                <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                    <Typography
+                        variant='caption'
+                        color='#ccc'
+                        onClick={() =>
+                            uiDispatch({
+                                type: 'UPDATE_UI',
+                                payload: {
+                                    recordsOpen: true,
+                                    heatmapOpen: true,
+                                    calendarOpen: true,
+                                }
+                            })
+                        }
+                        sx={{cursor: 'pointer'}}
+                    >
+                        Open All
+                    </Typography>
+                    <Typography
+                        variant='caption'
+                        color='#ccc'
+                        onClick={() =>
+                            uiDispatch({
+                                type: 'UPDATE_UI',
+                                payload: {
+                                    recordsOpen: false,
+                                    heatmapOpen: false,
+                                    calendarOpen: false,
+                                }
+                            })
+                        }
+                        sx={{cursor: 'pointer'}}
+                    >
+                        Close All
+                    </Typography>
+                </Box>
                 <RecordHeatmap
-                    records={filteredRecords}
+                    records={records}
                     groups={groups}
                     unitFilter={filterCriteria.unit}
                 />
                 <RecordCalendar records={records} />
-                {showRecords ? (
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: false })} sx={{ mb: 2 }}>
-                        閉じる
-                    </Button>
-                ) : (
-                    <Button variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_RECORDS', payload: true })} sx={{ mb: 2 }}>
-                        すべてのレコードを表示
-                    </Button>
-                )}
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_RECORDS_OPEN', payload: !uiState.recordsOpen })}
+                >
+                    Records
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.recordsOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
                 <Collapse
-                    in={showRecords}
+                    in={uiState.recordsOpen}
                     timeout={{ enter: 0, exit: 200 }}
                     onEntered={() => {
                         if (dataGridRef.current) {
@@ -207,7 +212,7 @@ function RecordList({ records, onRecordUpdate }) {
                         }
                     }}
                 >
-                    <Box ref={dataGridRef} sx={{ height: 400, width: '100%', mb: 2 }}>
+                    <Box ref={dataGridRef} sx={{ height: 800, m: 2 }}>
                         <DataGrid
                             rows={records}
                             columns={columns}
@@ -238,11 +243,9 @@ function RecordList({ records, onRecordUpdate }) {
                     open={true}
                     onClose={() => setRecordToEdit(null)}
                     onSubmit={handleEditRecordSubmit}
-                    activity={recordToEdit}  // recordToEdit自体を渡す
+                    activity={recordToEdit}
                     initialValue={recordToEdit.value}
-                    // 追加：編集用の場合、登録日時（created_at）の編集フィールドを表示するため、初期値として recordToEdit.created_at を渡す
                     initialDate={recordToEdit.created_at}
-                    // ここで isEdit フラグを渡すなど、ダイアログ側で編集モードと判断できるようにする
                     isEdit={true}
                 />
             )}

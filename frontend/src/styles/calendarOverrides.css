@@ -13,6 +13,11 @@
     color: #1a1a1a !important;
 }
 
+/* スクロールバーの分だけヘッダと表示がずれる問題の対応 */
+.rbc-time-content {
+    overflow-y: scroll !important; /* 常にスクロールバーを表示 */
+}
+
 @media (prefers-color-scheme: dark) {
     /* Agenda ビューの日付部分の背景色と文字色をリセット */
     .rbc-agenda-date-cell {

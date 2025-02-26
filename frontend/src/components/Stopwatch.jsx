@@ -1,9 +1,12 @@
 import React, { forwardRef, useImperativeHandle } from 'react';
-import { Button, Typography, Box, TextField } from '@mui/material';
+import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
 import { DateTime } from 'luxon';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 const Stopwatch = forwardRef((props, ref) => {
     //function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
@@ -11,8 +14,6 @@ const Stopwatch = forwardRef((props, ref) => {
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
         displayTime,
-        isPaused,
-        togglePause,
         complete,
         finishAndReset,
         cancel,
@@ -62,8 +63,8 @@ const Stopwatch = forwardRef((props, ref) => {
 
     // 現在の開始時刻の表示（currentStartTime を利用）
     const formattedStartTime = currentStartTime
-        ? DateTime.fromMillis(currentStartTime).toFormat("yyyy-MM-dd HH:mm")
-        : "未設定";
+        ? DateTime.fromMillis(currentStartTime).toFormat("HH:mm")
+        : "Undefined";
 
     // 時間をフォーマットする関数
     const formatTime = (ms) => {
@@ -75,51 +76,48 @@ const Stopwatch = forwardRef((props, ref) => {
     };
 
     return (
-        <Box sx={{ p: 2, border: '1px solid #ccc', borderRadius: 2, textAlign: 'center' }}>
-            {/* アクティビティ名・アイコン表示 */}
-            <Typography variant="h6" sx={{ mb: 1 }}>
-                {getIconForGroup(props.activityGroup, groups)}
-                {props.activityName}
-            </Typography>
-
-            {/* 開始時刻表示と編集UI */}
+        <Box sx={{ p: 2, borderRadius: 4 }}>
             <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                {/* アクティビティ名・アイコン表示 */}
+                {getIconForGroup(props.activityGroup, groups)}
+                <Typography variant="h6" sx={{ mr: 2 }}>
+                    {props.activityName}
+                </Typography>
+                {/* 開始時刻表示と編集UI */}
                 {isEditingStartTime ? (
                     <>
                         <TextField
                             type="datetime-local"
                             value={editedStartTime}
                             onChange={(e) => setEditedStartTime(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
+                            size='small'
                         />
                         <Button onClick={handleSaveStartTime} variant="contained" color="primary">
-                            保存
+                            Save
                         </Button>
                         <Button onClick={handleCancelEditStartTime} variant="outlined">
-                            キャンセル
+                            Cancel
                         </Button>
                     </>
                 ) : (
                     <>
-                        <Typography variant="body2">開始時刻: {formattedStartTime}</Typography>
-                        <Button onClick={handleEditStartTime} variant="text" size="small">
-                            編集
-                        </Button>
+                        <Typography variant="body1">(Start Time: {formattedStartTime}</Typography>
+                        <IconButton onClick={handleEditStartTime} sx={{ m: 0 }} size='small'>
+                            <EditIcon fontSize='small' />
+                        </IconButton>
+                        <Typography variant='body1'>)</Typography>
                     </>
                 )}
             </Box>
-
-            <Typography variant="h4">{formatTime(displayTime)}</Typography>
-            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                <Button variant="contained" onClick={togglePause}>
-                    {isPaused ? 'Resume' : 'Pause'}
-                </Button>
-                <Button variant="contained" color="primary" onClick={complete}>
-                    完了
-                </Button>
-                <Button variant="outlined" color="error" onClick={cancel}>
-                    キャンセル
-                </Button>
+            {/* 経過時間と完了・キャンセルアイコン */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
+                <IconButton color="primary" onClick={complete} >
+                    <CheckCircleIcon fontSize='large' />
+                </IconButton>
+                <IconButton color="error" onClick={cancel} >
+                    <CancelIcon fontSize='large' />
+                </IconButton>
             </Box>
         </Box>
     );

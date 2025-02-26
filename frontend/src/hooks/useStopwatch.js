@@ -7,12 +7,11 @@ const STORAGE_KEY = 'stopwatchState';
  * useStopwatch
  * @param {Object} discordData - Discord連携用データ（例: { group, ... }）
  * @param {Object} callbacks - { onComplete, onCancel } コールバック
- * @returns {Object} - { displayTime, isRunning, isPaused, start, togglePause, complete, cancel }
+ * @returns {Object} - { displayTime, isRunning, start, complete, cancel, updateStartTime, currentStartTime, finishAndReset }
  */
 function useStopwatch(discordData, { onComplete, onCancel }) {
     const [displayTime, setDisplayTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
     const [restored, setRestored] = useState(false);
     const [currentStartTime, setCurrentStartTime] = useState(null);
     const timerRef = useRef(null);
@@ -34,7 +33,6 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             offsetRef.current = state.offset;
             setDisplayTime(state.displayTime);
             setIsRunning(state.isRunning);
-            setIsPaused(state.isPaused);
             setCurrentStartTime(state.startTime);
         } else {
             handleStart();
@@ -49,11 +47,10 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             startTime: startTimeRef.current,
             offset: offsetRef.current,
             displayTime,
-            isRunning,
-            isPaused,
+            isRunning
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }, [displayTime, isRunning, isPaused, restored]);
+    }, [displayTime, isRunning, restored]);
 
     // タイマー処理（setInterval）の管理
     useEffect(() => {
@@ -80,13 +77,13 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         }
     };
 
+    // スタート
     const handleStart = async () => {
         if (startTimeRef.current) return; // 既に開始済みなら何もしない
         const now = Date.now();
         startTimeRef.current = now;
         offsetRef.current = 0;
         setIsRunning(true);
-        setIsPaused(false);
         setCurrentStartTime(now);
         try {
             await startDiscordPresence(discordData);
@@ -95,26 +92,6 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             console.error('Failed to start Discord presence:', error);
         }
         timerRef.current = setInterval(updateDisplayTime, 1000);
-    };
-
-    const handleTogglePause = () => {
-        if (isPaused) {
-            // 再開: 現在時刻を新たな startTime とする
-            startTimeRef.current = Date.now();
-            setIsPaused(false);
-            setIsRunning(true);
-            timerRef.current = setInterval(updateDisplayTime, 1000);
-        } else {
-            // 一時停止: 現在時刻との差分を offset に追加しタイマー停止
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-            if (startTimeRef.current !== null) {
-                const elapsed = Date.now() - startTimeRef.current;
-                offsetRef.current += elapsed;
-            }
-            setIsPaused(true);
-            setIsRunning(false);
-        }
     };
 
     const complete = async () => {
@@ -134,22 +111,21 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         startTimeRef.current = null;
         offsetRef.current = 0;
         setDisplayTime(0);
-        if (onComplete) onComplete(totalElapsed / 60000); // 分単位に換算
+        if (onComplete) onComplete(totalElapsed / 60000); // 分単位
     };
 
     // 完了して別のストップウォッチを開始する
     const finishAndReset = async (newDiscordData) => {
-        // タイマーを停止する前に、現在の isRunning 状態を保持
         const wasRunning = isRunning;
         clearInterval(timerRef.current);
 
-        // 経過時間の計算は、isRunning 状態が変更される前に行う
+        // 経過時間の計算は、isRunning が変更される前に行う
         let totalElapsed = offsetRef.current;
         if (startTimeRef.current !== null && wasRunning) {
             totalElapsed += Date.now() - startTimeRef.current;
         }
 
-        // Discord の接続を一度だけ切断
+        // Discord を一旦切断
         try {
             await stopDiscordPresence({ group: discordData.group });
             console.log('Discord presence stopped');
@@ -158,13 +134,13 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         }
 
         const minutes = totalElapsed / 60000;
-        // 状態をリセットして新規記録に備える
+        // 状態をリセットして新規アクティビティに切り替え
         startTimeRef.current = Date.now();
         offsetRef.current = 0;
         setDisplayTime(0);
         setIsRunning(true);
         timerRef.current = setInterval(updateDisplayTime, 1000);
-        // 新しいアクティビティデータでDisord presenceを再起動
+
         try {
             await startDiscordPresence(newDiscordData);
             console.log('Discord presence restarted with new data');
@@ -174,7 +150,6 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
 
         return minutes;
     };
-
 
     const cancel = async () => {
         clearInterval(timerRef.current);
@@ -192,7 +167,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         if (onCancel) onCancel();
     };
 
-    // 開始時刻を更新する関数
+    // 時間を補正する場合に使う（開始時刻を更新）
     const updateStartTime = (newStartTime) => {
         if (newStartTime > Date.now()) {
             throw new Error("Start time cannot be in the future");
@@ -206,9 +181,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
     return {
         displayTime,
         isRunning,
-        isPaused,
         start: handleStart,
-        togglePause: handleTogglePause,
         complete,
         cancel,
         updateStartTime,
