@@ -5,7 +5,8 @@ import {
     IconButton,
     TextField,
     ToggleButton,
-    Typography
+    Typography,
+    Collapse
 } from '@mui/material';
 import ToggleButtonGroup, {
     toggleButtonGroupClasses,
@@ -17,6 +18,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
 import { useMemo } from 'react';
 
@@ -89,87 +91,154 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
 
     return (
         <>
+            <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: true,
+                                tagOpen: true,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Open All
+                </Typography>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: false,
+                                tagOpen: false,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Close All
+                </Typography>
+            </Box>
             <Box sx={{ mb: 3 }}>
                 {/* グループフィルタ */}
-                <Typography variant='caption' color='#cccccc'>Group</Typography>
-                <Box>
-                    <ToggleButtonGroup
-                        value={groupFilter}
-                        exclusive
-                        size='medium'
-                        onChange={(e) => {
-                            setFilterState({
-                                groupFilter: e.target.value,
-                                activityNameFilter: ``,
-                            });
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => dispatch({ type: 'SET_GROUP_OPEN', payload: !state.groupOpen })}
+                >
+                    Group
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: state.groupOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
                         }}
-                        aria-label="Group filter"
-                        sx={{ mb: 1, mr: 1 }}
-                    >
-                        <ToggleButton value="" aria-label="All">
-                            All
-                        </ToggleButton>
-                        {groups.map((group) => (
-                            <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
-                                {getIconForGroup(group.name, groups)}
-                                {group.name}
+                    />
+                </Typography>
+                <Collapse in={state.groupOpen}>
+                    <Box>
+                        <ToggleButtonGroup
+                            value={groupFilter}
+                            exclusive
+                            size='medium'
+                            onChange={(e) => {
+                                setFilterState({
+                                    groupFilter: e.target.value,
+                                    activityNameFilter: ``,
+                                });
+                            }}
+                            aria-label="Group filter"
+                            sx={{ mb: 1, mr: 1 }}
+                        >
+                            <ToggleButton value="" aria-label="All">
+                                All
                             </ToggleButton>
-                        ))}
-                    </ToggleButtonGroup>
-                    {!state.showGrid && !stopwatchVisible && (
-                        <IconButton
-                            onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
-                            sx={{
-                                opacity: 0,
-                                transition: 'opacity 0.2s',
-                                '&:hover': { opacity: 1 },
-                            }}>
-                            <SettingsIcon />
-                        </IconButton>
-                    )}
-                    <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
-                </Box>
+                            {groups.map((group) => (
+                                <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
+                                    {getIconForGroup(group.name, groups)}
+                                    {group.name}
+                                </ToggleButton>
+                            ))}
+                        </ToggleButtonGroup>
+                        {!state.showGrid && !stopwatchVisible && (
+                            <IconButton
+                                onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                                sx={{
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    '&:hover': { opacity: 1 },
+                                }}>
+                                <SettingsIcon />
+                            </IconButton>
+                        )}
+                        <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
+                    </Box>
+                </Collapse>
 
                 {/* タグフィルタ */}
-                <Typography variant='caption' color='#cccccc'>Tag</Typography>
-                <Box>
-                    <StyledToggleButtonGroup
-                        value={tagFilter}
-                        exclusive
-                        size='small'
-                        onChange={(e) => {
-                            const tagFilter = e.currentTarget.value;
-                            setFilterState(prev => ({
-                                ...prev,
-                                tagFilter: tagFilter || ``,
-                            }));
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
+                >
+                    Tag
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: state.tagOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
                         }}
-                        multiple
-                        sx={{ mb: 1, mr: 1 }}
-                    >
-                        <ToggleButton value="" aria-label="All">
-                            All
-                        </ToggleButton>
-                        {filteredTags.map(tagName => (
-                            <ToggleButton key={tagName} value={tagName}>
-                                {tagName}
+                    />
+                </Typography>
+                <Collapse in={state.tagOpen}>
+                    <Box>
+                        <StyledToggleButtonGroup
+                            value={tagFilter}
+                            exclusive
+                            size='small'
+                            onChange={(e) => {
+                                const tagFilter = e.currentTarget.value;
+                                setFilterState(prev => ({
+                                    ...prev,
+                                    tagFilter: tagFilter || ``,
+                                }));
+                            }}
+                            multiple
+                            sx={{ mb: 1, mr: 1 }}
+                        >
+                            <ToggleButton value="" aria-label="All">
+                                All
                             </ToggleButton>
-                        ))}
-                    </StyledToggleButtonGroup>
-                    {!state.showGrid && !stopwatchVisible && (
-                        <IconButton
-                            onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                            sx={{
-                                opacity: 0,
-                                transition: 'opacity 0.2s',
-                                '&:hover': { opacity: 1 },
-                            }}>
-                            <SettingsIcon />
-                        </IconButton>
-                    )}
-                    <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
-                </Box>
-
+                            {filteredTags.map(tagName => (
+                                <ToggleButton key={tagName} value={tagName}>
+                                    {tagName}
+                                </ToggleButton>
+                            ))}
+                        </StyledToggleButtonGroup>
+                        {!state.showGrid && !stopwatchVisible && (
+                            <IconButton
+                                onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                                sx={{
+                                    opacity: 0,
+                                    transition: 'opacity 0.2s',
+                                    '&:hover': { opacity: 1 },
+                                }}>
+                                <SettingsIcon />
+                            </IconButton>
+                        )}
+                        <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
+                    </Box>
+                </Collapse>
                 {/* アクティビティ表示 */}
                 {!state.showGrid && (
                     <>
