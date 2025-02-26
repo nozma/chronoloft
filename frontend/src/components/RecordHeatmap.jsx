@@ -154,7 +154,7 @@ function RecordHeatmap({ records }) {
 
     const totalCountLabel7 =
         displayMode === 'time'
-            ? `${Math.floor(totalCount7 / 60)}:${(totalCount7 % 60).toFixed(0)} / 7d`
+            ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / 7d`
             : `${totalCount7.toFixed(0)} times / 7d`;
 
     return (
