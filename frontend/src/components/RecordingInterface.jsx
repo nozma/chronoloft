@@ -148,10 +148,12 @@ function RecordingInterface({ onRecordUpdate, records }) {
                     onComplete={async (minutes) => {
                         await createRecord({ activity_id: selectedActivity.id, value: minutes });
                         onRecordUpdate();
+                        localStorage.removeItem('stopwatchState');
                         setStopwatchVisible(false);
                         setActiveActivity(null);
                     }}
                     onCancel={() => {
+                        localStorage.removeItem('stopwatchState');
                         setStopwatchVisible(false);
                         setActiveActivity(null);
                     }}
