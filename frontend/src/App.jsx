@@ -3,6 +3,7 @@ import './App.css';
 import Box from '@mui/material/Box';
 import RecordingInterface from './components/RecordingInterface';
 import RecordList from './components/RecordList';
+import History from './components/History';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -72,7 +73,7 @@ function App() {
                                         <div>
                                             <RecordingInterface onRecordUpdate={updateRecords} records={records} />
                                             <h2>History</h2>
-                                            <RecordList records={records} onRecordUpdate={updateRecords} />
+                                            <History records={records} onRecordUpdate={updateRecords} />
                                         </div>
                                     </ActiveActivityProvider>
                                 </FilterProvider>

@@ -181,12 +181,6 @@ function RecordList({ records, onRecordUpdate }) {
                         Close All
                     </Typography>
                 </Box>
-                <RecordHeatmap
-                    records={records}
-                    groups={groups}
-                    unitFilter={filterCriteria.unit}
-                />
-                <RecordCalendar records={records} />
                 <Typography
                     variant='caption'
                     color='#cccccc'
