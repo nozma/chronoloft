@@ -27,7 +27,7 @@ class ActivityGroup(db.Model):
     __tablename__ = 'activity_group'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
-    client_id = db.Column(db.String(50), unique=True)
+    client_id = db.Column(db.String(50))
     icon_name = db.Column(db.String(50), nullable=True)
     icon_color = db.Column(db.String(50), nullable=True)
     position = db.Column(db.Integer, nullable=False, default=0, server_default='0')
