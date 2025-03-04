@@ -72,7 +72,6 @@ function App() {
                                     <ActiveActivityProvider>
                                         <div>
                                             <RecordingInterface onRecordUpdate={updateRecords} records={records} />
-                                            <h2>History</h2>
                                             <History records={records} onRecordUpdate={updateRecords} />
                                         </div>
                                     </ActiveActivityProvider>
