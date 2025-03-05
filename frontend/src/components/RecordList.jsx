@@ -6,12 +6,9 @@ import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import RecordHeatmap from './RecordHeatmap';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
-import RecordCalendar from './RecordCalendar';
-import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
 
 function RecordList({ records, onRecordUpdate }) {
@@ -21,9 +18,8 @@ function RecordList({ records, onRecordUpdate }) {
     const [error] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
-    const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
+    const { confirmDialogOpen, selectedRecordId } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
-    const { groups } = useGroups();
     const { state: uiState, dispatch: uiDispatch } = useUI();
 
     // ----------------------------
