@@ -12,13 +12,15 @@ import Stopwatch from './Stopwatch';
 import ActivityList from './ActivityList';
 import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
+import { useRecords } from '../contexts/RecordContext';
 
-function RecordingInterface({ onRecordUpdate, records }) {
+function RecordingInterface() {
     const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
     const { setFilterState } = useFilter();
     const { activities } = useActivities();
     const { refreshActivities } = useActivities();
+    const { records, refreshRecords: onRecordUpdate} = useRecords();
 
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
@@ -133,7 +135,7 @@ function RecordingInterface({ onRecordUpdate, records }) {
                 onStart={handleStartRecordFromSelect}
                 stopwatchVisible={stopwatchVisible}
             />
-            <ActivityList onRecordUpdate={onRecordUpdate} records={records} />
+            <ActivityList />
             {/* Count用ダイアログ */}
             {state.recordDialogOpen && recordDialogActivity && recordDialogActivity.unit === 'count' && (
                 <AddRecordDialog
