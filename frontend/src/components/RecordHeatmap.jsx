@@ -16,8 +16,9 @@ import { useGroups } from '../contexts/GroupContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
+import { useRecords } from '../contexts/RecordContext';
 
-function RecordHeatmap({ records }) {
+function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
     const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
@@ -26,6 +27,7 @@ function RecordHeatmap({ records }) {
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { records } = useRecords();
 
     // UI用: モード切替用ハンドラー
     const handleModeChange = (event, newMode) => {

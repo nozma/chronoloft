@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { updateRecord, deleteRecord } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from './ConfirmDialog'
 import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -10,8 +9,9 @@ import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import { useUI } from '../contexts/UIContext';
+import { useRecords } from '../contexts/RecordContext';
 
-function RecordList({ records, onRecordUpdate }) {
+function RecordList() {
     // ----------------------------
     // 状態管理
     // ----------------------------
@@ -21,6 +21,7 @@ function RecordList({ records, onRecordUpdate }) {
     const { confirmDialogOpen, selectedRecordId } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
 
     // ----------------------------
     // Ref の宣言
@@ -40,14 +41,14 @@ function RecordList({ records, onRecordUpdate }) {
     const handleConfirmDelete = async () => {
         try {
             await deleteRecord(selectedRecordId);
-            onRecordUpdate();
+            refreshRecords();
         } catch (err) {
             console.error("Failed to delete record:", err);
         }
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
-
+    
     const handleCancelDelete = () => {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
@@ -60,7 +61,7 @@ function RecordList({ records, onRecordUpdate }) {
     const handleEditRecordSubmit = async (updatedData) => {
         try {
             await updateRecord(recordToEdit.id, updatedData);
-            onRecordUpdate();
+            refreshRecords();
             setRecordToEdit(null);
         } catch (error) {
             console.error("Failed to update record:", error);
