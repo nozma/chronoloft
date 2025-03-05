@@ -10,6 +10,8 @@ import CustomEvent from './CalendarCustomEvent';
 import { Box, Typography, Collapse } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import AddRecordDialog from './AddRecordDialog';
+import { updateRecord } from '../services/api';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -45,12 +47,13 @@ function aggregateEventsForMonth(events) {
     return aggregatedArray;
 }
 
-function RecordCalendar({ records }) {
+function RecordCalendar({ records, onRecordUpdate }) {
     const { groups } = useGroups();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState('week');
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const [recordToEdit, setRecordToEdit] = useState(null);
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
@@ -96,6 +99,22 @@ function RecordCalendar({ records }) {
         }
     }, [records, groups, currentView]);
 
+    // ダブルクリック時に呼ばれるハンドラ
+    const handleDoubleClickEvent = (event) => {
+        setRecordToEdit(event);
+    }
+    // レコードSubmit後の処理
+    const handleEditRecordSubmit = async (updatedRecord) => {
+        try {
+            await updateRecord(recordToEdit.id, updatedRecord);
+            onRecordUpdate();
+            setRecordToEdit(null);
+        } catch (error) {
+            console.error("Failed to update record:", error);
+        }
+    }
+
+    // 日付等の表示フォーマット定義
     const formats = useMemo(() => ({
         dayHeaderFormat: 'yyyy/MM/dd (EEE)',
         monthHeaderFormat: 'yyyy/M',
@@ -142,6 +161,7 @@ function RecordCalendar({ records }) {
                     style={{ height: 800 }}
                     titleAccessor="title"
                     formats={formats}
+                    onDoubleClickEvent={handleDoubleClickEvent}
                     components={{ eventWrapper: CustomEvent }}
                     dayLayoutAlgorithm={'no-overlap'}
                     showAllEvents
@@ -158,6 +178,17 @@ function RecordCalendar({ records }) {
                 />
             </Box>
             </Collapse>
+            {recordToEdit && (
+                <AddRecordDialog
+                    open={true}
+                    onClose={() => setRecordToEdit(null)}
+                    onSubmit={handleEditRecordSubmit}
+                    activity={recordToEdit}
+                    initialValue={recordToEdit.value}
+                    initialDate={recordToEdit.created_at}
+                    isEdit={true}
+                />
+            )}
         </Box>
     );
 }

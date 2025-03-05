@@ -54,7 +54,10 @@ function History({ records, onRecordUpdate }) {
             <RecordHeatmap records={records} />
 
             {/* Calendar */}
-            <RecordCalendar records={records} />
+            <RecordCalendar
+                records={records}
+                onRecordUpdate={onRecordUpdate}
+            />
 
             {/* Record List */}
             <RecordList
