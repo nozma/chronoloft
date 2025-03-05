@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Box from '@mui/material/Box';
 import RecordingInterface from './components/RecordingInterface';
-import RecordList from './components/RecordList';
 import History from './components/History';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -14,6 +13,7 @@ import { FilterProvider } from './contexts/FilterContext';
 import { UIProvider } from './contexts/UIContext';
 import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
+import { RecordProvider } from './contexts/RecordContext';
 
 function App() {
     // カラーテーマ対応
@@ -67,16 +67,18 @@ function App() {
                 <GroupProvider>
                     <TagProvider>
                         <ActivityProvider>
-                            <UIProvider>
-                                <FilterProvider>
-                                    <ActiveActivityProvider>
-                                        <div>
-                                            <RecordingInterface onRecordUpdate={updateRecords} records={records} />
-                                            <History records={records} onRecordUpdate={updateRecords} />
-                                        </div>
-                                    </ActiveActivityProvider>
-                                </FilterProvider>
-                            </UIProvider>
+                            <RecordProvider>
+                                <UIProvider>
+                                    <FilterProvider>
+                                        <ActiveActivityProvider>
+                                            <div>
+                                                <RecordingInterface onRecordUpdate={updateRecords} records={records} />
+                                                <History records={records} onRecordUpdate={updateRecords} />
+                                            </div>
+                                        </ActiveActivityProvider>
+                                    </FilterProvider>
+                                </UIProvider>
+                            </RecordProvider>
                         </ActivityProvider>
                     </TagProvider>
                 </GroupProvider>
