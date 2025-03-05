@@ -4,10 +4,11 @@ import RecordList from './RecordList';
 import RecordHeatmap from './RecordHeatmap';
 import RecordCalendar from './RecordCalendar';
 import { useUI } from '../contexts/UIContext';
+import { useRecords } from '../contexts/RecordContext';
 
-
-function History({ records, onRecordUpdate }) {
+function History({ onRecordUpdate }) {
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { records } = useRecords();
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
@@ -51,13 +52,10 @@ function History({ records, onRecordUpdate }) {
                 </Typography>
             </Box>
             {/* Heatmap */}
-            <RecordHeatmap records={records} />
+            <RecordHeatmap />
 
             {/* Calendar */}
-            <RecordCalendar
-                records={records}
-                onRecordUpdate={onRecordUpdate}
-            />
+            <RecordCalendar />
 
             {/* Record List */}
             <RecordList

@@ -12,6 +12,7 @@ import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import AddRecordDialog from './AddRecordDialog';
 import { updateRecord, deleteRecord } from '../services/api';
+import { useRecords } from '../contexts/RecordContext';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -47,13 +48,14 @@ function aggregateEventsForMonth(events) {
     return aggregatedArray;
 }
 
-function RecordCalendar({ records, onRecordUpdate }) {
+function RecordCalendar() {
     const { groups } = useGroups();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState('week');
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
+    const { records, refreshRecords: onRecordUpdate } = useRecords();
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
