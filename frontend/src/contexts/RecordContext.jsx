@@ -1,5 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { fetchRecords, createRecord, updateRecord, deleteRecord } from '../services/api';
+import {
+    fetchRecords as apiFetchRecords,
+    createRecord as apiCreateRecord,
+    updateRecord as apiUpdateRecord,
+    deleteRecord as apiDeleteRecord
+} from '../services/api';
 
 const RecordContext = createContext();
 
@@ -12,50 +17,35 @@ export function RecordProvider({ children }) {
 
     const refreshRecords = async () => {
         try {
-            const data = await fetchRecords();
+            const data = await apiFetchRecords();
             setRecords(data);
-        } catch (err) {
-            console.error('Failed to fetch records:', err);
+        } catch (error) {
+            console.error("Failed to fetch records:", error);
         }
     };
 
-    const createRecordInContext = async (recordData) => {
-        try {
-            await createRecord(recordData);
-            await refreshRecords();
-        } catch (err) {
-            console.error('Failed to create record:', err);
-            throw err;
-        }
+    const createRecord = async (recordData) => {
+        await apiCreateRecord(recordData);
+        await refreshRecords();
     };
 
-    const updateRecordInContext = async (recordId, updateData) => {
-        try {
-            await updateRecord(recordId, updateData);
-            await refreshRecords();
-        } catch (err) {
-            console.error('Failed to update record:', err);
-            throw err;
-        }
+    const updateRecord = async (recordId, updateData) => {
+        await apiUpdateRecord(recordId, updateData);
+        await refreshRecords();
     };
 
-    const deleteRecordInContext = async (recordId) => {
-        try {
-            await deleteRecord(recordId);
-            await refreshRecords();
-        } catch (err) {
-            console.error('Failed to delete record:', err);
-            throw err;
-        }
+    const deleteRecord = async (recordId) => {
+        await apiDeleteRecord(recordId);
+        await refreshRecords();
     };
 
     return (
         <RecordContext.Provider value={{
             records,
-            refreshRecords,
-            createRecordInContext,
-            updateRecordInContext,
-            deleteRecordInContext
+            createRecord,
+            updateRecord,
+            deleteRecord,
+            refreshRecords
         }}>
             {children}
         </RecordContext.Provider>

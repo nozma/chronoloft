@@ -34,25 +34,6 @@ function App() {
         [prefersDarkMode]
     );
 
-    const [records, setRecords] = useState([]);
-
-
-    // 初回または更新時に最新のレコード一覧を取得する関数
-    const updateRecords = async () => {
-        try {
-            const data = await fetchRecords();
-            // 新しい配列の参照で更新
-            setRecords([...data]);
-        } catch (error) {
-            console.error("Failed to fetch records:", error);
-        }
-    };
-
-    // 初回取得
-    useEffect(() => {
-        updateRecords();
-    }, []);
-
     return (
         <ThemeProvider theme={theme}>
             <Box
@@ -72,8 +53,8 @@ function App() {
                                     <FilterProvider>
                                         <ActiveActivityProvider>
                                             <div>
-                                                <RecordingInterface onRecordUpdate={updateRecords} records={records} />
-                                                <History records={records} onRecordUpdate={updateRecords} />
+                                                <RecordingInterface />
+                                                <History />
                                             </div>
                                         </ActiveActivityProvider>
                                     </FilterProvider>
