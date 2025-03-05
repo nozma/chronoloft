@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Box from '@mui/material/Box';
 import RecordingInterface from './components/RecordingInterface';
-import RecordList from './components/RecordList';
+import History from './components/History';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -13,6 +13,7 @@ import { FilterProvider } from './contexts/FilterContext';
 import { UIProvider } from './contexts/UIContext';
 import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
+import { RecordProvider } from './contexts/RecordContext';
 
 function App() {
     // カラーテーマ対応
@@ -33,25 +34,6 @@ function App() {
         [prefersDarkMode]
     );
 
-    const [records, setRecords] = useState([]);
-
-
-    // 初回または更新時に最新のレコード一覧を取得する関数
-    const updateRecords = async () => {
-        try {
-            const data = await fetchRecords();
-            // 新しい配列の参照で更新
-            setRecords([...data]);
-        } catch (error) {
-            console.error("Failed to fetch records:", error);
-        }
-    };
-
-    // 初回取得
-    useEffect(() => {
-        updateRecords();
-    }, []);
-
     return (
         <ThemeProvider theme={theme}>
             <Box
@@ -66,17 +48,18 @@ function App() {
                 <GroupProvider>
                     <TagProvider>
                         <ActivityProvider>
-                            <UIProvider>
-                                <FilterProvider>
-                                    <ActiveActivityProvider>
-                                        <div>
-                                            <RecordingInterface onRecordUpdate={updateRecords} records={records} />
-                                            <h2>History</h2>
-                                            <RecordList records={records} onRecordUpdate={updateRecords} />
-                                        </div>
-                                    </ActiveActivityProvider>
-                                </FilterProvider>
-                            </UIProvider>
+                            <RecordProvider>
+                                <UIProvider>
+                                    <FilterProvider>
+                                        <ActiveActivityProvider>
+                                            <div>
+                                                <RecordingInterface />
+                                                <History />
+                                            </div>
+                                        </ActiveActivityProvider>
+                                    </FilterProvider>
+                                </UIProvider>
+                            </RecordProvider>
                         </ActivityProvider>
                     </TagProvider>
                 </GroupProvider>

@@ -10,6 +10,9 @@ import CustomEvent from './CalendarCustomEvent';
 import { Box, Typography, Collapse } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import AddRecordDialog from './AddRecordDialog';
+import { updateRecord, deleteRecord } from '../services/api';
+import { useRecords } from '../contexts/RecordContext';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -45,12 +48,14 @@ function aggregateEventsForMonth(events) {
     return aggregatedArray;
 }
 
-function RecordCalendar({ records }) {
+function RecordCalendar() {
     const { groups } = useGroups();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState('week');
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const [recordToEdit, setRecordToEdit] = useState(null);
+    const { records, refreshRecords: onRecordUpdate } = useRecords();
 
     useEffect(() => {
         // 記録単位が「分」のレコードだけを対象にする
@@ -80,7 +85,9 @@ function RecordCalendar({ records }) {
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
-                groupColor
+                groupColor,
+                unit: rec.unit,
+                created_at: rec.created_at,
             };
             // 複数日にまたがる場合は分割
             if (startDT.toJSDate().toDateString() !== endDT.toJSDate().toDateString()) {
@@ -96,6 +103,32 @@ function RecordCalendar({ records }) {
         }
     }, [records, groups, currentView]);
 
+    // ダブルクリック時に呼ばれるハンドラ
+    const handleDoubleClickEvent = (event) => {
+        setRecordToEdit(event);
+    }
+    // レコードSubmit後の処理
+    const handleEditRecordSubmit = async (updatedRecord) => {
+        try {
+            await updateRecord(recordToEdit.id, updatedRecord);
+            onRecordUpdate();
+            setRecordToEdit(null);
+        } catch (error) {
+            console.error("Failed to update record:", error);
+        }
+    }
+    const handleDeleteRecord = async () => {
+        if (!recordToEdit || !recordToEdit.id) return;
+        try {
+            await deleteRecord(recordToEdit.id);
+            onRecordUpdate();
+            setRecordToEdit(null);
+        } catch (err) {
+            console.error("Failed to delete record:", err);
+        }
+    };
+
+    // 日付等の表示フォーマット定義
     const formats = useMemo(() => ({
         dayHeaderFormat: 'yyyy/MM/dd (EEE)',
         monthHeaderFormat: 'yyyy/M',
@@ -108,7 +141,7 @@ function RecordCalendar({ records }) {
     }), [])
 
     return (
-        <Box sx={{mb:1}}>
+        <Box sx={{ mb: 1 }}>
             <Typography
                 variant='caption'
                 color='#cccccc'
@@ -126,38 +159,51 @@ function RecordCalendar({ records }) {
                 />
             </Typography>
             <Collapse in={uiState.calendarOpen}>
-            <Box sx={{ height: '800px', m: 2 }}>
-                <Calendar
-                    localizer={localizer}
-                    events={events}
-                    date={currentDate}
-                    view={currentView}
-                    onNavigate={(date) => setCurrentDate(date)}
-                    onView={(view) => setCurrentView(view)}
-                    startAccessor="start"
-                    endAccessor="end"
-                    views={['day', 'week', 'month', 'agenda']}
-                    step={30}
-                    timeslots={2}
-                    style={{ height: 800 }}
-                    titleAccessor="title"
-                    formats={formats}
-                    components={{ eventWrapper: CustomEvent }}
-                    dayLayoutAlgorithm={'no-overlap'}
-                    showAllEvents
-                    culture='ja'
-                    eventPropGetter={(event) => ({
-                        style: {
-                            backgroundColor: event.groupColor || '#3174ad', // fallback color
-                            borderRadius: '5px',
-                            opacity: 0.8,
-                            color: 'white',
-                            fontSize: '0.75em',
-                        },
-                    })}
-                />
-            </Box>
+                <Box sx={{ height: '800px', m: 2 }}>
+                    <Calendar
+                        localizer={localizer}
+                        events={events}
+                        date={currentDate}
+                        view={currentView}
+                        onNavigate={(date) => setCurrentDate(date)}
+                        onView={(view) => setCurrentView(view)}
+                        startAccessor="start"
+                        endAccessor="end"
+                        views={['day', 'week', 'month', 'agenda']}
+                        step={30}
+                        timeslots={2}
+                        style={{ height: 800 }}
+                        titleAccessor="title"
+                        formats={formats}
+                        onDoubleClickEvent={handleDoubleClickEvent}
+                        components={{ eventWrapper: CustomEvent }}
+                        dayLayoutAlgorithm={'no-overlap'}
+                        showAllEvents
+                        culture='ja'
+                        eventPropGetter={(event) => ({
+                            style: {
+                                backgroundColor: event.groupColor || '#3174ad', // fallback color
+                                borderRadius: '5px',
+                                opacity: 0.8,
+                                color: 'white',
+                                fontSize: '0.75em',
+                            },
+                        })}
+                    />
+                </Box>
             </Collapse>
+            {recordToEdit && (
+                <AddRecordDialog
+                    open={true}
+                    onClose={() => setRecordToEdit(null)}
+                    onSubmit={handleEditRecordSubmit}
+                    activity={recordToEdit}
+                    initialValue={recordToEdit.value}
+                    initialDate={recordToEdit.created_at}
+                    onDelete={handleDeleteRecord}
+                    isEdit={true}
+                />
+            )}
         </Box>
     );
 }

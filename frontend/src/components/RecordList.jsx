@@ -1,30 +1,27 @@
 import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
-import { updateRecord, deleteRecord } from '../services/api';
-import ConfirmDialog from './ConfirmDialog';
+import ConfirmDialog from './ConfirmDialog'
 import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import RecordHeatmap from './RecordHeatmap';
 import AddRecordDialog from './AddRecordDialog';
 import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
-import RecordCalendar from './RecordCalendar';
-import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
+import { useRecords } from '../contexts/RecordContext';
 
-function RecordList({ records, onRecordUpdate }) {
+function RecordList() {
     // ----------------------------
     // 状態管理
     // ----------------------------
     const [error] = useState(null);
     // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
-    const { filterCriteria, confirmDialogOpen, selectedRecordId, showRecords } = state;
+    const { confirmDialogOpen, selectedRecordId } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
-    const { groups } = useGroups();
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
 
     // ----------------------------
     // Ref の宣言
@@ -44,14 +41,14 @@ function RecordList({ records, onRecordUpdate }) {
     const handleConfirmDelete = async () => {
         try {
             await deleteRecord(selectedRecordId);
-            onRecordUpdate();
+            refreshRecords();
         } catch (err) {
             console.error("Failed to delete record:", err);
         }
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
-
+    
     const handleCancelDelete = () => {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
@@ -64,7 +61,7 @@ function RecordList({ records, onRecordUpdate }) {
     const handleEditRecordSubmit = async (updatedData) => {
         try {
             await updateRecord(recordToEdit.id, updatedData);
-            onRecordUpdate();
+            refreshRecords();
             setRecordToEdit(null);
         } catch (error) {
             console.error("Failed to update record:", error);
@@ -145,48 +142,6 @@ function RecordList({ records, onRecordUpdate }) {
         <Box ref={containerRef} sx={{ mb: 2 }}>
             {error && <div>Error: {error}</div>}
             <div style={{ width: '100%' }}>
-                <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                    <Typography
-                        variant='caption'
-                        color='#ccc'
-                        onClick={() =>
-                            uiDispatch({
-                                type: 'UPDATE_UI',
-                                payload: {
-                                    recordsOpen: true,
-                                    heatmapOpen: true,
-                                    calendarOpen: true,
-                                }
-                            })
-                        }
-                        sx={{cursor: 'pointer'}}
-                    >
-                        Open All
-                    </Typography>
-                    <Typography
-                        variant='caption'
-                        color='#ccc'
-                        onClick={() =>
-                            uiDispatch({
-                                type: 'UPDATE_UI',
-                                payload: {
-                                    recordsOpen: false,
-                                    heatmapOpen: false,
-                                    calendarOpen: false,
-                                }
-                            })
-                        }
-                        sx={{cursor: 'pointer'}}
-                    >
-                        Close All
-                    </Typography>
-                </Box>
-                <RecordHeatmap
-                    records={records}
-                    groups={groups}
-                    unitFilter={filterCriteria.unit}
-                />
-                <RecordCalendar records={records} />
                 <Typography
                     variant='caption'
                     color='#cccccc'
