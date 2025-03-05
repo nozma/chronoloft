@@ -18,6 +18,7 @@ function RecordingInterface({ onRecordUpdate, records }) {
     const { setActiveActivity } = useActiveActivity();
     const { setFilterState } = useFilter();
     const { activities } = useActivities();
+    const { refreshActivities } = useActivities();
 
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
@@ -81,6 +82,7 @@ function RecordingInterface({ onRecordUpdate, records }) {
             await createRecord(recordData);
             dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
             onRecordUpdate();
+            await refreshActivities();
         } catch (err) {
             console.error("Failed to create record:", err);
         }
@@ -148,6 +150,7 @@ function RecordingInterface({ onRecordUpdate, records }) {
                     onComplete={async (minutes) => {
                         await createRecord({ activity_id: selectedActivity.id, value: minutes });
                         onRecordUpdate();
+                        await refreshActivities();
                         localStorage.removeItem('stopwatchState');
                         setStopwatchVisible(false);
                         setActiveActivity(null);
