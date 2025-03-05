@@ -11,7 +11,7 @@ import { Box, Typography, Collapse } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import AddRecordDialog from './AddRecordDialog';
-import { updateRecord } from '../services/api';
+import { updateRecord, deleteRecord } from '../services/api';
 
 const localizer = luxonLocalizer(DateTime);
 
@@ -113,6 +113,16 @@ function RecordCalendar({ records, onRecordUpdate }) {
             console.error("Failed to update record:", error);
         }
     }
+    const handleDeleteRecord = async () => {
+        if (!recordToEdit || !recordToEdit.id) return;
+        try {
+            await deleteRecord(recordToEdit.id);
+            onRecordUpdate();
+            setRecordToEdit(null);
+        } catch (err) {
+            console.error("Failed to delete record:", err);
+        }
+    };
 
     // 日付等の表示フォーマット定義
     const formats = useMemo(() => ({
@@ -127,7 +137,7 @@ function RecordCalendar({ records, onRecordUpdate }) {
     }), [])
 
     return (
-        <Box sx={{mb:1}}>
+        <Box sx={{ mb: 1 }}>
             <Typography
                 variant='caption'
                 color='#cccccc'
@@ -145,38 +155,38 @@ function RecordCalendar({ records, onRecordUpdate }) {
                 />
             </Typography>
             <Collapse in={uiState.calendarOpen}>
-            <Box sx={{ height: '800px', m: 2 }}>
-                <Calendar
-                    localizer={localizer}
-                    events={events}
-                    date={currentDate}
-                    view={currentView}
-                    onNavigate={(date) => setCurrentDate(date)}
-                    onView={(view) => setCurrentView(view)}
-                    startAccessor="start"
-                    endAccessor="end"
-                    views={['day', 'week', 'month', 'agenda']}
-                    step={30}
-                    timeslots={2}
-                    style={{ height: 800 }}
-                    titleAccessor="title"
-                    formats={formats}
-                    onDoubleClickEvent={handleDoubleClickEvent}
-                    components={{ eventWrapper: CustomEvent }}
-                    dayLayoutAlgorithm={'no-overlap'}
-                    showAllEvents
-                    culture='ja'
-                    eventPropGetter={(event) => ({
-                        style: {
-                            backgroundColor: event.groupColor || '#3174ad', // fallback color
-                            borderRadius: '5px',
-                            opacity: 0.8,
-                            color: 'white',
-                            fontSize: '0.75em',
-                        },
-                    })}
-                />
-            </Box>
+                <Box sx={{ height: '800px', m: 2 }}>
+                    <Calendar
+                        localizer={localizer}
+                        events={events}
+                        date={currentDate}
+                        view={currentView}
+                        onNavigate={(date) => setCurrentDate(date)}
+                        onView={(view) => setCurrentView(view)}
+                        startAccessor="start"
+                        endAccessor="end"
+                        views={['day', 'week', 'month', 'agenda']}
+                        step={30}
+                        timeslots={2}
+                        style={{ height: 800 }}
+                        titleAccessor="title"
+                        formats={formats}
+                        onDoubleClickEvent={handleDoubleClickEvent}
+                        components={{ eventWrapper: CustomEvent }}
+                        dayLayoutAlgorithm={'no-overlap'}
+                        showAllEvents
+                        culture='ja'
+                        eventPropGetter={(event) => ({
+                            style: {
+                                backgroundColor: event.groupColor || '#3174ad', // fallback color
+                                borderRadius: '5px',
+                                opacity: 0.8,
+                                color: 'white',
+                                fontSize: '0.75em',
+                            },
+                        })}
+                    />
+                </Box>
             </Collapse>
             {recordToEdit && (
                 <AddRecordDialog
@@ -186,6 +196,7 @@ function RecordCalendar({ records, onRecordUpdate }) {
                     activity={recordToEdit}
                     initialValue={recordToEdit.value}
                     initialDate={recordToEdit.created_at}
+                    onDelete={handleDeleteRecord}
                     isEdit={true}
                 />
             )}

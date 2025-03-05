@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography } from '@mui/material';
 import { DateTime } from 'luxon';
 
-function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, initialDate, isEdit }) {
+function AddRecordDialog({
+    open,
+    onClose,
+    onSubmit,
+    activity,
+    initialValue,
+    initialDate,
+    isEdit = false,
+    onDelete,
+}) {
     const [value, setValue] = useState(
         initialValue !== undefined && initialValue !== null ? String(initialValue) : ''
     );
@@ -52,6 +61,12 @@ function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, init
         onClose();
     };
 
+    const handleDelete = async () => {
+        if (!onDelete) return;
+        await onDelete(activity.id);
+        onClose();
+    }
+
     return (
         <Dialog open={open} onClose={handleClose}>
             <DialogTitle>{isEdit ? "レコード編集" : "レコード作成"}</DialogTitle>
@@ -86,6 +101,15 @@ function AddRecordDialog({ open, onClose, onSubmit, activity, initialValue, init
                 />
             </DialogContent>
             <DialogActions>
+                {isEdit && (
+                    <Button
+                        onClick={handleDelete}
+                        color='error'
+                        sx={{ mr: 'auto' }}
+                    >
+                        Delete
+                    </Button>
+                )}
                 <Button onClick={handleClose}>キャンセル</Button>
                 <Button onClick={handleSubmit} variant="contained" color="primary">
                     Submit
