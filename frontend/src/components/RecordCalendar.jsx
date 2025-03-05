@@ -85,7 +85,8 @@ function RecordCalendar() {
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
-                groupColor
+                groupColor,
+                created_at: rec.created_at,
             };
             // 複数日にまたがる場合は分割
             if (startDT.toJSDate().toDateString() !== endDT.toJSDate().toDateString()) {
