@@ -105,6 +105,7 @@ class Record(db.Model):
     activity_id = db.Column(db.Integer, db.ForeignKey('activity.id'), nullable=False)
     activity = db.relationship('Activity', back_populates='records')
     value = db.Column(db.Float)
+    memo = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, nullable=False)
 
     def __repr__(self):
