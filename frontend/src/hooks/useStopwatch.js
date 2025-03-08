@@ -94,7 +94,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         timerRef.current = setInterval(updateDisplayTime, 1000);
     };
 
-    const complete = async () => {
+    const complete = async (passedMemo) => {
         clearInterval(timerRef.current);
         setIsRunning(false);
         try {
@@ -111,7 +111,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         startTimeRef.current = null;
         offsetRef.current = 0;
         setDisplayTime(0);
-        if (onComplete) onComplete(totalElapsed / 60000); // 分単位
+        if (onComplete) onComplete(totalElapsed / 60000, passedMemo);
     };
 
     // 完了して別のストップウォッチを開始する

@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
@@ -29,6 +29,8 @@ const Stopwatch = forwardRef((props, ref) => {
     // 編集モード用の状態
     const [isEditingStartTime, setIsEditingStartTime] = React.useState(false);
     const [editedStartTime, setEditedStartTime] = React.useState("");
+    // メモ機能用
+    const [memo, setMemo] = useState('');
 
     // 編集ボタン押下時：現在の開始時刻を編集用 state にセット
     const handleEditStartTime = () => {
@@ -112,13 +114,23 @@ const Stopwatch = forwardRef((props, ref) => {
             {/* 経過時間と完了・キャンセルアイコン */}
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                <IconButton color="primary" onClick={complete} >
+                <IconButton color="primary" onClick={() => complete(memo)} >
                     <CheckCircleIcon fontSize='large' />
                 </IconButton>
                 <IconButton color="error" onClick={cancel} >
                     <CancelIcon fontSize='large' />
                 </IconButton>
             </Box>
+            {/* メモ入力欄 */}
+            <TextField
+                label="Memo"
+                multiline
+                rows={2}
+                fullWidth
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                sx={{ my: 2 }}
+            />
         </Box>
     );
 });
