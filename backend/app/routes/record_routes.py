@@ -28,7 +28,8 @@ def get_records():
                 'activity_name': rec.activity.name if rec.activity else None,
                 'activity_group': rec.activity.group.name if rec.activity and rec.activity.group else None,
                 'activity_group_id': rec.activity.group_id if rec.activity else None,
-                'tags': tag_list
+                'tags': tag_list,
+                'memo': rec.memo
             })
         return jsonify(result), 200
     except SQLAlchemyError as e:
@@ -46,8 +47,9 @@ def create_record():
     try:
         new_record = Record(
             activity_id=data['activity_id'],
-            value=data['value']
+            value=data['value'],
             # created_at は Record モデル側で default=datetime.datetime.utcnow などになっている前提
+            memo=data.get('memo')
         )
         db.session.add(new_record)
         db.session.commit()
@@ -74,6 +76,8 @@ def update_record(record_id):
             import datetime
             # ここでは ISO 8601 形式で送信されることを前提とする
             record.created_at = datetime.datetime.fromisoformat(data['created_at'])
+        if 'memo' in data:
+            record.memo = data['memo']
         db.session.commit()
         return jsonify({'message': 'Record updated'}), 200
     except SQLAlchemyError as e:

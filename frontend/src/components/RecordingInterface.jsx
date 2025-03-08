@@ -149,8 +149,12 @@ function RecordingInterface() {
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
                     ref={stopwatchRef}
-                    onComplete={async (minutes) => {
-                        await createRecord({ activity_id: selectedActivity.id, value: minutes });
+                    onComplete={async (minutes, memo) => {
+                        await createRecord({ 
+                            activity_id: selectedActivity.id, 
+                            value: minutes,
+                            memo: memo
+                        });
                         onRecordUpdate();
                         await refreshActivities();
                         localStorage.removeItem('stopwatchState');

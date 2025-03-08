@@ -1,4 +1,4 @@
-import React, { forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
@@ -7,6 +7,7 @@ import { DateTime } from 'luxon';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { startDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
     //function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
@@ -19,6 +20,8 @@ const Stopwatch = forwardRef((props, ref) => {
         cancel,
         updateStartTime,
         currentStartTime,
+        memo,
+        setMemo
     } = useStopwatch(props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
 
     useImperativeHandle(ref, () => ({
@@ -112,13 +115,39 @@ const Stopwatch = forwardRef((props, ref) => {
             {/* 経過時間と完了・キャンセルアイコン */}
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                <IconButton color="primary" onClick={complete} >
+                <IconButton color="primary" onClick={() => complete(memo)} >
                     <CheckCircleIcon fontSize='large' />
                 </IconButton>
                 <IconButton color="error" onClick={cancel} >
                     <CancelIcon fontSize='large' />
                 </IconButton>
             </Box>
+            {/* メモ入力欄 */}
+            <TextField
+                label="Memo"
+                multiline
+                rows={2}
+                fullWidth
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                sx={{ my: 2 }}
+            />
+            {/* Update Presence ボタン */}
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    const data = {
+                        group: props.activityGroup,
+                        activity_name: props.activityName,
+                        details: memo,
+                        asset_key: props.discordData?.asset_key || "default_image",
+                    };
+                    startDiscordPresence(data)
+                        .catch(err => console.error("Failed to update presence:", err));
+                }}
+            >
+                Update Discord Presence
+            </Button>
         </Box>
     );
 });
