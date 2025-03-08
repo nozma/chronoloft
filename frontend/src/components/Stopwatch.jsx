@@ -7,6 +7,7 @@ import { DateTime } from 'luxon';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import { startDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
     //function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
@@ -131,6 +132,22 @@ const Stopwatch = forwardRef((props, ref) => {
                 onChange={(e) => setMemo(e.target.value)}
                 sx={{ my: 2 }}
             />
+            {/* Update Presence ボタン */}
+            <Button
+                variant="outlined"
+                onClick={() => {
+                    const data = {
+                        group: props.activityGroup,
+                        activity_name: props.activityName,
+                        details: memo,
+                        asset_key: props.discordData?.asset_key || "default_image",
+                    };
+                    startDiscordPresence(data)
+                        .catch(err => console.error("Failed to update presence:", err));
+                }}
+            >
+                Update Discord Presence
+            </Button>
         </Box>
     );
 });
