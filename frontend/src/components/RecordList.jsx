@@ -85,13 +85,13 @@ function RecordList() {
         {
             field: 'created_at',
             headerName: '記録日時',
-            width: 200,
+            width: 150,
             valueFormatter: (params) => formatToLocal(params)
         },
         {
             field: 'group_name',
             headerName: 'グループ',
-            width: 150,
+            width: 120,
         },
         {
             field: 'activity_name',
@@ -101,8 +101,7 @@ function RecordList() {
         {
             field: 'value',
             headerName: '記録',
-            width: 150,
-            editable: true,
+            width: 100,
             renderCell: (params) => {
                 const val = params.row.value;
                 const unit = params.row.unit;
@@ -117,9 +116,14 @@ function RecordList() {
             },
         },
         {
+            field: 'memo',
+            headerName: 'memo',
+            width: 230
+        },
+        {
             field: 'actions',
             headerName: 'Actions',
-            width: 240,
+            width: 100,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
