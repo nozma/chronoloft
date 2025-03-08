@@ -14,6 +14,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
     const [isRunning, setIsRunning] = useState(false);
     const [restored, setRestored] = useState(false);
     const [currentStartTime, setCurrentStartTime] = useState(null);
+    const [memo, setMemo] = useState('');
     const timerRef = useRef(null);
     const startTimeRef = useRef(null);
     const offsetRef = useRef(0);
@@ -34,6 +35,9 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             setDisplayTime(state.displayTime);
             setIsRunning(state.isRunning);
             setCurrentStartTime(state.startTime);
+            if (typeof state.memo === 'string') {
+                setMemo(state.memo);
+            }
         } else {
             handleStart();
         }
@@ -47,10 +51,11 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             startTime: startTimeRef.current,
             offset: offsetRef.current,
             displayTime,
-            isRunning
+            isRunning,
+            memo
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }, [displayTime, isRunning, restored]);
+    }, [displayTime, isRunning, restored, memo]);
 
     // タイマー処理（setInterval）の管理
     useEffect(() => {
@@ -111,6 +116,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         startTimeRef.current = null;
         offsetRef.current = 0;
         setDisplayTime(0);
+        setMemo('');
         if (onComplete) onComplete(totalElapsed / 60000, passedMemo);
     };
 
@@ -138,6 +144,7 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         startTimeRef.current = Date.now();
         offsetRef.current = 0;
         setDisplayTime(0);
+        setMemo('');
         setIsRunning(true);
         timerRef.current = setInterval(updateDisplayTime, 1000);
 
@@ -186,7 +193,9 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         cancel,
         updateStartTime,
         currentStartTime,
-        finishAndReset
+        finishAndReset,
+        memo,
+        setMemo,
     };
 }
 

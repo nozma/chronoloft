@@ -20,6 +20,8 @@ const Stopwatch = forwardRef((props, ref) => {
         cancel,
         updateStartTime,
         currentStartTime,
+        memo,
+        setMemo
     } = useStopwatch(props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
 
     useImperativeHandle(ref, () => ({
@@ -30,8 +32,6 @@ const Stopwatch = forwardRef((props, ref) => {
     // 編集モード用の状態
     const [isEditingStartTime, setIsEditingStartTime] = React.useState(false);
     const [editedStartTime, setEditedStartTime] = React.useState("");
-    // メモ機能用
-    const [memo, setMemo] = useState('');
 
     // 編集ボタン押下時：現在の開始時刻を編集用 state にセット
     const handleEditStartTime = () => {
