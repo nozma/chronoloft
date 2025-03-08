@@ -44,6 +44,7 @@ function AddRecordDialog({
     const [dateValue, setDateValue] = useState(''); // count用: 既存の記録日時
     const [startTime, setStartTime] = useState(''); // minutes用
     const [endTime, setEndTime] = useState('');     // minutes用
+    const [memo, setMemo] = useState('');
 
     useEffect(() => {
         if (activity?.unit === 'count') {
@@ -73,6 +74,9 @@ function AddRecordDialog({
                 setStartTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
             }
         }
+        if (isEdit && typeof initialValue === 'number' && activity?.memo) {
+            setMemo(activity.memo);
+        }
     }, [activity, initialValue, initialDate]);
 
     // 保存時処理
@@ -93,7 +97,8 @@ function AddRecordDialog({
             const recordData = {
                 activity_id: activity.id,
                 value: numValue,
-                created_at: dtUtc
+                created_at: dtUtc,
+                memo: memo,
             };
             onSubmit(recordData);
         } else if (activity?.unit === 'minutes') { // 分ベース：開始時刻と終了時刻を記録
@@ -115,7 +120,8 @@ function AddRecordDialog({
             const recordData = {
                 activity_id: activity.id,
                 value: duration,
-                created_at: endLocal.toUTC().toISO()
+                created_at: endLocal.toUTC().toISO(),
+                memo: memo,
             };
             onSubmit(recordData);
         }
@@ -160,6 +166,15 @@ function AddRecordDialog({
                             fullWidth
                             margin="dense"
                         />
+                        <TextField
+                            label="memo"
+                            multiline
+                            minRows={2}
+                            fullWidth
+                            value={memo}
+                            onChange={(e) => setMemo(e.target.value)}
+                            sx={{ mt: 2 }}
+                        />
                     </>
                 )}
 
@@ -180,6 +195,15 @@ function AddRecordDialog({
                             onChange={(e) => setEndTime(e.target.value)}
                             fullWidth
                             margin="dense"
+                        />
+                        <TextField
+                            label="memo"
+                            multiline
+                            minRows={2}
+                            fullWidth
+                            value={memo}
+                            onChange={(e) => setMemo(e.target.value)}
+                            sx={{ mt: 2 }}
                         />
                     </>
                 )}
