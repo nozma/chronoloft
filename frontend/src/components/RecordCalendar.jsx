@@ -100,6 +100,7 @@ function RecordCalendar() {
                 groupColor,
                 unit: rec.unit,
                 created_at: rec.created_at,
+                memo: rec.memo,
             };
 
             // If it spans multiple days, split it
@@ -203,6 +204,7 @@ function RecordCalendar() {
                     <div><strong>{event.title}</strong></div>
                     <div>開始: {start}</div>
                     <div>終了: {end}</div>
+                    <div>{event.memo}</div>
                 </div>
             );
         }
@@ -214,7 +216,8 @@ function RecordCalendar() {
                 followCursor
                 placement="top"
             >
-                {event.title}
+                <Box>{event.title}</Box>
+                <Box sx={{fontSize:1}}>{event.memo}</Box>
             </Tooltip>
         );
     }
@@ -248,9 +251,10 @@ function RecordCalendar() {
                         events={events}
                         view={currentView}
                         onView={(view) => setCurrentView(view)}
-                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]} // array-based views
+                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]}
                         date={currentDate}
                         onNavigate={(newDate) => setCurrentDate(newDate)}
+                        tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
 
                         // Layout
                         startAccessor="start"
