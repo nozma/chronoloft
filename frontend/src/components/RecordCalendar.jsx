@@ -60,7 +60,8 @@ function aggregateEventsForMonth(events) {
 function RecordCalendar() {
     const { groups } = useGroups();
     const [events, setEvents] = useState([]);
-    const [currentView, setCurrentView] = useState('week');
+    const [currentView, setCurrentView] = useState(Views.WEEK);
+    const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { records, refreshRecords: onRecordUpdate } = useRecords();
@@ -245,9 +246,11 @@ function RecordCalendar() {
                         // Basic RBC setup
                         localizer={localizer}
                         events={events}
-                        defaultView={Views.WEEK} // e.g., start in "week" view
+                        view={currentView}
+                        onView={(view) => setCurrentView(view)}
                         views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]} // array-based views
-                        defaultDate={new Date()} // or any day you want to display initially
+                        date={currentDate}
+                        onNavigate={(newDate) => setCurrentDate(newDate)}
 
                         // Layout
                         startAccessor="start"
