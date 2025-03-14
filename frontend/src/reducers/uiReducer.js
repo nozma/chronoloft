@@ -7,6 +7,7 @@ export const initialUIState = {
     tagDialogOpen: false,
     groupOpen: true,
     tagOpen: true,
+    chartOpen: true,
     heatmapOpen: true,
     calendarOpen: true,
     recordsOpen: true,
@@ -32,6 +33,8 @@ export function uiReducer(state, action) {
         case 'SET_TAG_OPEN':
             return { ...state, tagOpen: action.payload };
         // History項目の開閉状態
+        case 'SET_CHART_OPEN':
+            return { ...state, chartOpen: action.payload };
         case 'SET_HEATMAP_OPEN':
             return { ...state, heatmapOpen: action.payload };
         case 'SET_CALENDAR_OPEN':
