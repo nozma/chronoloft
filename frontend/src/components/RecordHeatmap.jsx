@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     ToggleButton,
@@ -55,6 +55,18 @@ function RecordHeatmap() {
         });
         setFilteredRecords(filtered);
     }, [filterCriteria, records, activeActivity]);
+
+    // フィルター条件が変化するたびに件数の多い単位を選ぶ
+    useEffect(() => {
+        let countMinutes = 0, countCount = 0;
+        filteredRecords.forEach(rec => {
+            if (rec.unit === 'minutes') countMinutes++;
+            else if (rec.unit === 'count') countCount++;
+        });
+        // 同数の場合は "time" を採用
+        const aggregationUnit = countMinutes >= countCount ? 'time' : 'count';
+        setDisplayMode(aggregationUnit);
+    }, [filteredRecords]);
 
     useEffect(() => {
         // 過去365日分に絞り込む
@@ -179,7 +191,7 @@ function RecordHeatmap() {
             </Typography>
             <Collapse in={uiState.heatmapOpen}>
                 {heatmapData.length > 0 ? (
-                    <Box sx={{ mb: 2}}>
+                    <Box sx={{ mb: 2 }}>
                         <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <RecordFilter
                                 groups={groups}

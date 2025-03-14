@@ -64,12 +64,12 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
             }
         }
         return result;
-    }, [filteredActivities]);
+    }, [groupFilter]);
 
 
     // 最近使用した項目を取得
-    const recentActivities = filteredActivities.slice(0, 5);
-    const remainingActivities = filteredActivities.slice(5);
+    const recentActivities = filteredActivities.slice(0, 10);
+    const remainingActivities = filteredActivities.slice(10);
 
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
@@ -115,11 +115,16 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                             value={groupFilter}
                             exclusive
                             size='medium'
-                            onChange={(e) => {
-                                setFilterState({
-                                    groupFilter: e.target.value,
+                            onChange={(e, newGroupFilter) => {
+                                if (newGroupFilter === null) {
+                                    return;
+                                }
+                                setFilterState(prev => ({
+                                    ...prev,
+                                    groupFilter: newGroupFilter ?? ``,
                                     activityNameFilter: ``,
-                                });
+                                    tagFilter: ``,
+                                }));
                             }}
                             aria-label="Group filter"
                             sx={{ mb: 1, mr: 1 }}
