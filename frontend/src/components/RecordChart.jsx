@@ -246,7 +246,7 @@ function RecordChart() {
     }, [keys, colorArray]);
 
     return (
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ mb: 1 }}>
             <Typography
                 variant='caption'
                 color='#cccccc'

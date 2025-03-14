@@ -40,7 +40,7 @@ function History() {
                         uiDispatch({
                             type: 'UPDATE_UI',
                             payload: {
-                                chartOpen:true,
+                                chartOpen: false,
                                 recordsOpen: false,
                                 heatmapOpen: false,
                                 calendarOpen: false,
