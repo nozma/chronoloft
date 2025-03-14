@@ -11,6 +11,7 @@ import {
     MenuItem,
     Collapse
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
     ResponsiveContainer,
     LineChart,
@@ -30,6 +31,8 @@ import { useActivities } from '../contexts/ActivityContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import { scaleOrdinal } from 'd3-scale';
+import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -130,7 +133,6 @@ function RecordChart() {
     const { filterState } = useFilter();
     const { activities } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
-    const { groups } = useGroups();
 
     // チャート表示用の各種状態
     const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
@@ -202,24 +204,46 @@ function RecordChart() {
     // 月日の表示のフォーマッタ
     const xAxisTickFormatter = (dateStr) => {
         if (xAxisUnit === 'month') {
-          // chartData の periodKey は "yyyy-MM" の形式になっているので
-          const dt = DateTime.fromFormat(dateStr, "yyyy-MM");
-          return dt.isValid ? `${dt.month}月` : dateStr;
+            // chartData の periodKey は "yyyy-MM" の形式になっているので
+            const dt = DateTime.fromFormat(dateStr, "yyyy-MM");
+            return dt.isValid ? `${dt.month}月` : dateStr;
         } else {
-          // "day" の場合は "yyyy-MM-dd"、"week" の場合は "yyyy-'W'WW" となっているので、それぞれパースする
-          let dt;
-          if (xAxisUnit === 'day') {
-            dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd");
-          } else if (xAxisUnit === 'week') {
-            // 週の場合、Luxon で直接 "kkkk-'W'WW" から変換する
-            dt = DateTime.fromFormat(dateStr, "kkkk-'W'WW");
-          }
-          if (dt && dt.isValid) {
-            return `${dt.month}月${dt.day}日`;
-          }
-          return dateStr;
+            // "day" の場合は "yyyy-MM-dd"、"week" の場合は "yyyy-'W'WW" となっているので、それぞれパースする
+            let dt;
+            if (xAxisUnit === 'day') {
+                dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd");
+            } else if (xAxisUnit === 'week') {
+                // 週の場合、Luxon で直接 "kkkk-'W'WW" から変換する
+                dt = DateTime.fromFormat(dateStr, "kkkk-'W'WW");
+            }
+            if (dt && dt.isValid) {
+                return `${dt.month}月${dt.day}日`;
+            }
+            return dateStr;
         }
-      };
+    };
+
+    // 配色設定
+    const theme = useTheme();
+    // テーマに応じたパレットを選択
+    const colorArray = theme.palette.mode === 'light' ? schemeCategory10 : schemeSet3;
+    // 全系列（集計グループ）のキーを算出
+    const keys = useMemo(() => {
+        if (chartData.length === 0) return [];
+        // すべてのオブジェクトから union を作成
+        const allKeys = new Set();
+        chartData.forEach(item => {
+            Object.keys(item).forEach(key => {
+                if (key !== 'date') allKeys.add(key);
+            });
+        });
+        return Array.from(allKeys);
+    }, [chartData]);
+
+    // d3 の ordinal scale で色を割り当てる
+    const colorScale = useMemo(() => {
+        return scaleOrdinal(colorArray).domain(keys);
+    }, [keys, colorArray]);
 
     return (
         <Box sx={{ p: 2 }}>
@@ -343,8 +367,16 @@ function RecordChart() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
                             <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
-                            <Tooltip formatter={(value) => formatTimeValue(value)} />
-                            <Legend />
+                            <Tooltip
+                                formatter={(value) => formatTimeValue(value)}
+                                contentStyle={{
+                                    backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
+                                    border: 'none'
+                                }}
+                                labelStyle={{
+                                    color: theme.palette.mode === 'dark' ? '#fff' : '#000'
+                                }}
+                            />                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .map((key, index) => (
@@ -352,7 +384,7 @@ function RecordChart() {
                                         key={key}
                                         type="monotone"
                                         dataKey={key}
-                                        stroke={colors[index % colors.length]}
+                                        stroke={colorScale(key)}
                                         dot={{ r: 3 }}
                                     />
                                 ))}
@@ -362,12 +394,25 @@ function RecordChart() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
                             <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
-                            <Tooltip formatter={(value) => formatTimeValue(value)} />
-                            <Legend />
+                            <Tooltip
+                                formatter={(value) => formatTimeValue(value)}
+                                contentStyle={{
+                                    backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
+                                    border: 'none'
+                                }}
+                                labelStyle={{
+                                    color: theme.palette.mode === 'dark' ? '#fff' : '#000'
+                                }}
+                            />                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .map((key, index) => (
-                                    <Bar key={key} dataKey={key} stackId="a" fill={colors[index % colors.length]} />
+                                    <Bar
+                                        key={key}
+                                        dataKey={key}
+                                        stackId="a"
+                                        fill={colorScale(key)}
+                                    />
                                 ))}
                         </BarChart>
                     )}
