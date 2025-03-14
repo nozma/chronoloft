@@ -199,6 +199,27 @@ function RecordChart() {
         }
         return value;
     };
+    // 月日の表示のフォーマッタ
+    const xAxisTickFormatter = (dateStr) => {
+        if (xAxisUnit === 'month') {
+          // chartData の periodKey は "yyyy-MM" の形式になっているので
+          const dt = DateTime.fromFormat(dateStr, "yyyy-MM");
+          return dt.isValid ? `${dt.month}月` : dateStr;
+        } else {
+          // "day" の場合は "yyyy-MM-dd"、"week" の場合は "yyyy-'W'WW" となっているので、それぞれパースする
+          let dt;
+          if (xAxisUnit === 'day') {
+            dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd");
+          } else if (xAxisUnit === 'week') {
+            // 週の場合、Luxon で直接 "kkkk-'W'WW" から変換する
+            dt = DateTime.fromFormat(dateStr, "kkkk-'W'WW");
+          }
+          if (dt && dt.isValid) {
+            return `${dt.month}月${dt.day}日`;
+          }
+          return dateStr;
+        }
+      };
 
     return (
         <Box sx={{ p: 2 }}>
@@ -220,82 +241,16 @@ function RecordChart() {
             </Typography>
             <Collapse in={uiState.chartOpen}>
                 {/* 各種コントロール */}
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-                    {/* チャート種類の切替 */}
-                    <ToggleButtonGroup
-                        value={chartType}
-                        exclusive
-                        onChange={(e, newType) => { if (newType !== null) setChartType(newType); }}
-                        aria-label="Chart Type"
-                    >
-                        <ToggleButton value="line" aria-label="Line Chart">
-                            Line
-                        </ToggleButton>
-                        <ToggleButton value="bar" aria-label="Bar Chart">
-                            Bar
-                        </ToggleButton>
-                    </ToggleButtonGroup>
-                    {/* x軸の集計単位切替 */}
-                    <ToggleButtonGroup
-                        value={xAxisUnit}
-                        exclusive
-                        onChange={(e, newUnit) => { if (newUnit !== null) setXAxisUnit(newUnit); }}
-                        aria-label="X-Axis Unit"
-                    >
-                        <ToggleButton value="day" aria-label="Daily">
-                            Day
-                        </ToggleButton>
-                        <ToggleButton value="week" aria-label="Weekly">
-                            Week
-                        </ToggleButton>
-                        <ToggleButton value="month" aria-label="Monthly">
-                            Month
-                        </ToggleButton>
-                    </ToggleButtonGroup>
-                    {/* グループ化モード切替 */}
-                    <ToggleButtonGroup
-                        value={groupBy}
-                        exclusive
-                        onChange={(e, newGroupBy) => { if (newGroupBy !== null) setGroupBy(newGroupBy); }}
-                        aria-label="Grouping Mode"
-                    >
-                        <ToggleButton value="group" aria-label="Group">
-                            Group
-                        </ToggleButton>
-                        <ToggleButton value="tag" aria-label="Tag">
-                            Tag
-                        </ToggleButton>
-                        <ToggleButton value="activity" aria-label="Activity">
-                            Activity
-                        </ToggleButton>
-                    </ToggleButtonGroup>
-                    {/* 集計単位の手動切替 */}
-                    <ToggleButtonGroup
-                        value={aggregationUnit}
-                        exclusive
-                        onChange={(e, newAggUnit) => {
-                            if (newAggUnit !== null) {
-                                setAggregationUnit(newAggUnit);
-                                setIsAggregationManual(true);
-                            }
-                        }}
-                        aria-label="Aggregation Unit"
-                    >
-                        <ToggleButton value="time" aria-label="Time">
-                            Time
-                        </ToggleButton>
-                        <ToggleButton value="count" aria-label="Count">
-                            Count
-                        </ToggleButton>
-                    </ToggleButtonGroup>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     {/* Activity フィルター */}
-                    <FormControl sx={{ minWidth: 120 }}>
-                        <InputLabel id="activity-filter-label">Activity</InputLabel>
+                    <FormControl sx={{ minWidth: 180 }}>
+                        <InputLabel id="activity-filter-label" size='small'>Activity</InputLabel>
                         <Select
                             labelId="activity-filter-label"
                             value={activityFilter}
                             label="Activity"
                             onChange={(e) => setActivityFilter(e.target.value)}
+                            size='small'
                         >
                             <MenuItem value="">
                                 <em>All</em>
@@ -307,13 +262,86 @@ function RecordChart() {
                             ))}
                         </Select>
                     </FormControl>
+                    {/* チャート種類の切替 */}
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
+                        <ToggleButtonGroup
+                            value={chartType}
+                            exclusive
+                            onChange={(e, newType) => { if (newType !== null) setChartType(newType); }}
+                            aria-label="Chart Type"
+                            size='small'
+                        >
+                            <ToggleButton value="line" aria-label="Line Chart">
+                                Line
+                            </ToggleButton>
+                            <ToggleButton value="bar" aria-label="Bar Chart">
+                                Bar
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                        {/* x軸の集計単位切替 */}
+                        <ToggleButtonGroup
+                            value={xAxisUnit}
+                            exclusive
+                            onChange={(e, newUnit) => { if (newUnit !== null) setXAxisUnit(newUnit); }}
+                            aria-label="X-Axis Unit"
+                            size='small'
+                        >
+                            <ToggleButton value="day" aria-label="Daily">
+                                Day
+                            </ToggleButton>
+                            <ToggleButton value="week" aria-label="Weekly">
+                                Week
+                            </ToggleButton>
+                            <ToggleButton value="month" aria-label="Monthly">
+                                Month
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                        {/* グループ化モード切替 */}
+                        <ToggleButtonGroup
+                            value={groupBy}
+                            exclusive
+                            onChange={(e, newGroupBy) => { if (newGroupBy !== null) setGroupBy(newGroupBy); }}
+                            aria-label="Grouping Mode"
+                            size='small'
+                        >
+                            <ToggleButton value="group" aria-label="Group">
+                                Group
+                            </ToggleButton>
+                            <ToggleButton value="tag" aria-label="Tag">
+                                Tag
+                            </ToggleButton>
+                            <ToggleButton value="activity" aria-label="Activity">
+                                Activity
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                        {/* 集計単位の手動切替 */}
+                        <ToggleButtonGroup
+                            value={aggregationUnit}
+                            exclusive
+                            onChange={(e, newAggUnit) => {
+                                if (newAggUnit !== null) {
+                                    setAggregationUnit(newAggUnit);
+                                    setIsAggregationManual(true);
+                                }
+                            }}
+                            aria-label="Aggregation Unit"
+                            size='small'
+                        >
+                            <ToggleButton value="time" aria-label="Time">
+                                Time
+                            </ToggleButton>
+                            <ToggleButton value="count" aria-label="Count">
+                                Count
+                            </ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
                 </Box>
                 {/* チャート描画部 */}
                 <ResponsiveContainer width="100%" height={400}>
                     {chartType === 'line' ? (
                         <LineChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
                             <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
                             <Tooltip formatter={(value) => formatTimeValue(value)} />
                             <Legend />
@@ -332,7 +360,7 @@ function RecordChart() {
                     ) : (
                         <BarChart data={chartData}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
+                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
                             <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
                             <Tooltip formatter={(value) => formatTimeValue(value)} />
                             <Legend />

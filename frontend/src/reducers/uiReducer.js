@@ -7,6 +7,7 @@ export const initialUIState = {
     tagDialogOpen: false,
     groupOpen: true,
     tagOpen: true,
+    chartOpen: true,
     heatmapOpen: true,
     calendarOpen: true,
     recordsOpen: true,
