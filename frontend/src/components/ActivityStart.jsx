@@ -68,8 +68,8 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
 
 
     // 最近使用した項目を取得
-    const recentActivities = filteredActivities.slice(0, 5);
-    const remainingActivities = filteredActivities.slice(5);
+    const recentActivities = filteredActivities.slice(0, 10);
+    const remainingActivities = filteredActivities.slice(10);
 
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
