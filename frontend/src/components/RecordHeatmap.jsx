@@ -65,8 +65,6 @@ function RecordHeatmap() {
         });
         // 同数の場合は "time" を採用
         const aggregationUnit = countMinutes >= countCount ? 'time' : 'count';
-        console.log(aggregationUnit) 
-        console.log(countMinutes, countCount)
         setDisplayMode(aggregationUnit);
     }, [filteredRecords]);
 
