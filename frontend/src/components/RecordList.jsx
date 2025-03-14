@@ -108,8 +108,9 @@ function RecordList() {
                 if (unit === 'count') {
                     return `${val}回`;
                 } else if (unit === 'minutes') {
-                    const hours = Math.floor(val / 60);
-                    const minutes = Math.floor(val % 60);
+                    const minutes_round = Math.round(val)
+                    const hours = Math.floor(minutes_round / 60);
+                    const minutes = Math.round(minutes_round % 60);
                     return `${hours}時間${minutes}分`;
                 }
                 return val;

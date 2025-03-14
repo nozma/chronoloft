@@ -18,8 +18,9 @@ export function calculateTimeDetails(activityId, records) {
 
     // 時間表示をフォーマットするヘルパー
     const formatTime30Days = (minutes) => {
-        const hrs = Math.floor(minutes / 60);
-        const mins = Math.round(minutes % 60);
+        const minutes_round = Math.round(minutes)
+        const hrs = Math.floor(minutes_round / 60);
+        const mins = Math.round(minutes_round % 60);
         return `${hrs}時間${mins}分`;
     };
     const formatTimeTotal = (minutes) => {

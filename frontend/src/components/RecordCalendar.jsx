@@ -85,8 +85,9 @@ function RecordCalendar() {
                 }
             }
             // label
-            const hours = Math.floor(rec.value / 60);
-            const mins = Math.round(rec.value % 60);
+            const min_round = Math.round(rec.value)
+            const hours = Math.floor(min_round / 60);
+            const mins = Math.round(min_round % 60);
             const formattedTime = `${String(hours)}:${String(mins).padStart(2, '0')}`;
 
             const event = {
