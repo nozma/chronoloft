@@ -3,6 +3,7 @@ import { Box, Typography } from '@mui/material';
 import RecordList from './RecordList';
 import RecordHeatmap from './RecordHeatmap';
 import RecordCalendar from './RecordCalendar';
+import RecordChart from './RecordChart';
 import { useUI } from '../contexts/UIContext';
 
 function History() {
@@ -21,6 +22,7 @@ function History() {
                         uiDispatch({
                             type: 'UPDATE_UI',
                             payload: {
+                                chartOpen: true,
                                 recordsOpen: true,
                                 heatmapOpen: true,
                                 calendarOpen: true,
@@ -38,6 +40,7 @@ function History() {
                         uiDispatch({
                             type: 'UPDATE_UI',
                             payload: {
+                                chartOpen:true,
                                 recordsOpen: false,
                                 heatmapOpen: false,
                                 calendarOpen: false,
@@ -49,6 +52,7 @@ function History() {
                     Close All
                 </Typography>
             </Box>
+            <RecordChart />
             <RecordHeatmap />
             <RecordCalendar />
             <RecordList />
