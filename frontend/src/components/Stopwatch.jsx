@@ -1,5 +1,6 @@
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
+import ReactDOMServer from 'react-dom/server';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
@@ -77,6 +78,21 @@ const Stopwatch = forwardRef((props, ref) => {
         const seconds = totalSeconds % 60;
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
+
+    // ストップウォッチ起動中にタイトルバーを変更する
+    useEffect(() => {
+        // タイトル文字列の変更
+        const totalSeconds = Math.floor(displayTime / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const colon = (totalSeconds % 2 === 0) ? ':' : ' ';
+        const formattedTime = `${String(hours)}${colon}${String(minutes).padStart(2, '0')}`;
+        document.title = `(${formattedTime}) ${props.activityName} - Activity Tracker`;
+        // 停止時のクリーンアップ
+        return () => {
+            document.title = 'Activity Tracker';
+        };
+    }, [displayTime])
 
     return (
         <Box sx={{ p: 2, borderRadius: 4 }}>
