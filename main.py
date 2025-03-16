@@ -8,26 +8,18 @@ from flask_migrate import upgrade
 from backend.app import create_app, db
 import os
 
-def auto_migrate_if_needed(app):
+def apply_all_migrations(app):
     """
-    DBファイルが存在しない場合、flask_migrate.upgrade() を呼んで
-    Alembicのマイグレーションを自動適用し、テーブルを作成する。
+    Alembicのマイグレーションを常に実行し、
+    既存DBがあればアップグレードし、空DBならテーブルを作成する。
     """
-    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
-    print(db_uri)
-    if db_uri.startswith("sqlite:///"):
-        db_path = db_uri.replace("sqlite:///", "")
-        if not os.path.exists(db_path):
-            print(f"[auto_migrate_if_needed] No DB found at {db_path}. Applying migrations...")
-
-            migrations_dir = os.path.join(os.path.dirname(__file__), "backend", "migrations")
-
-            with app.app_context():
-                try:
-                    upgrade(directory=migrations_dir)
-                    print("[auto_migrate_if_needed] Migrations applied successfully.")
-                except Exception as e:
-                    print(f"[auto_migrate_if_needed] Migration failed: {e}")
+    migrations_dir = os.path.join(os.path.dirname(__file__), "backend", "migrations")
+    with app.app_context():
+        try:
+            upgrade(directory=migrations_dir)
+            print("[apply_all_migrations] DB is now up-to-date.")
+        except Exception as e:
+            print(f"[apply_all_migrations] Migration failed: {e}")
 
 
 def find_free_port(preferred_port=5180):
@@ -56,9 +48,8 @@ def find_free_port(preferred_port=5180):
 
 def run_flask(port):
     app = create_app()
-    auto_migrate_if_needed(app)
+    apply_all_migrations(app)
     print(app.instance_path)
-    # 本番環境で使う場合は、debug=False にするなど必要に応じた設定を行う
     app.run(host='127.0.0.1', port=port)
     
 class ApiBridge:
