@@ -4,7 +4,33 @@ import threading
 import time
 import webview
 import webbrowser
-from backend.app import create_app  # Flaskアプリ生成のファクトリ関数
+from flask_migrate import upgrade
+from backend.app import create_app, db
+import os
+
+def auto_migrate_if_needed(app):
+    """
+    DBファイルが存在しない場合、flask_migrate.upgrade() を呼んで
+    Alembicのマイグレーションを自動適用し、テーブルを作成する。
+    """
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    print(db_uri)
+    if db_uri.startswith("sqlite:///"):
+        # sqlite:///... → ファイルパスを取り出す
+        db_path = db_uri.replace("sqlite:///", "")
+        if not os.path.exists(db_path):
+            print(f"[auto_migrate_if_needed] No DB found at {db_path}. Applying migrations...")
+
+            # migrationsフォルダのパスを指定 (要: ご自身のフォルダ構成を確認)
+            migrations_dir = os.path.join(os.path.dirname(__file__), "backend", "migrations")
+
+            with app.app_context():
+                try:
+                    upgrade(directory=migrations_dir)
+                    print("[auto_migrate_if_needed] Migrations applied successfully.")
+                except Exception as e:
+                    print(f"[auto_migrate_if_needed] Migration failed: {e}")
+
 
 def find_free_port():
     """空いているポートをOSに割り当ててもらい取得する。"""
@@ -16,6 +42,7 @@ def find_free_port():
 
 def run_flask(port):
     app = create_app()
+    auto_migrate_if_needed(app)
     print(app.instance_path)
     # 本番環境で使う場合は、debug=False にするなど必要に応じた設定を行う
     app.run(host='127.0.0.1', port=port)

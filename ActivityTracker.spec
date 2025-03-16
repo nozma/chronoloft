@@ -3,9 +3,9 @@
 
 a = Analysis(
     ['main.py'],
-    pathex=['backend'],
+    pathex=[],
     binaries=[],
-    datas=[('frontend/dist', 'frontend/dist'), ('backend/.env', 'backend/')],
+    datas=[('frontend/dist', 'frontend/dist')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
