@@ -20,7 +20,7 @@ function RecordingInterface() {
     const { setFilterState } = useFilter();
     const { activities } = useActivities();
     const { refreshActivities } = useActivities();
-    const { records, refreshRecords: onRecordUpdate} = useRecords();
+    const { records, refreshRecords: onRecordUpdate } = useRecords();
 
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
@@ -93,7 +93,7 @@ function RecordingInterface() {
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'baseline' }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
                 <Typography variant="h5" sx={{ mr: 2 }}>
                     Record Your Activity
                 </Typography>
@@ -150,8 +150,8 @@ function RecordingInterface() {
                 <Stopwatch
                     ref={stopwatchRef}
                     onComplete={async (minutes, memo) => {
-                        await createRecord({ 
-                            activity_id: selectedActivity.id, 
+                        await createRecord({
+                            activity_id: selectedActivity.id,
                             value: minutes,
                             memo: memo
                         });
