@@ -30,13 +30,29 @@ def auto_migrate_if_needed(app):
                     print(f"[auto_migrate_if_needed] Migration failed: {e}")
 
 
-def find_free_port():
-    """空いているポートをOSに割り当ててもらい取得する。"""
+def find_free_port(preferred_port=5180):
+    """
+    1. preferred_port を試みて、空いていればそこを返す
+    2. 空いていなければ、OSにランダムな空きポートを割り当ててもらう
+    """
+    # まず preferred_port で bind してみる
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('127.0.0.1', 0))  # ポートに 0 を指定 → OSがランダム割当
-    port = s.getsockname()[1]
-    s.close()
-    return port
+    try:
+        s.bind(('127.0.0.1', preferred_port))
+        # もし bind に成功すれば、ここで使うポートが確定
+        port = s.getsockname()[1]
+        s.close()
+        return port
+    except OSError:
+        # bind 失敗 → 既に使われているなどの理由でbindできない
+        # 次は 0 を指定して OSにランダムポートを割り当ててもらう
+        s.close()
+
+        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s2.bind(('127.0.0.1', 0))
+        port = s2.getsockname()[1]
+        s2.close()
+        return port
 
 def run_flask(port):
     app = create_app()
