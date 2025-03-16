@@ -3,7 +3,8 @@ import logging
 from pypresence import Presence
 import os
 import time
-from app.models import ActivityGroup
+from .models import ActivityGroup
+from . import db
 
 logger = logging.getLogger(__name__)
 # アプリ全体で常に1つのインスタンスのみを使用するためのグローバル変数

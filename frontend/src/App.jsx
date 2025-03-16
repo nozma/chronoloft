@@ -14,6 +14,7 @@ import { UIProvider } from './contexts/UIContext';
 import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
+import AppHeader from './components/AppHeader';
 
 function App() {
     // カラーテーマ対応
@@ -53,6 +54,7 @@ function App() {
                                     <FilterProvider>
                                         <ActiveActivityProvider>
                                             <div>
+                                                <AppHeader />
                                                 <RecordingInterface />
                                                 <History />
                                             </div>

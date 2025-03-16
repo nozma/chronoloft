@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
-from app.models import ActivityGroup
-from app import db
+from ..models import ActivityGroup
+from .. import db
 from sqlalchemy.exc import SQLAlchemyError
 
 activity_group_bp = Blueprint('activity_group', __name__, url_prefix='/api/activity_groups')

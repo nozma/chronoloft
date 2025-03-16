@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import SQLAlchemyError
-from app.models import Tag, db
+from ..models import Tag, db
 
 tag_bp = Blueprint('tag', __name__, url_prefix='/api/tags')
 

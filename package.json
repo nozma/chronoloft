@@ -6,9 +6,11 @@
     ],
     "scripts": {
         "dev:frontend": "cd frontend && npm run dev",
-        "dev:backend": "cd backend && venv/bin/python run.py",
+        "dev:backend": "cd backend && venv/bin/python ../main.py",
         "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "build": "pyinstaller main.py --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --windowed -n ActivityTracker --add-data \"backend/.env:backend/\""
+        "build:frontend": "cd frontend && npm run build",
+        "build:pyinstaller": "pyinstaller main.py -y --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --windowed -n ActivityTracker",
+        "build": "npm run build:frontend && npm run build:pyinstaller"
     },
     "devDependencies": {
         "concurrently": "^7.0.0"
