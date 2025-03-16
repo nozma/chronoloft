@@ -16,12 +16,10 @@ def auto_migrate_if_needed(app):
     db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     print(db_uri)
     if db_uri.startswith("sqlite:///"):
-        # sqlite:///... → ファイルパスを取り出す
         db_path = db_uri.replace("sqlite:///", "")
         if not os.path.exists(db_path):
             print(f"[auto_migrate_if_needed] No DB found at {db_path}. Applying migrations...")
 
-            # migrationsフォルダのパスを指定 (要: ご自身のフォルダ構成を確認)
             migrations_dir = os.path.join(os.path.dirname(__file__), "backend", "migrations")
 
             with app.app_context():
