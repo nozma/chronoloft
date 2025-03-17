@@ -33,6 +33,20 @@ function RecordingInterface() {
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
 
+        // Discord接続中か確認し、接続中ならストップウォッチを開始しない
+        // （別のウィンドウでストップウォッチが動作していると考えられるため）
+        try {
+            const presenceRes = await fetch('/api/discord_presence/status');
+            const presenceData = await presenceRes.json();
+            if (presenceData.connected) {
+                alert("Discord presence is active. Skipping stopwatch start.");
+                return;
+            }
+        } catch (e) {
+            console.error("Failed to check Discord presence:", e);
+        }
+
+
         if (activity.unit === 'minutes') {
             // minutes -> ストップウォッチ
             if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
