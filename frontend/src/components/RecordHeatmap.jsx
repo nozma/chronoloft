@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
-    ToggleButton,
-    ToggleButtonGroup,
+    MenuItem,
     Typography,
-    Collapse
+    Collapse,
+    TextField
 } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
@@ -28,13 +28,6 @@ function RecordHeatmap() {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records } = useRecords();
-
-    // UI用: モード切替用ハンドラー
-    const handleModeChange = (event, newMode) => {
-        if (newMode !== null) {
-            setDisplayMode(newMode);
-        }
-    };
 
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -198,15 +191,16 @@ function RecordHeatmap() {
                                 onFilterChange={handleFilterChange}
                                 records={records}
                             />
-                            <ToggleButtonGroup
+                            <TextField
                                 value={displayMode}
-                                exclusive
-                                onChange={handleModeChange}
+                                select
+                                onChange={(e) => setDisplayMode(e.target.value)}
+                                label="Unit"
                                 size='small'
                             >
-                                <ToggleButton value="time">Time</ToggleButton>
-                                <ToggleButton value="count">Count</ToggleButton>
-                            </ToggleButtonGroup>
+                                <MenuItem value="time">Time</MenuItem>
+                                <MenuItem value="count">Count</MenuItem>
+                            </TextField>
                         </Box>
                         <ActivityCalendar
                             data={heatmapData}
