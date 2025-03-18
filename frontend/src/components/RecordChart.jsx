@@ -1,14 +1,10 @@
 // frontend/src/components/RecordChart.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
     ToggleButtonGroup,
     ToggleButton,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Collapse
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
@@ -28,11 +24,13 @@ import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useActivities } from '../contexts/ActivityContext';
-import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
+import RecordFilter from './RecordFilter';
+import useRecordListState from '../hooks/useRecordListState';
+import { useGroups } from '../contexts/GroupContext';
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -130,21 +128,19 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit) {
 function RecordChart() {
     // コンテキストから必要なデータを取得
     const { records } = useRecords();
+    const { groups } = useGroups();
     const { filterState } = useFilter();
-    const { activities } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
     const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
     const [xAxisUnit, setXAxisUnit] = useState('day'); // 'day' / 'week' / 'month'
     const [groupBy, setGroupBy] = useState('group'); // 'group' / 'tag' / 'activity'
-    // このコンポーネント独自の Activity フィルター（activityFilter には activity.id を保持）
-    const [activityFilter, setActivityFilter] = useState('');
     // 集計単位（"time" または "count"）の状態。自動判定と手動切替の両方をサポート
     const [aggregationUnit, setAggregationUnit] = useState('time');
     const [isAggregationManual, setIsAggregationManual] = useState(false);
-
-    // 既存のフィルター条件（groupFilter, tagFilter, activityNameFilter）に加え、activityFilter を適用
+    // フィルタ条件を反映して表示に使うレコードをフィルタ
     const filteredRecords = useMemo(() => {
         return records.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
@@ -153,10 +149,13 @@ function RecordChart() {
                 if (!tagNames.includes(filterState.tagFilter)) return false;
             }
             if (filterState.activityNameFilter && r.activity_name !== filterState.activityNameFilter) return false;
-            if (activityFilter && r.activity_id !== activityFilter) return false;
             return true;
         });
-    }, [records, filterState, activityFilter]);
+    }, [records, filterState]);
+    // グローバルなフィルタ条件を更新する
+    const handleFilterChange = useCallback((newCriteria) => {
+        recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [recordListDispatch]);
 
     // 自動判定による集計単位（"time"＝分 or "count"＝回）の決定
     const autoAggregationUnit = useMemo(() => {
@@ -267,25 +266,11 @@ function RecordChart() {
                 {/* 各種コントロール */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     {/* Activity フィルター */}
-                    <FormControl sx={{ minWidth: 180 }}>
-                        <InputLabel id="activity-filter-label" size='small'>Activity</InputLabel>
-                        <Select
-                            labelId="activity-filter-label"
-                            value={activityFilter}
-                            label="Activity"
-                            onChange={(e) => setActivityFilter(e.target.value)}
-                            size='small'
-                        >
-                            <MenuItem value="">
-                                <em>All</em>
-                            </MenuItem>
-                            {activities.map(activity => (
-                                <MenuItem key={activity.id} value={activity.id}>
-                                    {activity.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                    <RecordFilter
+                        groups={groups}
+                        onFilterChange={handleFilterChange}
+                        records={records}
+                    />
                     {/* チャート種類の切替 */}
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
                         <ToggleButtonGroup
