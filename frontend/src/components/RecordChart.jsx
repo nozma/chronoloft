@@ -1,5 +1,5 @@
 // frontend/src/components/RecordChart.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -28,6 +28,9 @@ import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
+import RecordFilter from './RecordFilter';
+import useRecordListState from '../hooks/useRecordListState';
+import { useGroups } from '../contexts/GroupContext';
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -125,9 +128,10 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit) {
 function RecordChart() {
     // コンテキストから必要なデータを取得
     const { records } = useRecords();
+    const { groups } = useGroups();
     const { filterState } = useFilter();
-    const { activities } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
+    const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
     const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
@@ -148,6 +152,10 @@ function RecordChart() {
             return true;
         });
     }, [records, filterState]);
+    // グローバルなフィルタ条件を更新する
+    const handleFilterChange = useCallback((newCriteria) => {
+        recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
+    }, [recordListDispatch]);
 
     // 自動判定による集計単位（"time"＝分 or "count"＝回）の決定
     const autoAggregationUnit = useMemo(() => {
@@ -258,7 +266,11 @@ function RecordChart() {
                 {/* 各種コントロール */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     {/* Activity フィルター */}
-
+                    <RecordFilter
+                        groups={groups}
+                        onFilterChange={handleFilterChange}
+                        records={records}
+                    />
                     {/* チャート種類の切替 */}
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
                         <ToggleButtonGroup
