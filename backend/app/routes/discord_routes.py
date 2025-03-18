@@ -14,6 +14,10 @@ def discord_presence_start():
     activity_name = data.get('activity_name')
     details = data.get('details')
     asset_key = data.get('asset_key') or "default_image"
+    # すでに接続が存在していたら重複して開始しない
+    for grp, mgr in DISCORD_MANAGERS.items():
+        if mgr.is_connected():
+            return jsonify({'error': 'Another Discord session is active, cannot start a new one'}), 400
     manager = get_discord_manager_for_group(group)
     if not manager:
         return jsonify({'error': f'No CLIENT_ID for group {group}'}), 400
@@ -48,3 +52,14 @@ def discord_presence_stop():
             current_app.logger.error("Error in discord_presence: %s", e, exc_info=True)
             return jsonify({'error': str(e)}), 500
     return jsonify({'error': 'No manager found'}), 400
+
+@discord_bp.route('/api/discord_presence/status', methods=['GET'])
+def discord_presence_status():
+    """
+    現在Discordに接続中かどうかを返す簡易エンドポイント。
+    全Groupを走査し、どこか is_connected=True があれば connected=True。
+    """
+    for mgr in DISCORD_MANAGERS.values():
+        if mgr.is_connected():
+            return jsonify({'connected': True})
+    return jsonify({'connected': False})

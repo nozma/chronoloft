@@ -48,6 +48,13 @@ class DiscordRPCManager:
                 logger.error("Error while closing Discord RPC: %s", e)
             finally:
                 self.rpc = None
+    
+    def is_connected(self):
+        """
+        実際に rpc オブジェクトが存在し、連携が切れていないかどうかを確認。
+        「切れていれば」基本的に self.rpc.update() で例外が起き、close()されているはずと判断。
+        """
+        return (self.rpc is not None)
 
 def get_discord_manager_for_group(group):
     global _instance

@@ -31,7 +31,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const handleAutocompleteChange = (event, newValue) => {
         if (newValue) {
             onStart(newValue);
-            setShowAutocomplete(false);
         }
     };
 
