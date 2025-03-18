@@ -6,8 +6,10 @@
     ],
     "scripts": {
         "dev:frontend": "cd frontend && npm run dev",
-        "dev:backend": "cd backend && venv/bin/python ../main.py",
-        "start": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend:webview": "cd backend && venv/bin/python ../main.py",
+        "dev:backend:no_webview": "cd backend && venv/bin/python run.py",
+        "start:webview": "concurrently \"npm run dev:backend:webview\" \"npm run dev:frontend\"",
+        "start:no_webview": "concurrently \"npm run dev:backend:no_webview\" \"npm run dev:frontend\"",
         "build:frontend": "cd frontend && npm run build",
         "build:pyinstaller": "pyinstaller main.py -y --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --add-data \"backend/migrations:backend/migrations\" --windowed -n ActivityTracker --hidden-import logging.config",
         "build": "npm run build:frontend && npm run build:pyinstaller"
