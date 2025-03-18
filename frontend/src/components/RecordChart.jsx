@@ -23,7 +23,6 @@ import {
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
-import { useActivities } from '../contexts/ActivityContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { scaleOrdinal } from 'd3-scale';
@@ -131,7 +130,7 @@ function RecordChart() {
     const { groups } = useGroups();
     const { filterState } = useFilter();
     const { state: uiState, dispatch: uiDispatch } = useUI();
-    const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
+    const { dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
     const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
