@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
-    ToggleButton,
-    ToggleButtonGroup,
+    MenuItem,
     Typography,
-    Collapse
+    Collapse,
+    TextField
 } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
@@ -17,6 +17,7 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
+import { useMediaQuery } from '@mui/material';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
@@ -28,13 +29,6 @@ function RecordHeatmap() {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records } = useRecords();
-
-    // UI用: モード切替用ハンドラー
-    const handleModeChange = (event, newMode) => {
-        if (newMode !== null) {
-            setDisplayMode(newMode);
-        }
-    };
 
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -171,6 +165,10 @@ function RecordHeatmap() {
             ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / 7d`
             : `${totalCount7.toFixed(0)} times / 7d`;
 
+    // min-width:1100px であるかどうかを判定
+    const isWide = useMediaQuery('(min-width:1100px)');
+    const blockSize = isWide ? 15 : 12;
+
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
@@ -198,19 +196,20 @@ function RecordHeatmap() {
                                 onFilterChange={handleFilterChange}
                                 records={records}
                             />
-                            <ToggleButtonGroup
+                            <TextField
                                 value={displayMode}
-                                exclusive
-                                onChange={handleModeChange}
+                                select
+                                onChange={(e) => setDisplayMode(e.target.value)}
+                                label="Unit"
                                 size='small'
                             >
-                                <ToggleButton value="time">Time</ToggleButton>
-                                <ToggleButton value="count">Count</ToggleButton>
-                            </ToggleButtonGroup>
+                                <MenuItem value="time">Time</MenuItem>
+                                <MenuItem value="count">Count</MenuItem>
+                            </TextField>
                         </Box>
                         <ActivityCalendar
                             data={heatmapData}
-                            blockSize={14}
+                            blockSize={blockSize}
                             blockMargin={2}
                             fontSize={14}
                             theme={{

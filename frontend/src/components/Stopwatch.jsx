@@ -95,76 +95,97 @@ const Stopwatch = forwardRef((props, ref) => {
     }, [displayTime])
 
     return (
-        <Box sx={{ p: 2, borderRadius: 4 }}>
-            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                {/* アクティビティ名・アイコン表示 */}
-                {getIconForGroup(props.activityGroup, groups)}
-                <Typography variant="h6" sx={{ mr: 2 }}>
-                    {props.activityName}
-                </Typography>
-                {/* 開始時刻表示と編集UI */}
-                {isEditingStartTime ? (
-                    <>
-                        <TextField
-                            type="datetime-local"
-                            value={editedStartTime}
-                            onChange={(e) => setEditedStartTime(e.target.value)}
-                            size='small'
-                        />
-                        <Button onClick={handleSaveStartTime} variant="contained" color="primary">
-                            Save
-                        </Button>
-                        <Button onClick={handleCancelEditStartTime} variant="outlined">
-                            Cancel
-                        </Button>
-                    </>
-                ) : (
-                    <>
-                        <Typography variant="body1">(Start Time: {formattedStartTime}</Typography>
-                        <IconButton onClick={handleEditStartTime} sx={{ m: 0 }} size='small'>
-                            <EditIcon fontSize='small' />
-                        </IconButton>
-                        <Typography variant='body1'>)</Typography>
-                    </>
-                )}
-            </Box>
-            {/* 経過時間と完了・キャンセルアイコン */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                <IconButton color="primary" onClick={() => complete(memo)} >
-                    <CheckCircleIcon fontSize='large' />
-                </IconButton>
-                <IconButton color="error" onClick={cancel} >
-                    <CancelIcon fontSize='large' />
-                </IconButton>
-            </Box>
-            {/* メモ入力欄 */}
-            <TextField
-                label="Memo"
-                multiline
-                rows={2}
-                fullWidth
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                sx={{ my: 2 }}
-            />
-            {/* Update Presence ボタン */}
-            <Button
-                variant="outlined"
-                onClick={() => {
-                    const data = {
-                        group: props.activityGroup,
-                        activity_name: props.activityName,
-                        details: memo,
-                        asset_key: props.discordData?.asset_key || "default_image",
-                    };
-                    startDiscordPresence(data)
-                        .catch(err => console.error("Failed to update presence:", err));
-                }}
+        <>
+            <Box
+                sx={(theme) => ({
+                    display: 'flex',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    backgroundColor: theme.palette.mode === 'dark'
+                        ? '#222'  // ダークモード用
+                        : '#fafafa', // ライトモード用
+                    zIndex: 100,
+                    py: 2,
+                    px: 8
+                })}
             >
-                Update Discord Presence
-            </Button>
-        </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                        {/* アクティビティ名・アイコン表示 */}
+                        {getIconForGroup(props.activityGroup, groups)}
+                        <Typography variant="h6" sx={{ mr: 2 }}>
+                            {props.activityName}
+                        </Typography>
+                        {/* 開始時刻表示と編集UI */}
+                        {isEditingStartTime ? (
+                            <>
+                                <TextField
+                                    type="datetime-local"
+                                    value={editedStartTime}
+                                    onChange={(e) => setEditedStartTime(e.target.value)}
+                                    size='small'
+                                />
+                                <Button onClick={handleSaveStartTime} variant="contained" color="primary">
+                                    Save
+                                </Button>
+                                <Button onClick={handleCancelEditStartTime} variant="outlined">
+                                    Cancel
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="body1">Start Time: {formattedStartTime}</Typography>
+                                <IconButton onClick={handleEditStartTime} sx={{ ml: -1 }} size='small' >
+                                    <EditIcon fontSize='small' />
+                                </IconButton>
+                            </>
+                        )}
+                    </Box>
+                    {/* 経過時間と完了・キャンセルアイコン */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
+                        <IconButton color="primary" onClick={() => complete(memo)} >
+                            <CheckCircleIcon fontSize='large' />
+                        </IconButton>
+                        <IconButton color="error" onClick={cancel} >
+                            <CancelIcon fontSize='large' />
+                        </IconButton>
+                    </Box>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    {/* メモ入力欄 */}
+                    <TextField
+                        label="Memo"
+                        multiline
+                        rows={2}
+                        fullWidth
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        sx={{ mb: 1 }}
+                    />
+                    {/* Update Presence ボタン */}
+                    <Button
+                        variant="outlined"
+                        size='small'
+                        onClick={() => {
+                            const data = {
+                                group: props.activityGroup,
+                                activity_name: props.activityName,
+                                details: memo,
+                                asset_key: props.discordData?.asset_key || "default_image",
+                            };
+                            startDiscordPresence(data)
+                                .catch(err => console.error("Failed to update presence:", err));
+                        }}
+                    >
+                        Sync Memo
+                    </Button>
+                </Box>
+            </Box>
+            <Box sx={{ marginTop: 8 }} />
+        </>
     );
 });
 

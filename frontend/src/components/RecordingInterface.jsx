@@ -108,59 +108,6 @@ function RecordingInterface() {
 
     return (
         <Box sx={{ mb: 2 }}>
-            {/* Heading / Title */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
-                <Typography variant="h5" sx={{ mr: 2 }}>
-                    Record Your Activity
-                </Typography>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: true,
-                                tagOpen: true,
-                            }
-                        })
-                    }
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Open All
-                </Typography>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: false,
-                                tagOpen: false,
-                            }
-                        })
-                    }
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Close All
-                </Typography>
-            </Box>
-            <ActivityStart
-                activities={activities}
-                onStart={handleStartRecordFromSelect}
-                stopwatchVisible={stopwatchVisible}
-            />
-            <ActivityList />
-            {/* Count用ダイアログ */}
-            {state.recordDialogOpen && recordDialogActivity && recordDialogActivity.unit === 'count' && (
-                <AddRecordDialog
-                    open={state.recordDialogOpen}
-                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
-                    activity={recordDialogActivity}
-                    onSubmit={handleRecordCreated}
-                />
-            )}
             {/* Stopwatch */}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
@@ -185,6 +132,61 @@ function RecordingInterface() {
                     discordData={discordData}
                     activityName={selectedActivity.name}
                     activityGroup={selectedActivity.group_name}
+                />
+            )}
+            {/* Heading / Title */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
+                <Typography variant="h5" sx={{ mr: 2 }}>
+                    Record Your Activity
+                </Typography>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: true,
+                                tagOpen: true,
+                                activityOpen: true,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Open All
+                </Typography>
+                <Typography
+                    variant='caption'
+                    color='#ccc'
+                    onClick={() =>
+                        dispatch({
+                            type: 'UPDATE_UI',
+                            payload: {
+                                groupOpen: false,
+                                tagOpen: false,
+                                activityOpen: false,
+                            }
+                        })
+                    }
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Close All
+                </Typography>
+            </Box>
+            <ActivityStart
+                activities={activities}
+                onStart={handleStartRecordFromSelect}
+                stopwatchVisible={stopwatchVisible}
+            />
+            <ActivityList />
+            {/* Count用ダイアログ */}
+            {state.recordDialogOpen && recordDialogActivity && recordDialogActivity.unit === 'count' && (
+                <AddRecordDialog
+                    open={state.recordDialogOpen}
+                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
+                    activity={recordDialogActivity}
+                    onSubmit={handleRecordCreated}
                 />
             )}
         </Box>

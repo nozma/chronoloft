@@ -3,9 +3,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
-    ToggleButtonGroup,
-    ToggleButton,
-    Collapse
+    Collapse,
+    TextField,
+    MenuItem
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -23,7 +23,6 @@ import {
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
-import { useActivities } from '../contexts/ActivityContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { scaleOrdinal } from 'd3-scale';
@@ -131,7 +130,7 @@ function RecordChart() {
     const { groups } = useGroups();
     const { filterState } = useFilter();
     const { state: uiState, dispatch: uiDispatch } = useUI();
-    const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
+    const { dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
     const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
@@ -176,13 +175,39 @@ function RecordChart() {
 
     // 集計済みデータの作成
     const chartData = useMemo(() => {
-        return aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit);
+        const aggregated = aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit);
+        // 各データに数値（timestamp）を示す dateValue を付与
+        aggregated.forEach(item => {
+            let dt;
+            if (xAxisUnit === 'day') {
+                dt = DateTime.fromFormat(item.date, 'yyyy-MM-dd');
+            } else if (xAxisUnit === 'week') {
+                dt = DateTime.fromFormat(item.date, "kkkk-'W'WW");
+            } else if (xAxisUnit === 'month') {
+                dt = DateTime.fromFormat(item.date, 'yyyy-MM');
+            }
+            item.dateValue = dt.isValid ? dt.toMillis() : null;
+        });
+        return aggregated;
     }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit]);
 
-    // グラフ描画に使う色パレット
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#413ea0', '#ff0000', '#00ff00', '#0000ff'];
+    // データの最大値を取得
+    const maxValue = useMemo(() => {
+        if (!chartData || chartData.length === 0) return 0;
+        let maxVal = 0;
+        chartData.forEach((row) => {
+            Object.keys(row).forEach((key) => {
+                if (key === 'date') return; // date 以外の値を対象に最大値を計算
+                const val = row[key];
+                if (typeof val === 'number' && val > maxVal) {
+                    maxVal = val;
+                }
+            });
+        });
+        return maxVal;
+    }, [chartData]);
 
-    // aggregationUnitに応じて数値をフォーマットする
+    // ツールチップ用の数値フォーマット
     const formatTimeValue = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
@@ -192,35 +217,36 @@ function RecordChart() {
         }
         return value;
     };
+    // y軸表示のフォーマット
     const formatTimeValueHour = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
+            if (maxValue < 120) return `${value}分` // 最大値が2時間未満の場合はそのまま表示する
             const hours = Math.floor(roundedValue / 60);
             return `${hours}時間`;
         }
         return value;
     };
     // 月日の表示のフォーマッタ
-    const xAxisTickFormatter = (dateStr) => {
+    const xAxisTickFormatter = (val) => {
+        if (!val) return '';
+        const dt = DateTime.fromMillis(val);
         if (xAxisUnit === 'month') {
-            // chartData の periodKey は "yyyy-MM" の形式になっているので
-            const dt = DateTime.fromFormat(dateStr, "yyyy-MM");
-            return dt.isValid ? `${dt.month}月` : dateStr;
+            return dt.isValid ? `${dt.month}月` : '';
+        } else if (xAxisUnit === 'week') {
+            return dt.isValid ? dt.toFormat('M月d日') : '';
         } else {
-            // "day" の場合は "yyyy-MM-dd"、"week" の場合は "yyyy-'W'WW" となっているので、それぞれパースする
-            let dt;
-            if (xAxisUnit === 'day') {
-                dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd");
-            } else if (xAxisUnit === 'week') {
-                // 週の場合、Luxon で直接 "kkkk-'W'WW" から変換する
-                dt = DateTime.fromFormat(dateStr, "kkkk-'W'WW");
-            }
-            if (dt && dt.isValid) {
-                return `${dt.month}月${dt.day}日`;
-            }
-            return dateStr;
+            // day
+            return dt.isValid ? dt.toFormat('M月d日') : '';
         }
     };
+    // ツールチップの日時のフォーマッタ
+    const tooltipLabelFormatter = (val) => {
+        if (!val) return '';
+        // val はミリ秒 (timestamp) 
+        const dt = DateTime.fromMillis(val);
+        return dt.isValid ? dt.toFormat('yyyy-MM-dd') : '';
+    }
 
     // 配色設定
     const theme = useTheme();
@@ -243,6 +269,19 @@ function RecordChart() {
     const colorScale = useMemo(() => {
         return scaleOrdinal(colorArray).domain(keys);
     }, [keys, colorArray]);
+
+    // y軸のtickは最大値が120以上なら60の倍数にする
+    const domain = useMemo(() => {
+        return [
+            0,
+            (dataMax) => {
+                if (dataMax < 120) {
+                    return 'auto';
+                }
+                return Math.ceil(dataMax / 60) * 60;
+            },
+        ];
+    }, []);
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -271,89 +310,84 @@ function RecordChart() {
                         onFilterChange={handleFilterChange}
                         records={records}
                     />
-                    {/* チャート種類の切替 */}
+                    {/* チャート表示設定 */}
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
-                        <ToggleButtonGroup
+                        {/* 折れ線グラフ・棒グラフ切り替え */}
+                        <TextField
+                            select
+                            label="Chart Type"
+                            variant="outlined"
+                            size="small"
                             value={chartType}
-                            exclusive
-                            onChange={(e, newType) => { if (newType !== null) setChartType(newType); }}
-                            aria-label="Chart Type"
-                            size='small'
+                            onChange={(e) => setChartType(e.target.value)}
+                            sx={{ minWidth: 100 }}
                         >
-                            <ToggleButton value="line" aria-label="Line Chart">
-                                Line
-                            </ToggleButton>
-                            <ToggleButton value="bar" aria-label="Bar Chart">
-                                Bar
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                            <MenuItem value="line">Line</MenuItem>
+                            <MenuItem value="bar">Bar</MenuItem>
+                        </TextField>
                         {/* x軸の集計単位切替 */}
-                        <ToggleButtonGroup
+                        <TextField
+                            select
+                            label="Timescale"
+                            size="small"
                             value={xAxisUnit}
-                            exclusive
-                            onChange={(e, newUnit) => { if (newUnit !== null) setXAxisUnit(newUnit); }}
-                            aria-label="X-Axis Unit"
-                            size='small'
+                            onChange={(e) => setXAxisUnit(e.target.value)}
+                            sx={{ minWidth: 100 }}
                         >
-                            <ToggleButton value="day" aria-label="Daily">
-                                Day
-                            </ToggleButton>
-                            <ToggleButton value="week" aria-label="Weekly">
-                                Week
-                            </ToggleButton>
-                            <ToggleButton value="month" aria-label="Monthly">
-                                Month
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                            <MenuItem value="day">Day</MenuItem>
+                            <MenuItem value="week">Week</MenuItem>
+                            <MenuItem value="month">Month</MenuItem>
+                        </TextField>
                         {/* グループ化モード切替 */}
-                        <ToggleButtonGroup
+                        <TextField
+                            select
+                            label="Grouping"
+                            size="small"
                             value={groupBy}
-                            exclusive
-                            onChange={(e, newGroupBy) => { if (newGroupBy !== null) setGroupBy(newGroupBy); }}
-                            aria-label="Grouping Mode"
-                            size='small'
+                            onChange={(e) => setGroupBy(e.target.value)}
                         >
-                            <ToggleButton value="group" aria-label="Group">
-                                Group
-                            </ToggleButton>
-                            <ToggleButton value="tag" aria-label="Tag">
-                                Tag
-                            </ToggleButton>
-                            <ToggleButton value="activity" aria-label="Activity">
-                                Activity
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                            <MenuItem value="group">Group</MenuItem>
+                            <MenuItem value="tag">Tag</MenuItem>
+                            <MenuItem value="activity">Activity</MenuItem>
+                        </TextField>
                         {/* 集計単位の手動切替 */}
-                        <ToggleButtonGroup
+                        <TextField
+                            select
+                            label="Unit"
+                            size="small"
                             value={aggregationUnit}
-                            exclusive
-                            onChange={(e, newAggUnit) => {
-                                if (newAggUnit !== null) {
-                                    setAggregationUnit(newAggUnit);
-                                    setIsAggregationManual(true);
-                                }
+                            onChange={(e) => {
+                                setAggregationUnit(e.target.value);
+                                setIsAggregationManual(true); // ここは従来のロジックを踏襲
                             }}
-                            aria-label="Aggregation Unit"
-                            size='small'
                         >
-                            <ToggleButton value="time" aria-label="Time">
-                                Time
-                            </ToggleButton>
-                            <ToggleButton value="count" aria-label="Count">
-                                Count
-                            </ToggleButton>
-                        </ToggleButtonGroup>
+                            <MenuItem value="time">Time</MenuItem>
+                            <MenuItem value="count">Count</MenuItem>
+                        </TextField>
                     </Box>
                 </Box>
                 {/* チャート描画部 */}
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={180}>
                     {chartType === 'line' ? (
                         <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
-                            <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
+                            <CartesianGrid
+                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                            />
+                            <XAxis
+                                type='number'
+                                dataKey='dateValue'
+                                scale='time'
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={xAxisTickFormatter}
+                            />
+                            <YAxis
+                                tickCount={8}
+                                tickFormatter={formatTimeValueHour}
+                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                            />
                             <Tooltip
                                 formatter={(value) => formatTimeValue(value)}
+                                labelFormatter={tooltipLabelFormatter}
                                 contentStyle={{
                                     backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
                                     border: 'none'
@@ -361,9 +395,11 @@ function RecordChart() {
                                 labelStyle={{
                                     color: theme.palette.mode === 'dark' ? '#fff' : '#000'
                                 }}
-                            />                            <Legend />
+                            />
+                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
+                                .filter(key => key !== 'dateValue')
                                 .map((key, index) => (
                                     <Line
                                         key={key}
@@ -376,11 +412,24 @@ function RecordChart() {
                         </LineChart>
                     ) : (
                         <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
-                            <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
+                            <CartesianGrid
+                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                            />
+                            <XAxis
+                                type='number'
+                                dataKey='dateValue'
+                                scale='time'
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={xAxisTickFormatter}
+                            />
+                            <YAxis
+                                tickCount={8}
+                                tickFormatter={formatTimeValueHour}
+                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                            />
                             <Tooltip
                                 formatter={(value) => formatTimeValue(value)}
+                                labelFormatter={tooltipLabelFormatter}
                                 contentStyle={{
                                     backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
                                     border: 'none'
@@ -391,6 +440,7 @@ function RecordChart() {
                             />                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
+                                .filter(key => key !== 'dateValue')
                                 .map((key, index) => (
                                     <Bar
                                         key={key}

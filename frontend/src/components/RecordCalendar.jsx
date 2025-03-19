@@ -245,24 +245,25 @@ function RecordCalendar() {
             </Typography>
 
             <Collapse in={uiState.calendarOpen}>
-                <Box sx={{ height: '800px', m: 2 }}>
+                <Box sx={{ mb: 2 }}>
                     <DragAndDropCalendar
                         // Basic RBC setup
                         localizer={localizer}
                         events={events}
                         view={currentView}
                         onView={(view) => setCurrentView(view)}
-                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]}
+                        views={[Views.DAY, Views.WEEK, Views.MONTH]}
                         date={currentDate}
                         onNavigate={(newDate) => setCurrentDate(newDate)}
                         tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
+                        min={new Date(1972, 0, 1, 4, 0, 0, 0)}
 
                         // Layout
                         startAccessor="start"
                         endAccessor="end"
-                        step={30}
+                        step={60}
                         timeslots={2}
-                        style={{ height: 800 }}
+                        style={{ height: 500 }}
                         titleAccessor="title"
                         formats={formats}
                         components={{ event: CustomEvent }}
@@ -287,7 +288,7 @@ function RecordCalendar() {
                                 borderRadius: '5px',
                                 opacity: 0.8,
                                 color: 'white',
-                                fontSize: '0.75em',
+                                fontSize: '0.5em',
                             },
                         })}
                     />
