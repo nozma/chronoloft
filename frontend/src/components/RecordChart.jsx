@@ -3,8 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,
     Typography,
-    ToggleButtonGroup,
-    ToggleButton,
     Collapse,
     TextField,
     MenuItem
@@ -177,13 +175,39 @@ function RecordChart() {
 
     // 集計済みデータの作成
     const chartData = useMemo(() => {
-        return aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit);
+        const aggregated = aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit);
+        // 各データに数値（timestamp）を示す dateValue を付与
+        aggregated.forEach(item => {
+            let dt;
+            if (xAxisUnit === 'day') {
+                dt = DateTime.fromFormat(item.date, 'yyyy-MM-dd');
+            } else if (xAxisUnit === 'week') {
+                dt = DateTime.fromFormat(item.date, "kkkk-'W'WW");
+            } else if (xAxisUnit === 'month') {
+                dt = DateTime.fromFormat(item.date, 'yyyy-MM');
+            }
+            item.dateValue = dt.isValid ? dt.toMillis() : null;
+        });
+        return aggregated;
     }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit]);
 
-    // グラフ描画に使う色パレット
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#413ea0', '#ff0000', '#00ff00', '#0000ff'];
+    // データの最大値を取得
+    const maxValue = useMemo(() => {
+        if (!chartData || chartData.length === 0) return 0;
+        let maxVal = 0;
+        chartData.forEach((row) => {
+            Object.keys(row).forEach((key) => {
+                if (key === 'date') return; // date 以外の値を対象に最大値を計算
+                const val = row[key];
+                if (typeof val === 'number' && val > maxVal) {
+                    maxVal = val;
+                }
+            });
+        });
+        return maxVal;
+    }, [chartData]);
 
-    // aggregationUnitに応じて数値をフォーマットする
+    // ツールチップ用の数値フォーマット
     const formatTimeValue = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
@@ -193,35 +217,36 @@ function RecordChart() {
         }
         return value;
     };
+    // y軸表示のフォーマット
     const formatTimeValueHour = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
+            if (maxValue < 120) return `${value}分` // 最大値が2時間未満の場合はそのまま表示する
             const hours = Math.floor(roundedValue / 60);
             return `${hours}時間`;
         }
         return value;
     };
     // 月日の表示のフォーマッタ
-    const xAxisTickFormatter = (dateStr) => {
+    const xAxisTickFormatter = (val) => {
+        if (!val) return '';
+        const dt = DateTime.fromMillis(val);
         if (xAxisUnit === 'month') {
-            // chartData の periodKey は "yyyy-MM" の形式になっているので
-            const dt = DateTime.fromFormat(dateStr, "yyyy-MM");
-            return dt.isValid ? `${dt.month}月` : dateStr;
+            return dt.isValid ? `${dt.month}月` : '';
+        } else if (xAxisUnit === 'week') {
+            return dt.isValid ? dt.toFormat('M月d日') : '';
         } else {
-            // "day" の場合は "yyyy-MM-dd"、"week" の場合は "yyyy-'W'WW" となっているので、それぞれパースする
-            let dt;
-            if (xAxisUnit === 'day') {
-                dt = DateTime.fromFormat(dateStr, "yyyy-MM-dd");
-            } else if (xAxisUnit === 'week') {
-                // 週の場合、Luxon で直接 "kkkk-'W'WW" から変換する
-                dt = DateTime.fromFormat(dateStr, "kkkk-'W'WW");
-            }
-            if (dt && dt.isValid) {
-                return `${dt.month}月${dt.day}日`;
-            }
-            return dateStr;
+            // day
+            return dt.isValid ? dt.toFormat('M月d日') : '';
         }
     };
+    // ツールチップの日時のフォーマッタ
+    const tooltipLabelFormatter = (val) => {
+        if (!val) return '';
+        // val はミリ秒 (timestamp) 
+        const dt = DateTime.fromMillis(val);
+        return dt.isValid ? dt.toFormat('yyyy-MM-dd') : '';
+    }
 
     // 配色設定
     const theme = useTheme();
@@ -244,6 +269,19 @@ function RecordChart() {
     const colorScale = useMemo(() => {
         return scaleOrdinal(colorArray).domain(keys);
     }, [keys, colorArray]);
+
+    // y軸のtickは最大値が120以上なら60の倍数にする
+    const domain = useMemo(() => {
+        return [
+            0,
+            (dataMax) => {
+                if (dataMax < 120) {
+                    return 'auto';
+                }
+                return Math.ceil(dataMax / 60) * 60;
+            },
+        ];
+    }, []);
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -329,14 +367,27 @@ function RecordChart() {
                     </Box>
                 </Box>
                 {/* チャート描画部 */}
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={180}>
                     {chartType === 'line' ? (
                         <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
-                            <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
+                            <CartesianGrid
+                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                            />
+                            <XAxis
+                                type='number'
+                                dataKey='dateValue'
+                                scale='time'
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={xAxisTickFormatter}
+                            />
+                            <YAxis
+                                tickCount={8}
+                                tickFormatter={formatTimeValueHour}
+                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                            />
                             <Tooltip
                                 formatter={(value) => formatTimeValue(value)}
+                                labelFormatter={tooltipLabelFormatter}
                                 contentStyle={{
                                     backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
                                     border: 'none'
@@ -344,9 +395,11 @@ function RecordChart() {
                                 labelStyle={{
                                     color: theme.palette.mode === 'dark' ? '#fff' : '#000'
                                 }}
-                            />                            <Legend />
+                            />
+                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
+                                .filter(key => key !== 'dateValue')
                                 .map((key, index) => (
                                     <Line
                                         key={key}
@@ -359,11 +412,24 @@ function RecordChart() {
                         </LineChart>
                     ) : (
                         <BarChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" tickFormatter={xAxisTickFormatter} />
-                            <YAxis domain={[0, 'auto']} tickFormatter={formatTimeValueHour} />
+                            <CartesianGrid
+                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                            />
+                            <XAxis
+                                type='number'
+                                dataKey='dateValue'
+                                scale='time'
+                                domain={['dataMin', 'dataMax']}
+                                tickFormatter={xAxisTickFormatter}
+                            />
+                            <YAxis
+                                tickCount={8}
+                                tickFormatter={formatTimeValueHour}
+                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                            />
                             <Tooltip
                                 formatter={(value) => formatTimeValue(value)}
+                                labelFormatter={tooltipLabelFormatter}
                                 contentStyle={{
                                     backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
                                     border: 'none'
@@ -374,6 +440,7 @@ function RecordChart() {
                             />                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
+                                .filter(key => key !== 'dateValue')
                                 .map((key, index) => (
                                     <Bar
                                         key={key}
