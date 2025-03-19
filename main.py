@@ -79,5 +79,7 @@ if __name__ == '__main__':
         title="Activity Tracker",
         url=app_url,
         js_api=api,   # フロントエンドから呼び出すAPIを登録
+        width=900,
+        height=600,
     )
     webview.start()
