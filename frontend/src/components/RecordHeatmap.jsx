@@ -17,6 +17,7 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
+import { useMediaQuery } from '@mui/material';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
@@ -164,6 +165,10 @@ function RecordHeatmap() {
             ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / 7d`
             : `${totalCount7.toFixed(0)} times / 7d`;
 
+    // min-width:1100px であるかどうかを判定
+    const isWide = useMediaQuery('(min-width:1100px)');
+    const blockSize = isWide ? 15 : 12;
+
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
@@ -204,7 +209,7 @@ function RecordHeatmap() {
                         </Box>
                         <ActivityCalendar
                             data={heatmapData}
-                            blockSize={14}
+                            blockSize={blockSize}
                             blockMargin={2}
                             fontSize={14}
                             theme={{
