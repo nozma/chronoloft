@@ -148,6 +148,7 @@ function RecordingInterface() {
                             payload: {
                                 groupOpen: true,
                                 tagOpen: true,
+                                activityOpen: true,
                             }
                         })
                     }
@@ -164,6 +165,7 @@ function RecordingInterface() {
                             payload: {
                                 groupOpen: false,
                                 tagOpen: false,
+                                activityOpen: false,
                             }
                         })
                     }

@@ -212,58 +212,75 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                 {/* アクティビティ表示 */}
                 {!state.showGrid && (
                     <>
-                        <Typography variant='caption' color='#cccccc'>Activity (Click to start recording)</Typography>
-                        <Box>
-                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                {recentActivities.map(activity => (
-                                    <Button
-                                        key={activity.id}
-                                        variant="outlined"
-                                        color="primary"
-                                        onClick={() => onStart(activity)}
-                                        sx={{
-                                            display: 'flex',
-                                            textTransform: 'none',
-                                            borderRadius: 5,
-                                            boxShadow: 2,
-                                        }}
-                                        startIcon={getIconForGroup(activity.group_name, groups)}
-                                    >
-                                        {activity.name}
-                                    </Button>
-                                ))}
-                                {remainingActivities.length > 0 && (
-                                    <Autocomplete
-                                        options={remainingActivities}
-                                        getOptionLabel={(option) => option.name}
-                                        onChange={handleAutocompleteChange}
-                                        renderOption={(props, option) => (
-                                            <li {...props}>
-                                                {getIconForGroup(option.group_name, groups)}
-                                                {option.name}
-                                            </li>
-                                        )}
-                                        renderInput={(params) => (
-                                            <TextField {...params} label="その他" variant="outlined" />
-                                        )}
-                                        sx={{ minWidth: 200 }}
-                                        size='small'
-                                    />
-                                )}
-                                {!state.showGrid && !stopwatchVisible && (
-                                    <IconButton
-                                        variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
-                                        sx={{
-                                            opacity: 0,
-                                            transition: 'opacity 0.3s',
-                                            '&:hover': { opacity: 1 },
-                                        }}
-                                    >
-                                        <SettingsIcon />
-                                    </IconButton>
-                                )}
+                        <Typography
+                            variant='caption'
+                            color='#cccccc'
+                            sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                            onClick={() => dispatch({ type: 'SET_ACTIVITY_OPEN', payload: !state.activityOpen })}
+                        >
+                            Activity (Click to start recording)
+                            <KeyboardArrowRightIcon
+                                fontSize='small'
+                                sx={{
+                                    transition: 'transform 0.15s linear',
+                                    transform: state.activityOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    marginLeft: '4px'
+                                }}
+                            />
+                        </Typography>
+                        <Collapse in={state.activityOpen}>
+                            <Box>
+                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    {recentActivities.map(activity => (
+                                        <Button
+                                            key={activity.id}
+                                            variant="outlined"
+                                            color="primary"
+                                            onClick={() => onStart(activity)}
+                                            sx={{
+                                                display: 'flex',
+                                                textTransform: 'none',
+                                                borderRadius: 5,
+                                                boxShadow: 2,
+                                            }}
+                                            startIcon={getIconForGroup(activity.group_name, groups)}
+                                        >
+                                            {activity.name}
+                                        </Button>
+                                    ))}
+                                    {remainingActivities.length > 0 && (
+                                        <Autocomplete
+                                            options={remainingActivities}
+                                            getOptionLabel={(option) => option.name}
+                                            onChange={handleAutocompleteChange}
+                                            renderOption={(props, option) => (
+                                                <li {...props}>
+                                                    {getIconForGroup(option.group_name, groups)}
+                                                    {option.name}
+                                                </li>
+                                            )}
+                                            renderInput={(params) => (
+                                                <TextField {...params} label="その他" variant="outlined" />
+                                            )}
+                                            sx={{ minWidth: 200 }}
+                                            size='small'
+                                        />
+                                    )}
+                                    {!state.showGrid && !stopwatchVisible && (
+                                        <IconButton
+                                            variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                            sx={{
+                                                opacity: 0,
+                                                transition: 'opacity 0.3s',
+                                                '&:hover': { opacity: 1 },
+                                            }}
+                                        >
+                                            <SettingsIcon />
+                                        </IconButton>
+                                    )}
+                                </Box>
                             </Box>
-                        </Box>
+                        </Collapse>
                     </>
                 )}
             </Box>
