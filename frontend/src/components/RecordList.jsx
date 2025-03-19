@@ -10,22 +10,18 @@ import { formatToLocal } from '../utils/dateUtils';
 import useRecordListState from '../hooks/useRecordListState';
 import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
+import getIconForGroup from '../utils/getIconForGroup';
+import { useGroups } from '../contexts/GroupContext';
 
 function RecordList() {
-    // ----------------------------
-    // 状態管理
-    // ----------------------------
     const [error] = useState(null);
-    // useRecordListState で一元管理する
     const { state, dispatch } = useRecordListState();
     const { confirmDialogOpen, selectedRecordId } = state;
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
+    const { groups } = useGroups();
 
-    // ----------------------------
-    // Ref の宣言
-    // ----------------------------
     const dataGridRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -48,7 +44,7 @@ function RecordList() {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
     };
-    
+
     const handleCancelDelete = () => {
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: false });
         dispatch({ type: 'SET_SELECTED_RECORD_ID', payload: null });
@@ -85,41 +81,52 @@ function RecordList() {
         {
             field: 'created_at',
             headerName: '記録日時',
-            width: 150,
+            width: 160,
             valueFormatter: (params) => formatToLocal(params)
-        },
-        {
-            field: 'group_name',
-            headerName: 'グループ',
-            width: 120,
         },
         {
             field: 'activity_name',
             headerName: '項目名',
-            width: 150,
+            width: 240,
+            renderCell: (params) => {
+                const groupName = params.row.activity_group;
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getIconForGroup(groupName, groups)}
+                        <Typography noWrap variant='body' title={params.value}>
+                            {params.value}
+                        </Typography>
+                    </Box>
+                );
+            }
         },
         {
             field: 'value',
             headerName: '記録',
-            width: 100,
+            width: 60,
             renderCell: (params) => {
                 const val = params.row.value;
                 const unit = params.row.unit;
+                let val_txt;
                 if (unit === 'count') {
-                    return `${val}回`;
+                    val_txt = `${val}回`;
                 } else if (unit === 'minutes') {
                     const minutes_round = Math.round(val)
                     const hours = Math.floor(minutes_round / 60);
                     const minutes = Math.round(minutes_round % 60);
-                    return `${hours}時間${minutes}分`;
+                    val_txt = `${hours}:${String(minutes).padStart(2, "0")}`;
                 }
-                return val;
+                return (
+                    <Typography noWrap variant='body' title={val_txt}>
+                        {val_txt}
+                    </Typography>
+                );
             },
         },
         {
             field: 'memo',
             headerName: 'memo',
-            width: 230
+            width: 200
         },
         {
             field: 'actions',
@@ -172,7 +179,7 @@ function RecordList() {
                         }
                     }}
                 >
-                    <Box ref={dataGridRef} sx={{ height: 800, m: 2 }}>
+                    <Box ref={dataGridRef} sx={{ height: 600, mb: 2 }}>
                         <DataGrid
                             rows={records}
                             columns={columns}
