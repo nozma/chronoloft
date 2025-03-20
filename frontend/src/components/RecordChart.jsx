@@ -249,7 +249,7 @@ function RecordChart() {
     }, [chartData]);
 
     // ツールチップ用の数値フォーマット
-    const formatTimeValue = (value) => {
+    const tooltipValueFormatter = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
             const hours = Math.floor(roundedValue / 60);
@@ -259,7 +259,7 @@ function RecordChart() {
         return value;
     };
     // y軸表示のフォーマット
-    const formatTimeValueHour = (value) => {
+    const yAxisTimeValueFormatter = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
             if (maxValue < 120) return `${value}分` // 最大値が2時間未満の場合はそのまま表示する
@@ -380,7 +380,7 @@ function RecordChart() {
                             </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 12 }}>
-                            {formatTimeValue(entry.value)}
+                            {tooltipValueFormatter(entry.value)}
                         </Typography>
                     </Box>
                 ))}
@@ -503,7 +503,7 @@ function RecordChart() {
                             />
                             <YAxis
                                 tickCount={8}
-                                tickFormatter={formatTimeValueHour}
+                                tickFormatter={yAxisTimeValueFormatter}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
                             <Tooltip content={<CustomTooltip />} />
@@ -535,7 +535,7 @@ function RecordChart() {
                             />
                             <YAxis
                                 tickCount={8}
-                                tickFormatter={formatTimeValueHour}
+                                tickFormatter={yAxisTimeValueFormatter}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
                             <Tooltip content={<CustomTooltip />} />
