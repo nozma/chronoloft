@@ -488,7 +488,7 @@ function RecordChart() {
                     </Box>
                 </Box>
                 {/* チャート描画部 */}
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={250}>
                     {chartType === 'line' ? (
                         <LineChart data={chartData}>
                             <CartesianGrid
