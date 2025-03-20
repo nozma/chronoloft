@@ -155,9 +155,29 @@ function RecordChart() {
     // 集計単位（"time" または "count"）の状態。自動判定と手動切替の両方をサポート
     const [aggregationUnit, setAggregationUnit] = useState('time');
     const [isAggregationManual, setIsAggregationManual] = useState(false);
+    // 集計期間
+    const [selectedPeriod, setSelectedPeriod] = useState('30d'); // デフォルトは過去30日
+
+    // 過去の日付を取得する関数
+    const getStartDate = (period) => {
+        const now = DateTime.local();
+        switch (period) {
+            case '7d':
+                return now.minus({ days: 7 });
+            case '30d':
+                return now.minus({ days: 30 });
+            case '365d':
+                return now.minus({ days: 365 });
+            case 'all':
+            default:
+                return DateTime.fromMillis(0); // すべてのデータを対象
+        }
+    };
+
     // フィルタ条件を反映して表示に使うレコードをフィルタ
     const filteredRecords = useMemo(() => {
-        return records.filter(r => {
+        const startDate = getStartDate(selectedPeriod);
+        const filteredByState = records.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -166,7 +186,11 @@ function RecordChart() {
             if (filterState.activityNameFilter && r.activity_name !== filterState.activityNameFilter) return false;
             return true;
         });
-    }, [records, filterState]);
+        return filteredByState.filter(r => {
+            const recordDate = DateTime.fromISO(r.created_at);
+            return recordDate >= startDate;
+        });
+    }, [records, filterState, selectedPeriod]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -395,6 +419,20 @@ function RecordChart() {
                     />
                     {/* チャート表示設定 */}
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
+                        {/* 表示期間選択 */}
+                        <TextField
+                            select
+                            label="Period"
+                            size="small"
+                            value={selectedPeriod}
+                            onChange={(e) => setSelectedPeriod(e.target.value)}
+                            sx={{ minWidth: 120 }}
+                        >
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="365d">Year</MenuItem>
+                            <MenuItem value="30d">Month</MenuItem>
+                            <MenuItem value="7d">Week</MenuItem>
+                        </TextField>
                         {/* 折れ線グラフ・棒グラフ切り替え */}
                         <TextField
                             select
@@ -468,7 +506,7 @@ function RecordChart() {
                                 tickFormatter={formatTimeValueHour}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
-                            <Tooltip content={<CustomTooltip />}/>
+                            <Tooltip content={<CustomTooltip />} />
                             <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
@@ -500,8 +538,8 @@ function RecordChart() {
                                 tickFormatter={formatTimeValueHour}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
-                            <Tooltip content={<CustomTooltip />}/>
-                         <Legend />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .filter(key => key !== 'dateValue')
