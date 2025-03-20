@@ -198,6 +198,7 @@ function RecordChart() {
         chartData.forEach((row) => {
             Object.keys(row).forEach((key) => {
                 if (key === 'date') return; // date 以外の値を対象に最大値を計算
+                if (key === 'dateValue') return;
                 const val = row[key];
                 if (typeof val === 'number' && val > maxVal) {
                     maxVal = val;
