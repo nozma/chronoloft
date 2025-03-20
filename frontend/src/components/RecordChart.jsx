@@ -253,7 +253,7 @@ function RecordChart() {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
             const hours = Math.floor(roundedValue / 60);
-            const minutes = Math.round(roundedValue % 60);
+            const minutes = String(Math.round(roundedValue % 60)).padStart(2, '0');
             return `${hours}時間${minutes}分`;
         }
         return value;
