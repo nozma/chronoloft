@@ -39,7 +39,7 @@ import { useGroups } from '../contexts/GroupContext';
  * @param {string} aggregationUnit - 'time'（＝minutes）または 'count'
  * @returns {Array} - 集計済みデータの配列。各オブジェクトは { date: 'YYYY-MM-DD', group1: value, group2: value, ... } の形式
  */
-function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit) {
+function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumulative) {
     // aggregationUnit に合わせて対象レコードを絞る
     const filtered = records.filter(r => {
         if (aggregationUnit === 'time') {
@@ -121,6 +121,22 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit) {
         });
     });
 
+    // 累積データの計算 (Line Chart用)
+    if (isCumulative) {
+        let cumulativeSums = {};
+        dataArray.forEach(item => {
+            Object.keys(item).forEach(key => {
+                if (key !== 'date') {
+                    if (!cumulativeSums[key]) {
+                        cumulativeSums[key] = 0;
+                    }
+                    cumulativeSums[key] += item[key];
+                    item[key] = cumulativeSums[key];
+                }
+            });
+        });
+    }
+
     return dataArray;
 }
 
@@ -175,7 +191,7 @@ function RecordChart() {
 
     // 集計済みデータの作成
     const chartData = useMemo(() => {
-        const aggregated = aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit);
+        const aggregated = aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType === 'line');
         // 各データに数値（timestamp）を示す dateValue を付与
         aggregated.forEach(item => {
             let dt;
@@ -189,7 +205,7 @@ function RecordChart() {
             item.dateValue = dt.isValid ? dt.toMillis() : null;
         });
         return aggregated;
-    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit]);
+    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType]);
 
     // データの最大値を取得
     const maxValue = useMemo(() => {
@@ -283,6 +299,72 @@ function RecordChart() {
             },
         ];
     }, []);
+
+    // ツールチップ用カスタムコンポーネント
+    const CustomTooltip = ({ active, payload, label }) => {
+        const theme = useTheme(); // MUIのテーマを取得
+        if (!active || !payload || payload.length === 0) return null;
+        // 0を除外し数値の降順でソート
+        const sortedPayload = [...payload]
+            .filter(entry => entry.value > 0)
+            .sort((a, b) => b.value - a.value);
+        return (
+            <Box
+                sx={{
+                    backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#fff',
+                    color: theme.palette.mode === 'dark' ? '#fff' : '#000',
+                    padding: 1,
+                    borderRadius: 1,
+                    boxShadow: 3,
+                    border: theme.palette.mode === 'dark' ? '1px solid #444' : '1px solid #ddd',
+                    minWidth: 120,
+                }}
+            >
+                <Typography
+                    variant="caption"
+                    sx={{
+                        fontWeight: 'bold',
+                        color: theme.palette.mode === 'dark' ? '#bbb' : '#333',
+                        borderBottom: '1px solid',
+                        paddingBottom: 0.5,
+                        display: 'block'
+                    }}
+                >
+                    {tooltipLabelFormatter(label)}
+                </Typography>
+                {sortedPayload.map((entry, index) => (
+                    <Box
+                        key={index}
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginTop: 0.5,
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box
+                                sx={{
+                                    width: 12,
+                                    height: 12,
+                                    backgroundColor: entry.color,
+                                    borderRadius: '50%',
+                                }}
+                            />
+                            <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                {entry.name}
+                            </Typography>
+                        </Box>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 12 }}>
+                            {formatTimeValue(entry.value)}
+                        </Typography>
+                    </Box>
+                ))}
+            </Box>
+        );
+    };
+
+
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -386,17 +468,7 @@ function RecordChart() {
                                 tickFormatter={formatTimeValueHour}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
-                            <Tooltip
-                                formatter={(value) => formatTimeValue(value)}
-                                labelFormatter={tooltipLabelFormatter}
-                                contentStyle={{
-                                    backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
-                                    border: 'none'
-                                }}
-                                labelStyle={{
-                                    color: theme.palette.mode === 'dark' ? '#fff' : '#000'
-                                }}
-                            />
+                            <Tooltip content={<CustomTooltip />}/>
                             <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
@@ -407,7 +479,7 @@ function RecordChart() {
                                         type="monotone"
                                         dataKey={key}
                                         stroke={colorScale(key)}
-                                        dot={{ r: 3 }}
+                                        dot={false}
                                     />
                                 ))}
                         </LineChart>
@@ -428,17 +500,8 @@ function RecordChart() {
                                 tickFormatter={formatTimeValueHour}
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
-                            <Tooltip
-                                formatter={(value) => formatTimeValue(value)}
-                                labelFormatter={tooltipLabelFormatter}
-                                contentStyle={{
-                                    backgroundColor: theme.palette.mode === 'dark' ? '#000' : '#fff',
-                                    border: 'none'
-                                }}
-                                labelStyle={{
-                                    color: theme.palette.mode === 'dark' ? '#fff' : '#000'
-                                }}
-                            />                            <Legend />
+                            <Tooltip content={<CustomTooltip />}/>
+                         <Legend />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .filter(key => key !== 'dateValue')
