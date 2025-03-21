@@ -18,8 +18,10 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend
+    Legend,
+    Customized
 } from 'recharts';
+import { forceSimulation, forceY, forceCollide } from 'd3-force';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
@@ -300,7 +302,7 @@ function RecordChart() {
         const allKeys = new Set();
         chartData.forEach(item => {
             Object.keys(item).forEach(key => {
-                if (key !== 'date') allKeys.add(key);
+                if (key !== 'date' && key !== 'date') allKeys.add(key);
             });
         });
         return Array.from(allKeys);
@@ -323,6 +325,18 @@ function RecordChart() {
             },
         ];
     }, []);
+
+    // Line Chartのラベル関連
+    // 最も長いラベルの幅を計算する
+    const longestLabelWidth = useMemo(() => {
+        if (!keys || keys.length === 0) return 0; // fallback（初回表示時はkeysが空のため）
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '12px sans-serif';
+
+        return Math.max(...keys.map(k => ctx.measureText(k).width)) + 12;
+    }, [chartData]);
 
     // ツールチップ用カスタムコンポーネント
     const CustomTooltip = ({ active, payload, label }) => {
@@ -490,7 +504,7 @@ function RecordChart() {
                 {/* チャート描画部 */}
                 <ResponsiveContainer width="100%" height={250}>
                     {chartType === 'line' ? (
-                        <LineChart data={chartData}>
+                        <LineChart data={chartData} margin={{ right: longestLabelWidth }}>
                             <CartesianGrid
                                 stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                             />
@@ -507,14 +521,117 @@ function RecordChart() {
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend />
+                            {/* カスタムラベル */}
+                            <Customized
+                                component={({ xAxisMap, yAxisMap }) => {
+                                    const xKey = Object.keys(xAxisMap)[0];
+                                    const yKey = Object.keys(yAxisMap)[0];
+                                    const xScale = xAxisMap[xKey]?.scale;
+                                    const yScale = yAxisMap[yKey]?.scale;
+
+                                    if (!xScale || !yScale) return null;
+
+                                    const labels = keys.map(key => {
+                                        const last = chartData[chartData.length - 1];
+
+                                        return {
+                                            key,
+                                            value: last[key],
+                                            rawX: xScale(last.dateValue),
+                                            rawY: yScale(last[key]),
+                                            y: yScale(last[key]), // 初期y
+                                            color: colorScale(key),
+                                        };
+                                    });
+
+                                    // 右端の凡例がなるべく重ならないようにする
+                                    const topPadding = 10;
+                                    const bottomPadding = 30;
+                                    const chartHeight = 250;
+                                    const availableHeight = chartHeight - topPadding - bottomPadding;
+                                    const minGap = 10;
+                                    labels.sort((a, b) => a.rawY - b.rawY);
+                                    // d3-forceによる重なり回避
+                                    const sim = forceSimulation(labels)
+                                        .force('y', forceY(d => d.rawY).strength(1))
+                                        .force('collide', forceCollide(minGap / 2))
+                                        .stop();
+                                    for (let i = 0; i < 300; ++i) sim.tick();
+
+                                    // 手動調整で順序を保つ（必要に応じて）
+                                    for (let i = 1; i < labels.length; ++i) {
+                                        const prev = labels[i - 1];
+                                        const curr = labels[i];
+                                        if (curr.y - prev.y < minGap) {
+                                            curr.y = prev.y + minGap;
+                                        }
+                                    }
+
+                                    // スケーリング or シフト
+                                    const validYLabels = labels.filter(
+                                        l => typeof l.y === 'number' &&
+                                            !isNaN(l.y) &&
+                                            l.key !== 'date' &&
+                                            l.key !== 'dateValue'
+                                    );
+
+                                    if (validYLabels.length === 0) return;
+
+                                    const yMin = Math.min(...validYLabels.map(l => l.y));
+                                    const yMax = Math.max(...validYLabels.map(l => l.y));
+                                    const labelSpan = yMax - yMin;
+
+                                    if (labelSpan > availableHeight) {
+                                        // スケーリングして詰める
+                                        const scale = availableHeight / labelSpan;
+                                        labels.forEach(label => {
+                                            label.y = topPadding + (label.y - yMin) * scale;
+                                        });
+                                    } else {
+                                        // シフトして中央寄せ（または上寄せ）
+                                        const offset = topPadding - yMin;
+                                        labels.forEach(label => {
+                                            label.y += offset;
+                                        });
+                                    }
+
+                                    return (
+                                        <g>
+                                            {labels.map(label => (
+                                                <g key={`label-${label.key}`}>
+                                                    {/* ガイドライン: 折れ線の終点 → ラベル */}
+                                                    <line
+                                                        x1={label.rawX}
+                                                        y1={label.rawY}
+                                                        x2={label.rawX + 10}
+                                                        y2={label.y}
+                                                        stroke={label.color}
+                                                        strokeWidth={.5}
+                                                    />
+                                                    {/* ラベル */}
+                                                    <text
+                                                        x={label.rawX + 10}
+                                                        y={label.y}
+                                                        fill={label.color}
+                                                        fontSize={12}
+                                                        alignmentBaseline="middle"
+                                                        textAnchor="start"
+                                                    >
+                                                        {label.key}
+                                                    </text>
+                                                </g>
+                                            ))}
+                                        </g>
+                                    );
+                                }}
+                            />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .filter(key => key !== 'dateValue')
                                 .map((key, index) => (
                                     <Line
                                         key={key}
-                                        type="monotone"
+                                        type="stepAfter"
                                         dataKey={key}
                                         stroke={colorScale(key)}
                                         dot={false}
