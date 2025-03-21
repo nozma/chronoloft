@@ -514,10 +514,10 @@ function RecordChart() {
                                 .map((key, index) => (
                                     <Line
                                         key={key}
-                                        type="linear"
+                                        type="stepAfter"
                                         dataKey={key}
                                         stroke={colorScale(key)}
-                                        dot={{r: 1}}
+                                        dot={false}
                                     />
                                 ))}
                         </LineChart>
