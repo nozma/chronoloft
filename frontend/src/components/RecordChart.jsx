@@ -517,7 +517,7 @@ function RecordChart() {
                                         type="monotone"
                                         dataKey={key}
                                         stroke={colorScale(key)}
-                                        dot={false}
+                                        dot={{r: 1}}
                                     />
                                 ))}
                         </LineChart>
