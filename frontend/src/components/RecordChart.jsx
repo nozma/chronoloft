@@ -329,10 +329,12 @@ function RecordChart() {
     // Line Chartのラベル関連
     // 最も長いラベルの幅を計算する
     const longestLabelWidth = useMemo(() => {
+        if (!keys || keys.length === 0) return 0; // fallback（初回表示時はkeysが空のため）
+
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         ctx.font = '12px sans-serif';
-      
+
         return Math.max(...keys.map(k => ctx.measureText(k).width)) + 12;
     }, [chartData]);
 
@@ -531,7 +533,7 @@ function RecordChart() {
 
                                     const labels = keys.map(key => {
                                         const last = chartData[chartData.length - 1];
-                                        
+
                                         return {
                                             key,
                                             value: last[key],
@@ -568,15 +570,15 @@ function RecordChart() {
                                     // スケーリング or シフト
                                     const validYLabels = labels.filter(
                                         l => typeof l.y === 'number' &&
-                                             !isNaN(l.y) &&
-                                             l.key !== 'date' &&
-                                             l.key !== 'dateValue'
-                                      );
-                                      
-                                      if (validYLabels.length === 0) return;
-                                      
-                                      const yMin = Math.min(...validYLabels.map(l => l.y));
-                                      const yMax = Math.max(...validYLabels.map(l => l.y));
+                                            !isNaN(l.y) &&
+                                            l.key !== 'date' &&
+                                            l.key !== 'dateValue'
+                                    );
+
+                                    if (validYLabels.length === 0) return;
+
+                                    const yMin = Math.min(...validYLabels.map(l => l.y));
+                                    const yMax = Math.max(...validYLabels.map(l => l.y));
                                     const labelSpan = yMax - yMin;
 
                                     if (labelSpan > availableHeight) {
