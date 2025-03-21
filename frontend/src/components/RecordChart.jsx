@@ -18,7 +18,8 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend
+    Legend,
+    Customized
 } from 'recharts';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
@@ -324,6 +325,15 @@ function RecordChart() {
         ];
     }, []);
 
+    // 最も長いラベルの幅を計算する
+    const longestLabelWidth = useMemo(() => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '12px sans-serif';
+      
+        return Math.max(...keys.map(k => ctx.measureText(k).width)) + 12;
+      }, [chartData]);
+
     // ツールチップ用カスタムコンポーネント
     const CustomTooltip = ({ active, payload, label }) => {
         const theme = useTheme(); // MUIのテーマを取得
@@ -490,7 +500,7 @@ function RecordChart() {
                 {/* チャート描画部 */}
                 <ResponsiveContainer width="100%" height={250}>
                     {chartType === 'line' ? (
-                        <LineChart data={chartData}>
+                        <LineChart data={chartData} margin={{ right: longestLabelWidth }}>
                             <CartesianGrid
                                 stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                             />
@@ -507,7 +517,40 @@ function RecordChart() {
                                 domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend />
+                            <Legend verticalAlign='top' />
+                            {/* カスタムラベル */}
+                            <Customized
+                                component={({ width, height, xAxisMap, yAxisMap }) => {
+                                    const xScale = xAxisMap[0].scale;
+                                    const yScale = yAxisMap[0].scale;
+
+                                    return (
+                                        <>
+                                            {keys.map((key) => {
+                                                const lastPoint = chartData[chartData.length - 1];
+                                                const x = xScale(lastPoint.dateValue);
+                                                const y = yScale(lastPoint[key]);
+
+                                                if (x == null || y == null || isNaN(y)) return null;
+
+                                                return (
+                                                    <text
+                                                        key={`label-${key}`}
+                                                        x={x + 6} // 少し右に出す
+                                                        y={y}
+                                                        fill={colorScale(key)}
+                                                        fontSize={12}
+                                                        alignmentBaseline="middle"
+                                                        textAnchor="start" // 左寄せで表示
+                                                    >
+                                                        {key}
+                                                    </text>
+                                                );
+                                            })}
+                                        </>
+                                    );
+                                }}
+                            />
                             {Object.keys(chartData[0] || {})
                                 .filter(key => key !== 'date')
                                 .filter(key => key !== 'dateValue')
