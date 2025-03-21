@@ -514,7 +514,7 @@ function RecordChart() {
                                 .map((key, index) => (
                                     <Line
                                         key={key}
-                                        type="monotone"
+                                        type="linear"
                                         dataKey={key}
                                         stroke={colorScale(key)}
                                         dot={{r: 1}}
