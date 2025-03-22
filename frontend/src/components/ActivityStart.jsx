@@ -1,12 +1,12 @@
 import {
-    Autocomplete,
     Button,
     Box,
     IconButton,
-    TextField,
     ToggleButton,
     Typography,
-    Collapse
+    Collapse,
+    Menu,
+    MenuItem
 } from '@mui/material';
 import ToggleButtonGroup, {
     toggleButtonGroupClasses,
@@ -20,13 +20,19 @@ import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import ConfirmDialog from './ConfirmDialog';
 
 function ActivityStart({ activities, onStart, stopwatchVisible }) {
     const { groups } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
+
+    const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
+    const [contextTargetActivity, setContextTargetActivity] = useState(null);
+    const [dummyDialogOpen, setDummyDialogOpen] = useState(false);
+    const [showRemaining, setShowRemaining] = useState(false);
 
     const handleAutocompleteChange = (event, newValue) => {
         if (newValue) {
@@ -86,6 +92,23 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
             borderLeft: '1px solid transparent',
         },
     }));
+
+    // 右クリック用ハンドラ
+    const handleContextMenu = (event, activity) => {
+        event.preventDefault();
+        setContextMenuAnchor(event.currentTarget);
+        setContextTargetActivity(activity);
+    };
+
+    const handleCloseContextMenu = () => {
+        setContextMenuAnchor(null);
+        setContextTargetActivity(null);
+    };
+
+    const handleStartSubStopwatchDummy = () => {
+        setDummyDialogOpen(true);
+        handleCloseContextMenu();
+    };
 
 
     return (
@@ -230,13 +253,14 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                         </Typography>
                         <Collapse in={state.activityOpen}>
                             <Box>
-                                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     {recentActivities.map(activity => (
                                         <Button
                                             key={activity.id}
                                             variant="outlined"
                                             color="primary"
                                             onClick={() => onStart(activity)}
+                                            onContextMenu={(e) => handleContextMenu(e, activity)}
                                             sx={{
                                                 display: 'flex',
                                                 textTransform: 'none',
@@ -248,24 +272,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                             {activity.name}
                                         </Button>
                                     ))}
-                                    {remainingActivities.length > 0 && (
-                                        <Autocomplete
-                                            options={remainingActivities}
-                                            getOptionLabel={(option) => option.name}
-                                            onChange={handleAutocompleteChange}
-                                            renderOption={(props, option) => (
-                                                <li {...props}>
-                                                    {getIconForGroup(option.group_name, groups)}
-                                                    {option.name}
-                                                </li>
-                                            )}
-                                            renderInput={(params) => (
-                                                <TextField {...params} label="その他" variant="outlined" />
-                                            )}
-                                            sx={{ minWidth: 200 }}
-                                            size='small'
-                                        />
-                                    )}
+                                    {/* 設定アイコンの表示 */}
                                     {!state.showGrid && !stopwatchVisible && (
                                         <IconButton
                                             variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
@@ -279,6 +286,72 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                         </IconButton>
                                     )}
                                 </Box>
+                                {/* 残りの項目を表示するUI */}
+                                {remainingActivities.length > 0 && (
+                                    <Typography
+                                        variant='caption'
+                                        color='#777'
+                                        sx={{ 
+                                            alignItems: 'center', 
+                                            display: 'flex', 
+                                            cursor: 'pointer',
+                                            my:0.5,
+                                            ml:2 
+                                        }}
+                                        onClick={() => setShowRemaining((prev) => !prev)}
+                                    >
+                                        More Items
+                                        <KeyboardArrowRightIcon
+                                            fontSize='small'
+                                            sx={{
+                                                transition: 'transform 0.15s linear',
+                                                transform: showRemaining ? 'rotate(90deg)' : 'rotate(0deg)',
+                                                marginLeft: '4px'
+                                            }}
+                                        />
+                                    </Typography>
+                                )}
+                                {showRemaining && (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
+                                        {remainingActivities.map(activity => (
+                                            <Button
+                                                key={activity.id}
+                                                variant="outlined"
+                                                color="primary"
+                                                onClick={() => onStart(activity)}
+                                                onContextMenu={(e) => handleContextMenu(e, activity)}
+                                                sx={{
+                                                    display: 'flex',
+                                                    textTransform: 'none',
+                                                    borderRadius: 5,
+                                                    boxShadow: 2,
+                                                }}
+                                                startIcon={getIconForGroup(activity.group_name, groups)}
+                                            >
+                                                {activity.name}
+                                            </Button>
+                                        ))}
+                                    </Box>
+                                )}
+                                <Menu
+                                    open={Boolean(contextMenuAnchor)}
+                                    anchorEl={contextMenuAnchor}
+                                    onClose={handleCloseContextMenu}
+                                >
+                                    <MenuItem
+                                        onClick={handleStartSubStopwatchDummy}
+                                        disabled={contextTargetActivity?.unit === 'count'}
+                                    >
+                                        サブストップウォッチを起動する
+                                    </MenuItem>
+                                </Menu>
+                                <ConfirmDialog
+                                    open={dummyDialogOpen}
+                                    title="サブストップウォッチ（ダミー）"
+                                    content={`「${contextTargetActivity?.name}」のサブストップウォッチを起動します（ダミー）`}
+                                    onConfirm={() => setDummyDialogOpen(false)}
+                                    onCancel={() => setDummyDialogOpen(false)}
+                                />
                             </Box>
                         </Collapse>
                     </>
