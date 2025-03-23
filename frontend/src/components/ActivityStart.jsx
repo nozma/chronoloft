@@ -336,7 +336,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         onClick={handleStartSubStopwatch}
                                         disabled={contextTargetActivity?.unit === 'count'}
                                     >
-                                        サブストップウォッチを起動する
+                                        Start Sub Stopwatch
                                     </MenuItem>
                                 </Menu>
                             </Box>
