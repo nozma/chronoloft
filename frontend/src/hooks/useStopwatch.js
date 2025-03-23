@@ -7,7 +7,7 @@ import { startDiscordPresence, stopDiscordPresence } from '../services/api';
  * @param {Object|null} discordData - Discord連携用データ（null可）
  * @param {Object} callbacks - { onComplete, onCancel }
  */
-function useStopwatch(storageKey, discordData, { onComplete, onCancel } = {}) {
+function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     const [displayTime, setDisplayTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [restored, setRestored] = useState(false);
