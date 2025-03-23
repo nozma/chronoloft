@@ -21,7 +21,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
-import ConfirmDialog from './ConfirmDialog';
 
 function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch }) {
     const { groups } = useGroups();
