@@ -214,6 +214,7 @@ function RecordingInterface() {
                 activities={activities}
                 onStart={handleStartRecordFromSelect}
                 stopwatchVisible={stopwatchVisible}
+                onStartSubStopwatch={handleStartSubStopwatch}
             />
             <ActivityList />
             {/* Count用ダイアログ */}

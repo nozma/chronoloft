@@ -23,7 +23,7 @@ import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import ConfirmDialog from './ConfirmDialog';
 
-function ActivityStart({ activities, onStart, stopwatchVisible }) {
+function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch }) {
     const { groups } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
@@ -31,7 +31,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
     const [contextTargetActivity, setContextTargetActivity] = useState(null);
-    const [dummyDialogOpen, setDummyDialogOpen] = useState(false);
     const [showRemaining, setShowRemaining] = useState(false);
 
     const handleAutocompleteChange = (event, newValue) => {
@@ -105,9 +104,11 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
         setContextTargetActivity(null);
     };
 
-    const handleStartSubStopwatchDummy = () => {
-        setDummyDialogOpen(true);
+    const handleStartSubStopwatch = () => {
         handleCloseContextMenu();
+        if (contextTargetActivity && onStartSubStopwatch) {
+            onStartSubStopwatch(contextTargetActivity);
+        }
     };
 
 
@@ -339,19 +340,12 @@ function ActivityStart({ activities, onStart, stopwatchVisible }) {
                                     onClose={handleCloseContextMenu}
                                 >
                                     <MenuItem
-                                        onClick={handleStartSubStopwatchDummy}
+                                        onClick={handleStartSubStopwatch}
                                         disabled={contextTargetActivity?.unit === 'count'}
                                     >
                                         サブストップウォッチを起動する
                                     </MenuItem>
                                 </Menu>
-                                <ConfirmDialog
-                                    open={dummyDialogOpen}
-                                    title="サブストップウォッチ（ダミー）"
-                                    content={`「${contextTargetActivity?.name}」のサブストップウォッチを起動します（ダミー）`}
-                                    onConfirm={() => setDummyDialogOpen(false)}
-                                    onCancel={() => setDummyDialogOpen(false)}
-                                />
                             </Box>
                         </Collapse>
                     </>
