@@ -33,12 +33,6 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
     const [contextTargetActivity, setContextTargetActivity] = useState(null);
     const [showRemaining, setShowRemaining] = useState(false);
 
-    const handleAutocompleteChange = (event, newValue) => {
-        if (newValue) {
-            onStart(newValue);
-        }
-    };
-
     // アクティビティに対するフィルターの適用
     const filteredActivities = activities.filter(act => {
         // グループフィルタ
