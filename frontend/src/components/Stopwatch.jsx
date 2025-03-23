@@ -1,6 +1,5 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
-import ReactDOMServer from 'react-dom/server';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
