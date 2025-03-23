@@ -305,7 +305,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         />
                                     </Typography>
                                 )}
-                                {showRemaining && (
+                                <Collapse in={showRemaining}>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
                                         {remainingActivities.map(activity => (
                                             <Button
@@ -326,7 +326,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                             </Button>
                                         ))}
                                     </Box>
-                                )}
+                                </Collapse>
                                 <Menu
                                     open={Boolean(contextMenuAnchor)}
                                     anchorEl={contextMenuAnchor}
