@@ -110,7 +110,7 @@ const Stopwatch = forwardRef((props, ref) => {
                     px: 8
                 })}
             >
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, width: '10%' }} >
                     <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}

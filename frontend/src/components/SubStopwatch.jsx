@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useState } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
@@ -69,52 +69,67 @@ const SubStopwatch = forwardRef(({ onComplete, onCancel, activityName, activityG
     };
 
     return (
-        <Box sx={{ p: 2, borderRadius: 4, mt: 2, border: '1px solid #ccc' }}>
-            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                {getIconForGroup(activityGroup, groups)}
-                <Typography variant="h6" sx={{ mr: 2 }}>{activityName}</Typography>
-                {isEditingStartTime ? (
-                    <>
-                        <TextField
-                            type="datetime-local"
-                            value={editedStartTime}
-                            onChange={(e) => setEditedStartTime(e.target.value)}
-                            size='small'
-                        />
-                        <Button onClick={handleSaveStartTime} variant="contained" color="primary">Save</Button>
-                        <Button onClick={handleCancelEditStartTime} variant="outlined">Cancel</Button>
-                    </>
-                ) : (
-                    <>
-                        <Typography variant="body1">(Start Time: {formattedStartTime}</Typography>
-                        <IconButton onClick={handleEditStartTime} size='small'>
-                            <EditIcon fontSize='small' />
+        <>
+            <Box sx={(theme) => ({
+                display: 'flex',
+                width: '100%',
+                backgroundColor: theme.palette.mode === 'dark'
+                    ? '#151515'  // ダークモード用
+                    : '#eeeeee', // ライトモード用
+                py: 1,
+                px: 2,
+                borderRadius: 2,                
+                mb: 2
+            })}
+            >
+                <Typography variant='caption' color='#555'>Sub Stopwatch</Typography>
+                <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        {getIconForGroup(activityGroup, groups)}
+                        <Typography variant="body2" sx={{ mr: 1 }}>{activityName}</Typography>
+                        {isEditingStartTime ? (
+                            <>
+                                <TextField
+                                    type="datetime-local"
+                                    value={editedStartTime}
+                                    onChange={(e) => setEditedStartTime(e.target.value)}
+                                    size='small'
+                                />
+                                <Button onClick={handleSaveStartTime} variant="contained" color="primary">Save</Button>
+                                <Button onClick={handleCancelEditStartTime} variant="outlined">Cancel</Button>
+                            </>
+                        ) : (
+                            <>
+                                <Typography variant="body2">Start Time: {formattedStartTime}</Typography>
+                                <IconButton onClick={handleEditStartTime} size='small'>
+                                    <EditIcon fontSize='small' />
+                                </IconButton>
+                            </>
+                        )}
+                    </Box>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: -1 }}>
+                        <Typography variant="h6" sx={{ mr: 1 }}>{formatTime(displayTime)}</Typography>
+                        <IconButton color="primary" onClick={() => complete(memo)} sx={{ mx: -1.5 }}>
+                            <CheckCircleIcon fontSize='middle' />
                         </IconButton>
-                        <Typography variant='body1'>)</Typography>
-                    </>
-                )}
+                        <IconButton color="error" onClick={cancel} >
+                            <CancelIcon fontSize='middle' />
+                        </IconButton>
+                    </Box>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <TextField
+                        label="Memo"
+                        multiline
+                        fullWidth
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                    />
+                </Box>
             </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                <IconButton color="primary" onClick={() => complete(memo)}>
-                    <CheckCircleIcon fontSize='large' />
-                </IconButton>
-                <IconButton color="error" onClick={cancel}>
-                    <CancelIcon fontSize='large' />
-                </IconButton>
-            </Box>
-
-            <TextField
-                label="Memo"
-                multiline
-                rows={2}
-                fullWidth
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                sx={{ my: 2 }}
-            />
-        </Box>
+            <Box sx={{ marginTop: 0 }} />
+        </>
     );
 });
 
