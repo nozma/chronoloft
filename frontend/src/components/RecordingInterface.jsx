@@ -9,6 +9,7 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 import ActivityStart from './ActivityStart';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
+import SubStopwatch from './SubStopwatch';
 import ActivityList from './ActivityList';
 import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
@@ -26,7 +27,11 @@ function RecordingInterface() {
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
 
+    const [subStopwatchVisible, setSubStopwatchVisible] = useLocalStorageState('subStopwatchVisible', false);
+    const [subSelectedActivity, setSubSelectedActivity] = useLocalStorageState('subSelectedActivity', null);
+
     const stopwatchRef = useRef(null);
+    const subStopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
 
     // 「記録作成」ハンドラ
@@ -94,6 +99,19 @@ function RecordingInterface() {
         }
     };
 
+    // SubStopwatch用ハンドラ
+    const handleStartSubStopwatch = async (activity) => {
+        if (!activity || activity.unit === 'count') return;
+
+        if (subStopwatchVisible && subSelectedActivity && subSelectedActivity.id !== activity.id && subStopwatchRef.current) {
+            const minutes = await subStopwatchRef.current.finishAndReset();
+            await createRecord({ activity_id: subSelectedActivity.id, value: minutes });
+            onRecordUpdate();
+        }
+        setSubSelectedActivity(activity);
+        setSubStopwatchVisible(true);
+    };
+
     // 回数ダイアログでのレコード作成
     const handleRecordCreated = async (recordData) => {
         try {
@@ -132,6 +150,24 @@ function RecordingInterface() {
                     discordData={discordData}
                     activityName={selectedActivity.name}
                     activityGroup={selectedActivity.group_name}
+                />
+            )}
+            {subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes' && (
+                <SubStopwatch
+                    ref={subStopwatchRef}
+                    onComplete={async (minutes, memo) => {
+                        await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo });
+                        onRecordUpdate();
+                        await refreshActivities();
+                        localStorage.removeItem('subStopwatchState');
+                        setSubStopwatchVisible(false);
+                    }}
+                    onCancel={() => {
+                        localStorage.removeItem('subStopwatchState');
+                        setSubStopwatchVisible(false);
+                    }}
+                    activityName={subSelectedActivity.name}
+                    activityGroup={subSelectedActivity.group_name}
                 />
             )}
             {/* Heading / Title */}
@@ -178,6 +214,7 @@ function RecordingInterface() {
                 activities={activities}
                 onStart={handleStartRecordFromSelect}
                 stopwatchVisible={stopwatchVisible}
+                onStartSubStopwatch={handleStartSubStopwatch}
             />
             <ActivityList />
             {/* Count用ダイアログ */}

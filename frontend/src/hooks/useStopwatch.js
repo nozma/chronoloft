@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
 
-const STORAGE_KEY = 'stopwatchState';
-
 /**
  * useStopwatch
- * @param {Object} discordData - Discord連携用データ（例: { group, ... }）
- * @param {Object} callbacks - { onComplete, onCancel } コールバック
- * @returns {Object} - { displayTime, isRunning, start, complete, cancel, updateStartTime, currentStartTime, finishAndReset }
+ * @param {string} storageKey - localStorage 用のキー
+ * @param {Object|null} discordData - Discord連携用データ（null可）
+ * @param {Object} callbacks - { onComplete, onCancel }
  */
-function useStopwatch(discordData, { onComplete, onCancel }) {
+function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     const [displayTime, setDisplayTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [restored, setRestored] = useState(false);
@@ -19,15 +17,13 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
     const startTimeRef = useRef(null);
     const offsetRef = useRef(0);
 
-    // 最新の isRunning を保持する ref
     const isRunningRef = useRef(isRunning);
     useEffect(() => {
         isRunningRef.current = isRunning;
     }, [isRunning]);
 
-    // ローカルストレージから状態を復元。なければ自動スタート
     useEffect(() => {
-        const savedState = localStorage.getItem(STORAGE_KEY);
+        const savedState = localStorage.getItem(storageKey);
         if (savedState) {
             const state = JSON.parse(savedState);
             startTimeRef.current = state.startTime;
@@ -42,9 +38,8 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             handleStart();
         }
         setRestored(true);
-    }, []);
+    }, [storageKey]);
 
-    // 復元後、状態変化時にローカルストレージへ保存
     useEffect(() => {
         if (!restored) return;
         const state = {
@@ -54,10 +49,9 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
             isRunning,
             memo
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }, [displayTime, isRunning, restored, memo]);
+        localStorage.setItem(storageKey, JSON.stringify(state));
+    }, [displayTime, isRunning, restored, memo, storageKey]);
 
-    // タイマー処理（setInterval）の管理
     useEffect(() => {
         if (isRunning && !timerRef.current) {
             timerRef.current = setInterval(updateDisplayTime, 1000);
@@ -82,19 +76,20 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         }
     };
 
-    // スタート
     const handleStart = async () => {
-        if (startTimeRef.current) return; // 既に開始済みなら何もしない
+        if (startTimeRef.current) return;
         const now = Date.now();
         startTimeRef.current = now;
         offsetRef.current = 0;
         setIsRunning(true);
         setCurrentStartTime(now);
-        try {
-            await startDiscordPresence(discordData);
-            console.log('Discord presence started');
-        } catch (error) {
-            console.error('Failed to start Discord presence:', error);
+        if (discordData) {
+            try {
+                await startDiscordPresence(discordData);
+                console.log('Discord presence started');
+            } catch (error) {
+                console.error('Failed to start Discord presence:', error);
+            }
         }
         timerRef.current = setInterval(updateDisplayTime, 1000);
     };
@@ -102,17 +97,19 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
     const complete = async (passedMemo) => {
         clearInterval(timerRef.current);
         setIsRunning(false);
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
+        if (discordData) {
+            try {
+                await stopDiscordPresence({ group: discordData.group });
+                console.log('Discord presence stopped');
+            } catch (error) {
+                console.error('Failed to stop Discord presence:', error);
+            }
         }
         let totalElapsed = offsetRef.current;
         if (startTimeRef.current !== null && isRunning) {
             totalElapsed += Date.now() - startTimeRef.current;
         }
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(storageKey);
         startTimeRef.current = null;
         offsetRef.current = 0;
         setDisplayTime(0);
@@ -120,27 +117,25 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         if (onComplete) onComplete(totalElapsed / 60000, passedMemo);
     };
 
-    // 完了して別のストップウォッチを開始する
     const finishAndReset = async (newDiscordData) => {
         const wasRunning = isRunning;
         clearInterval(timerRef.current);
 
-        // 経過時間の計算は、isRunning が変更される前に行う
         let totalElapsed = offsetRef.current;
         if (startTimeRef.current !== null && wasRunning) {
             totalElapsed += Date.now() - startTimeRef.current;
         }
 
-        // Discord を一旦切断
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
+        if (discordData) {
+            try {
+                await stopDiscordPresence({ group: discordData.group });
+                console.log('Discord presence stopped');
+            } catch (error) {
+                console.error('Failed to stop Discord presence:', error);
+            }
         }
 
         const minutes = totalElapsed / 60000;
-        // 状態をリセットして新規アクティビティに切り替え
         startTimeRef.current = Date.now();
         offsetRef.current = 0;
         setDisplayTime(0);
@@ -148,11 +143,13 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
         setIsRunning(true);
         timerRef.current = setInterval(updateDisplayTime, 1000);
 
-        try {
-            await startDiscordPresence(newDiscordData);
-            console.log('Discord presence restarted with new data');
-        } catch (error) {
-            console.error('Failed to restart Discord presence:', error);
+        if (newDiscordData) {
+            try {
+                await startDiscordPresence(newDiscordData);
+                console.log('Discord presence restarted with new data');
+            } catch (error) {
+                console.error('Failed to restart Discord presence:', error);
+            }
         }
 
         return minutes;
@@ -161,20 +158,21 @@ function useStopwatch(discordData, { onComplete, onCancel }) {
     const cancel = async () => {
         clearInterval(timerRef.current);
         setIsRunning(false);
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped on cancel');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
+        if (discordData) {
+            try {
+                await stopDiscordPresence({ group: discordData.group });
+                console.log('Discord presence stopped on cancel');
+            } catch (error) {
+                console.error('Failed to stop Discord presence:', error);
+            }
         }
         offsetRef.current = 0;
         startTimeRef.current = null;
         setDisplayTime(0);
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(storageKey);
         if (onCancel) onCancel();
     };
 
-    // 時間を補正する場合に使う（開始時刻を更新）
     const updateStartTime = (newStartTime) => {
         if (newStartTime > Date.now()) {
             throw new Error("Start time cannot be in the future");

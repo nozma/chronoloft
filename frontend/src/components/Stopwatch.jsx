@@ -1,6 +1,5 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle } from 'react';
 import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
-import ReactDOMServer from 'react-dom/server';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
@@ -23,7 +22,7 @@ const Stopwatch = forwardRef((props, ref) => {
         currentStartTime,
         memo,
         setMemo
-    } = useStopwatch(props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
+    } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
 
     useImperativeHandle(ref, () => ({
         complete,
@@ -111,7 +110,7 @@ const Stopwatch = forwardRef((props, ref) => {
                     px: 8
                 })}
             >
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, width: '10%' }} >
                     <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}
