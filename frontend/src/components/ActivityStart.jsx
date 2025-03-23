@@ -21,7 +21,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
-import ConfirmDialog from './ConfirmDialog';
 
 function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch }) {
     const { groups } = useGroups();
@@ -306,7 +305,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         />
                                     </Typography>
                                 )}
-                                {showRemaining && (
+                                <Collapse in={showRemaining}>
                                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
                                         {remainingActivities.map(activity => (
                                             <Button
@@ -327,7 +326,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                             </Button>
                                         ))}
                                     </Box>
-                                )}
+                                </Collapse>
                                 <Menu
                                     open={Boolean(contextMenuAnchor)}
                                     anchorEl={contextMenuAnchor}
@@ -337,7 +336,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         onClick={handleStartSubStopwatch}
                                         disabled={contextTargetActivity?.unit === 'count'}
                                     >
-                                        サブストップウォッチを起動する
+                                        Start Sub Stopwatch
                                     </MenuItem>
                                 </Menu>
                             </Box>
