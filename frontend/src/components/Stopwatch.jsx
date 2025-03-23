@@ -22,7 +22,7 @@ const Stopwatch = forwardRef((props, ref) => {
         currentStartTime,
         memo,
         setMemo
-    } = useStopwatch(props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
+    } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
 
     useImperativeHandle(ref, () => ({
         complete,

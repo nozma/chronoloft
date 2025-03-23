@@ -19,7 +19,7 @@ const SubStopwatch = forwardRef(({ onComplete, onCancel, activityName, activityG
         currentStartTime,
         memo,
         setMemo,
-    } = useStopwatch(null, { onComplete, onCancel }); // Discord連携を無効化
+    } = useStopwatch('subStopwatchState', null, { onComplete, onCancel }); // Discord連携を無効化
 
     useImperativeHandle(ref, () => ({
         complete,
