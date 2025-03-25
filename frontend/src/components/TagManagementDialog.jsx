@@ -9,6 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import { useTags } from '../contexts/TagContext';
 import { fetchTags, createTag, updateTag, deleteTag } from '../services/api';
+import { useActivities } from '../contexts/ActivityContext';
 
 /**
  * タグ管理ダイアログ
@@ -17,8 +18,8 @@ import { fetchTags, createTag, updateTag, deleteTag } from '../services/api';
  * - 一覧がテーブル表示され、編集/削除が可能
  */
 function TagManagementDialog({ open, onClose }) {
-    // useTags() で tags, setTags を共有しているならここで使う
     const { tags, setTags } = useTags();
+    const { refreshActivities } = useActivities();
 
     // 新規登録用フィールド
     const [newTagName, setNewTagName] = useState('');
@@ -38,6 +39,7 @@ function TagManagementDialog({ open, onClose }) {
             });
             const updated = await fetchTags();
             setTags(updated);
+            await refreshActivities();
             setNewTagName('');
             setNewTagColor('#ffffff');
         } catch (err) {
@@ -61,6 +63,7 @@ function TagManagementDialog({ open, onClose }) {
             });
             const updated = await fetchTags();
             setTags(updated);
+            await refreshActivities();
             setEditTagId(null);
             setEditTagName('');
             setEditTagColor('#ffffff');
@@ -75,6 +78,7 @@ function TagManagementDialog({ open, onClose }) {
             await deleteTag(id);
             const updated = await fetchTags();
             setTags(updated);
+            await refreshActivities();
         } catch (err) {
             console.error('Failed to delete tag:', err);
         }
