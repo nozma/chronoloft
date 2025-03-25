@@ -61,7 +61,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
             }
         }
         return result;
-    }, [groupFilter]);
+    }, [filteredActivities]);
 
 
     // 最近使用した項目を取得
