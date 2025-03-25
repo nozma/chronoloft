@@ -504,7 +504,7 @@ function RecordChart() {
                 {/* チャート描画部 */}
                 <ResponsiveContainer width="100%" height={250}>
                     {chartType === 'line' ? (
-                        <LineChart data={chartData} margin={{ right: longestLabelWidth }}>
+                        <LineChart data={chartData} margin={{ left: 25, right: longestLabelWidth }}>
                             <CartesianGrid
                                 stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                             />
@@ -639,7 +639,7 @@ function RecordChart() {
                                 ))}
                         </LineChart>
                     ) : (
-                        <BarChart data={chartData}>
+                        <BarChart data={chartData} margin={{ left: 20 }} >
                             <CartesianGrid
                                 stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                             />
@@ -647,7 +647,10 @@ function RecordChart() {
                                 type='number'
                                 dataKey='dateValue'
                                 scale='time'
-                                domain={['dataMin', 'dataMax']}
+                                domain={[ // 半日分広げる
+                                    (dataMin) => dataMin - 86400000/2,
+                                    (dataMax) => dataMax + 86400000/2
+                                ]}
                                 tickFormatter={xAxisTickFormatter}
                             />
                             <YAxis
