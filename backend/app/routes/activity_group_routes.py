@@ -3,9 +3,9 @@ from ..models import ActivityGroup
 from .. import db
 from sqlalchemy.exc import SQLAlchemyError
 
-activity_group_bp = Blueprint('activity_group', __name__, url_prefix='/api/activity_groups')
+activity_group_bp = Blueprint('activity_group', __name__)
 
-@activity_group_bp.route('/', methods=['GET'])
+@activity_group_bp.route('/api/activity_groups', methods=['GET'])
 def get_activity_groups():
     """
     ActivityGroup テーブルの全グループを取得して JSON で返す
@@ -28,7 +28,7 @@ def get_activity_groups():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@activity_group_bp.route('/', methods=['POST'])
+@activity_group_bp.route('/api/activity_groups', methods=['POST'])
 def add_activity_group():
     """
     新規グループを追加する。リクエスト JSON には 'name'（必須）と 'client_id'（任意）が必要
@@ -53,7 +53,7 @@ def add_activity_group():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@activity_group_bp.route('/<int:group_id>', methods=['PUT'])
+@activity_group_bp.route('/api/activity_groups/<int:group_id>', methods=['PUT'])
 def update_activity_group(group_id):
     """
     指定したグループの情報を更新する。リクエスト JSON には更新したい 'name' や 'client_id' を含める。
@@ -84,7 +84,7 @@ def update_activity_group(group_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@activity_group_bp.route('/<int:group_id>', methods=['DELETE'])
+@activity_group_bp.route('/api/activity_groups/<int:group_id>', methods=['DELETE'])
 def delete_activity_group(group_id):
     """
     指定したグループを削除する。削除前に関連するカテゴリなどのデータとの整合性について検討する必要があります。

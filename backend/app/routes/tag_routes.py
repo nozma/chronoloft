@@ -2,9 +2,9 @@ from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from ..models import Tag, db
 
-tag_bp = Blueprint('tag', __name__, url_prefix='/api/tags')
+tag_bp = Blueprint('tag', __name__)
 
-@tag_bp.route('/', methods=['GET'])
+@tag_bp.route('/api/tags', methods=['GET'])
 def get_tags():
     try:
         tags = Tag.query.all()
@@ -20,7 +20,7 @@ def get_tags():
         current_app.logger.error("Error in get_tags: %s", e, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
-@tag_bp.route('/', methods=['POST'])
+@tag_bp.route('/api/tags', methods=['POST'])
 def create_tag():
     data = request.get_json()
     if not data or 'name' not in data:
@@ -36,7 +36,7 @@ def create_tag():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@tag_bp.route('/<int:tag_id>', methods=['PUT'])
+@tag_bp.route('/api/tags/<int:tag_id>', methods=['PUT'])
 def update_tag(tag_id):
     data = request.get_json()
     tag = Tag.query.get(tag_id)
@@ -56,7 +56,7 @@ def update_tag(tag_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@tag_bp.route('/<int:tag_id>', methods=['DELETE'])
+@tag_bp.route('/api/tags/<int:tag_id>', methods=['DELETE'])
 def delete_tag(tag_id):
     tag = Tag.query.get(tag_id)
     if not tag:
