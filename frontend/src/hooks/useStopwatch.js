@@ -243,30 +243,10 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     };
 
     // -----------------------------------------------
-    // キャンセル（計測結果を破棄）
-    // 例：ストップウォッチ途中破棄したい場合。
-    // Discord連携も止めて everythingを初期化
+    // キャンセル（計測結果を破棄して停止）
     // -----------------------------------------------
     const cancel = async () => {
-        setIsRunning(false);
-
-        // Discord連携停止
-        if (discordData) {
-            try {
-                await stopDiscordPresence({ group: discordData.group });
-                console.log('Discord presence stopped on cancel');
-            } catch (error) {
-                console.error('Failed to stop Discord presence:', error);
-            }
-        }
-
-        // 全部リセットし、localStorageも消す
-        offsetRef.current = 0;
-        startTimeRef.current = null;
-        setDisplayTime(0);
-        localStorage.removeItem(storageKey);
-
-        // 外部コールバック
+        await stopNow();
         if (onCancel) onCancel();
     };
 
