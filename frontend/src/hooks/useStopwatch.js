@@ -173,9 +173,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
                 console.error('Failed to start Discord presence:', error);
             }
         }
-
-        // setIntervalを使ったtimerを開始
-        timerRef.current = setInterval(updateDisplayTime, 1000);
     };
 
     // -----------------------------------------------
@@ -184,7 +181,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // Discordを停止し、onCompleteコールバックを呼ぶ
     // -----------------------------------------------
     const complete = async (passedMemo) => {
-        clearInterval(timerRef.current);
+        // タイマー停止
         setIsRunning(false);
 
         // Discord連携停止
@@ -222,7 +219,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // -----------------------------------------------
     const finishAndReset = async (newDiscordData) => {
         const wasRunning = isRunning;
-        clearInterval(timerRef.current);
 
         // まず、今までの累計時間を算出
         let totalElapsed = offsetRef.current;
@@ -271,7 +267,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // Discord連携も止めて everythingを初期化
     // -----------------------------------------------
     const cancel = async () => {
-        clearInterval(timerRef.current);
         setIsRunning(false);
 
         // Discord連携停止
