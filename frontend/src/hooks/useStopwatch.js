@@ -154,7 +154,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // startTimeRef が nullなら開始処理、そうでなければ無視
     // Discord連携も開始し、timerをスタートする
     // -----------------------------------------------
-    const handleStart = async () => {
+    const handleStart = async (newDiscordData) => {
         // 既に開始済みなら何もせずreturn
         if (startTimeRef.current) return;
 
@@ -164,10 +164,11 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         setIsRunning(true);
         setCurrentStartTime(now);
 
-        // Discord連携を開始
-        if (discordData) {
+        // Discord連携を開始（新しいデータが有ればそちらを優先）
+        const discordDataToUse = newDiscordData || discordData;
+        if (discordDataToUse) {
             try {
-                await startDiscordPresence(discordData);
+                await startDiscordPresence(discordDataToUse);
                 console.log('Discord presence started');
             } catch (error) {
                 console.error('Failed to start Discord presence:', error);
@@ -176,15 +177,17 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     };
 
     // -----------------------------------------------
-    // 計測完了（ユーザーがStopボタンを押した等）
-    // 経過時間を確定して localStorageをクリア
-    // Discordを停止し、onCompleteコールバックを呼ぶ
+    // ストップウォッチ停止処理
+    //   * タイマーを止める
+    //   * Discord連係を止める
+    //   * localStorageを削除し、内部状態もリセット
+    //   * 経過時間(ms)を返す
     // -----------------------------------------------
-    const complete = async (passedMemo) => {
-        // タイマー停止
+    async function stopNow() {
+        // 1) タイマーを止める
         setIsRunning(false);
 
-        // Discord連携停止
+        // 2) Discord停止
         if (discordData) {
             try {
                 await stopDiscordPresence({ group: discordData.group });
@@ -194,20 +197,31 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
             }
         }
 
-        // 累計時間を計算
+        // 3) 経過時間(ms)を計算
         let totalElapsed = offsetRef.current;
         if (startTimeRef.current !== null && isRunning) {
             totalElapsed += Date.now() - startTimeRef.current;
         }
 
-        // 完了したので localStorage の情報は消去
+        // 4) localStorage削除＋内部変数リセット
         localStorage.removeItem(storageKey);
-
-        // 変数等をリセット
         startTimeRef.current = null;
         offsetRef.current = 0;
         setDisplayTime(0);
         setMemo('');
+
+        // 5) 経過時間を返す
+        return totalElapsed;
+    }
+
+    // -----------------------------------------------
+    // 計測完了（ユーザーがStopボタンを押した等）
+    // 経過時間を確定して localStorageをクリア
+    // Discordを停止し、onCompleteコールバックを呼ぶ
+    // -----------------------------------------------
+    const complete = async (passedMemo) => {
+        // 停止及び経過時間の取得
+        const totalElapsed = await stopNow();
 
         // 親コールバックで使用
         if (onComplete) onComplete(totalElapsed / 60000, passedMemo);
@@ -218,47 +232,14 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // （例：アクティビティ切替時などに使う）
     // -----------------------------------------------
     const finishAndReset = async (newDiscordData) => {
-        const wasRunning = isRunning;
+        // 停止及び経過時間の取得、状態のリセット
+        let totalElapsed = await stopNow();
 
-        // まず、今までの累計時間を算出
-        let totalElapsed = offsetRef.current;
-        if (startTimeRef.current !== null && wasRunning) {
-            totalElapsed += Date.now() - startTimeRef.current;
-        }
+        // ストップウォッチを開始（+必要に応じて新しいDiscordデータで連係）
+        handleStart(newDiscordData);
 
-        // Discord連携をいったん停止
-        if (discordData) {
-            try {
-                await stopDiscordPresence({ group: discordData.group });
-                console.log('Discord presence stopped');
-            } catch (error) {
-                console.error('Failed to stop Discord presence:', error);
-            }
-        }
-
-        // 分数換算し、新しい計測を開始するためにリセット
-        const minutes = totalElapsed / 60000;
-        startTimeRef.current = Date.now();
-        offsetRef.current = 0;
-        setDisplayTime(0);
-        setMemo('');
-        setIsRunning(true);
-
-        // 新たにtimerを開始
-        timerRef.current = setInterval(updateDisplayTime, 1000);
-
-        // 引数があれば再度Discord連携開始
-        if (newDiscordData) {
-            try {
-                await startDiscordPresence(newDiscordData);
-                console.log('Discord presence restarted with new data');
-            } catch (error) {
-                console.error('Failed to restart Discord presence:', error);
-            }
-        }
-
-        // finishしたアクティビティにかかった分数を返しておく
-        return minutes;
+        // finishしたアクティビティにかかった分数を返す
+        return totalElapsed / 60000;
     };
 
     // -----------------------------------------------
