@@ -13,12 +13,13 @@ import { startDiscordPresence, stopDiscordPresence } from '../services/api';
  * - Discord連携の開始・停止
  * - localStorageに計測状態を保存・復元
  */
-function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
+function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) {
 
     const [displayTime, setDisplayTime] = useState(0); // ストップウォッチの経過時間(ms)
     const [restored, setRestored] = useState(false); // localStorageからの復元完了フラグ
     const [currentStartTime, setCurrentStartTime] = useState(null); // 開始時刻
     const [memo, setMemo] = useState(''); // メモ
+    const [discordData, setDiscordData] = useState(initialDiscordData); // Discordデータ
 
     const timerRef = useRef(null); // setIntervalのID保持
 
@@ -93,15 +94,16 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // currentStartTime が nullなら開始処理、そうでなければ無視
     // Discord連携も開始し、timerをスタートする
     // -----------------------------------------------
-    const handleStart = async (newDiscordData) => {
-        // 既に開始済みなら何もせずreturn
-        if (currentStartTime !== null) return;
+    const handleStart = async (newDiscordData, force = false) => {
+        // 強制開始無効かつ既に開始済みなら何もせずreturn
+        if (!force && currentStartTime !== null) return;
 
         const now = Date.now();
         setCurrentStartTime(now);
 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData || discordData;
+        setDiscordData(discordDataToUse);
         if (discordDataToUse) {
             try {
                 await startDiscordPresence(discordDataToUse);
@@ -131,7 +133,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         }
         // 経過時間(ms)計算
         let totalElapsed = 0;
-        if (currentStartTime !== null && isRunning) {
+        if (currentStartTime !== null) {
             totalElapsed = Date.now() - currentStartTime;
         }
         // リセット
@@ -156,7 +158,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     // -----------------------------------------------
     const finishAndReset = async (newDiscordData) => {
         let totalElapsed = await stopNow();
-        handleStart(newDiscordData);
+        await handleStart(newDiscordData, true);
         return totalElapsed / 60000;
     };
 
