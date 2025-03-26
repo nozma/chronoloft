@@ -53,12 +53,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     const startTimeRef = useRef(null);
 
     // -----------------------------------------------
-    // 一時停止 → 再開 などを行ったときの累計オフセット時間(ms)
-    // ここに保存しておき、再開時に加算する
-    // -----------------------------------------------
-    const offsetRef = useRef(0);
-
-    // -----------------------------------------------
     // 最新のisRunningの値を参照するためのRef
     // setInterval内やコールバックで staleにならないように
     // -----------------------------------------------
@@ -78,9 +72,8 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         const savedState = localStorage.getItem(storageKey);
         if (savedState) {
             const state = JSON.parse(savedState);
-            // 開始時刻やオフセット、表示中時間をRefやstateに復元
+            // 開始時刻や表示中時間をRefやstateに復元
             startTimeRef.current = state.startTime;
-            offsetRef.current = state.offset;
             setDisplayTime(state.displayTime);
             setIsRunning(state.isRunning);
             setCurrentStartTime(state.startTime);
@@ -105,7 +98,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         if (!restored) return;
         const state = {
             startTime: startTimeRef.current,
-            offset: offsetRef.current,
             displayTime,
             isRunning,
             memo
@@ -144,7 +136,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
     const updateDisplayTime = () => {
         if (!isRunningRef.current) return;
         if (startTimeRef.current !== null) {
-            const elapsed = Date.now() - startTimeRef.current + offsetRef.current;
+            const elapsed = Date.now() - startTimeRef.current;
             setDisplayTime(elapsed);
         }
     };
@@ -160,7 +152,6 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
 
         const now = Date.now();
         startTimeRef.current = now;
-        offsetRef.current = 0;
         setIsRunning(true);
         setCurrentStartTime(now);
 
@@ -198,15 +189,14 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         }
 
         // 3) 経過時間(ms)を計算
-        let totalElapsed = offsetRef.current;
+        let totalElapsed = 0;
         if (startTimeRef.current !== null && isRunning) {
-            totalElapsed += Date.now() - startTimeRef.current;
+            totalElapsed = Date.now() - startTimeRef.current;
         }
 
         // 4) localStorage削除＋内部変数リセット
         localStorage.removeItem(storageKey);
         startTimeRef.current = null;
-        offsetRef.current = 0;
         setDisplayTime(0);
         setMemo('');
 
@@ -261,7 +251,7 @@ function useStopwatch(storageKey, discordData, { onComplete, onCancel }) {
         setCurrentStartTime(newStartTime);
 
         // 現在時刻との差から表示用の経過時間を再計算
-        const elapsed = Date.now() - newStartTime + offsetRef.current;
+        const elapsed = Date.now() - newStartTime;
         setDisplayTime(elapsed);
     };
 
