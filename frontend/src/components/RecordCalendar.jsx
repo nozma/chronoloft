@@ -100,7 +100,7 @@ function RecordCalendar() {
                 activity_id: rec.activity_id,
                 activityName: rec.activity_name,
                 value: rec.value,
-                title: `(${formattedTime}) ${rec.activity_name}`,
+                title: `${rec.activity_name} [${formattedTime}]`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
