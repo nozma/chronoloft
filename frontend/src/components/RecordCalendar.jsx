@@ -223,8 +223,10 @@ function RecordCalendar() {
                 followCursor
                 placement="top"
             >
-                <Box>{event.title}</Box>
-                <Box sx={{ fontSize: 1 }}>{event.memo}</Box>
+                <Box sx={{ height: '100%' }}>
+                    <Box>{event.title}</Box>
+                    <Box sx={{ fontSize: 1 }}>{event.memo}</Box>
+                </Box>
             </Tooltip>
         );
     }
