@@ -85,6 +85,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     <ToggleButton value="day">Day</ToggleButton>
                     <ToggleButton value="week">Week</ToggleButton>
                     <ToggleButton value="month">Month</ToggleButton>
+                    <ToggleButton value="agenda">Agenda</ToggleButton>
                 </ToggleButtonGroup>
                 {/* 表示モード切り替え */}
                 <ToggleButtonGroup
@@ -305,8 +306,16 @@ function RecordCalendar() {
                         localizer={localizer}
                         events={events}
                         view={currentView}
-                        onView={(view) => setCurrentView(view)}
-                        views={[Views.DAY, Views.WEEK, Views.MONTH]}
+                        onView={(view) => {
+                            if (view === 'agenda') {
+                                // 月曜始まりにしたい場合
+                                const weekStart = DateTime.fromJSDate(currentDate).startOf('week').plus({ days: -1 });
+                                setCurrentDate(weekStart.toJSDate());
+                            }
+                            setCurrentView(view);
+                        }}
+                        length={7}
+                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]}
                         date={currentDate}
                         onNavigate={(newDate) => setCurrentDate(newDate)}
                         tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
