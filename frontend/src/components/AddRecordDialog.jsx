@@ -7,9 +7,10 @@ import {
     DialogActions,
     Button,
     TextField,
-    Typography
+    MenuItem
 } from '@mui/material';
 import { DateTime } from 'luxon';
+import { useActivities } from '../contexts/ActivityContext'
 
 function AddRecordDialog({
     open,
@@ -21,13 +22,21 @@ function AddRecordDialog({
     isEdit = false,
     onDelete
 }) {
+    const { activities } = useActivities();
+    const [selectedActivity, setSelectedActivity] = useState(activity);
     const [value, setValue] = useState('');
     const [dateValue, setDateValue] = useState(''); // count用: 記録日時
     const [startTime, setStartTime] = useState(''); // minutes用: 開始日時
     const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
     const [memo, setMemo] = useState('');
 
+    // activitiesを元のactivityとunitが一致するものに絞り込む
+    const compatibleActivities = activities.filter(a => a.unit === activity.unit);
+
     useEffect(() => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+
         if (activity?.unit === 'count') {
             setValue(initialValue ? String(initialValue) : '');
             if (initialDate) {
@@ -62,7 +71,8 @@ function AddRecordDialog({
 
     // 保存時処理
     const handleSubmit = () => {
-        if (activity?.unit === 'count') { // 回数により記録するもの
+        if (!selectedActivity) return;
+        if (selectedActivity?.unit === 'count') { // 回数により記録するもの
             const numValue = parseFloat(value);
             if (isNaN(numValue) || numValue < 0) {
                 alert("有効な数値（回数）を入力してください。");
@@ -76,13 +86,13 @@ function AddRecordDialog({
             const dtUtc = dtLocal.toUTC().toISO();
 
             const recordData = {
-                activity_id: activity.id,
+                activity_id: selectedActivity.id,
                 value: numValue,
                 created_at: dtUtc,
                 memo: memo,
             };
             onSubmit(recordData);
-        } else if (activity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
+        } else if (selectedActivity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
             const startLocal = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
             const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
@@ -99,7 +109,7 @@ function AddRecordDialog({
             const duration = endLocal.diff(startLocal, 'minutes').toObject().minutes ?? 0;
             // DBに送るのは終了時刻と経過時間（分） {value: durationInMinutes, created_at: 終了時刻(UTC)}
             const recordData = {
-                activity_id: activity.id,
+                activity_id: selectedActivity.id,
                 value: duration,
                 created_at: endLocal.toUTC().toISO(),
                 memo: memo,
@@ -123,13 +133,25 @@ function AddRecordDialog({
         <Dialog open={open} onClose={handleClose}>
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
             <DialogContent>
-                {activity && (
-                    <>
-                        <Typography variant="subtitle1">{activity.name}</Typography>
-                    </>
-                )}
+                <TextField
+                    select
+                    label="アクティビティ"
+                    fullWidth
+                    margin="dense"
+                    value={selectedActivity?.id || ''}
+                    onChange={(e) => {
+                        const newAct = activities.find(a => a.id === Number(e.target.value));
+                        if (newAct) setSelectedActivity(newAct);
+                    }}
+                >
+                    {compatibleActivities.map((a) => (
+                        <MenuItem key={a.id} value={a.id}>
+                            {a.name}
+                        </MenuItem>
+                    ))}
+                </TextField>
 
-                {activity?.unit === 'count' && (
+                {selectedActivity?.unit === 'count' && (
                     <>
                         <TextField
                             label="回数"
@@ -159,7 +181,7 @@ function AddRecordDialog({
                     </>
                 )}
 
-                {activity?.unit === 'minutes' && (
+                {selectedActivity?.unit === 'minutes' && (
                     <>
                         <TextField
                             label="開始時刻"

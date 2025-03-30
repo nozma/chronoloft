@@ -20,6 +20,7 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import AddRecordDialog from './AddRecordDialog';
 import { updateRecord, deleteRecord } from '../services/api';
 import { useRecords } from '../contexts/RecordContext';
+import { useActivities } from '../contexts/ActivityContext';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
@@ -59,12 +60,16 @@ function aggregateEventsForMonth(events) {
 
 function RecordCalendar() {
     const { groups } = useGroups();
+    const { activities } = useActivities();
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useState(Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { records, refreshRecords: onRecordUpdate } = useRecords();
+    const selectedActivity = recordToEdit
+        ? activities.find((a) => a.id === recordToEdit.activity_id)
+        : null;
 
     useEffect(() => {
         const minuteRecords = records.filter((rec) => rec.unit === 'minutes');
@@ -92,6 +97,7 @@ function RecordCalendar() {
 
             const event = {
                 id: rec.id,
+                activity_id: rec.activity_id,
                 activityName: rec.activity_name,
                 value: rec.value,
                 title: `(${formattedTime}) ${rec.activity_name}`,
@@ -218,7 +224,7 @@ function RecordCalendar() {
                 placement="top"
             >
                 <Box>{event.title}</Box>
-                <Box sx={{fontSize:1}}>{event.memo}</Box>
+                <Box sx={{ fontSize: 1 }}>{event.memo}</Box>
             </Tooltip>
         );
     }
@@ -300,7 +306,7 @@ function RecordCalendar() {
                     open={true}
                     onClose={() => setRecordToEdit(null)}
                     onSubmit={handleEditRecordSubmit}
-                    activity={recordToEdit}
+                    activity={selectedActivity}
                     initialValue={recordToEdit.value}
                     initialDate={recordToEdit.created_at}
                     onDelete={handleDeleteRecord}
