@@ -13,7 +13,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
-import { Box, Typography, Collapse, Tooltip } from '@mui/material';
+import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, Button } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
@@ -58,6 +58,51 @@ function aggregateEventsForMonth(events) {
     return aggregatedArray;
 }
 
+/* ヘッダ部分のツールバーのカスタム定義 */
+function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode }) {
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+            {/* ナビゲーション */}
+            <ToggleButtonGroup size="small" exclusive>
+                <ToggleButton value="prev" onClick={() => onNavigate('PREV')}>←</ToggleButton>
+                <ToggleButton value="today" onClick={() => onNavigate('TODAY')}>Today</ToggleButton>
+                <ToggleButton value="next" onClick={() => onNavigate('NEXT')}>→</ToggleButton>
+            </ToggleButtonGroup>
+            {/* 期間ラベル */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mx: 2 }}>
+                {label}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* View切り替え */}
+                <ToggleButtonGroup
+                    value={view}
+                    exclusive
+                    onChange={(e, newView) => {
+                        if (newView) onView(newView);
+                    }}
+                    size="small"
+                >
+                    <ToggleButton value="day">Day</ToggleButton>
+                    <ToggleButton value="week">Week</ToggleButton>
+                    <ToggleButton value="month">Month</ToggleButton>
+                </ToggleButtonGroup>
+                {/* 表示モード切り替え */}
+                <ToggleButtonGroup
+                    value={calendarMode}
+                    exclusive
+                    onChange={(e, newMode) => {
+                        if (newMode !== null) setCalendarMode(newMode);
+                    }}
+                    size="small"
+                >
+                    <ToggleButton value="short">Short</ToggleButton>
+                    <ToggleButton value="long">Long</ToggleButton>
+                </ToggleButtonGroup>
+            </Box>
+        </Box>
+    );
+}
+
 function RecordCalendar() {
     const { groups } = useGroups();
     const { activities } = useActivities();
@@ -70,6 +115,7 @@ function RecordCalendar() {
     const selectedActivity = recordToEdit
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
+    const [calendarMode, setCalendarMode] = useState("short");
 
     useEffect(() => {
         const minuteRecords = records.filter((rec) => rec.unit === 'minutes');
@@ -270,11 +316,20 @@ function RecordCalendar() {
                         startAccessor="start"
                         endAccessor="end"
                         step={60}
-                        timeslots={2}
-                        style={{ height: 500 }}
+                        timeslots={calendarMode === "short" ? 2 : 1}
+                        style={{ height: calendarMode === "short" ? 500 : 800 }}
                         titleAccessor="title"
                         formats={formats}
-                        components={{ event: CustomEvent }}
+                        components={{
+                            event: CustomEvent,
+                            toolbar: (toolbarProps) => (
+                                <CustomToolbar
+                                    {...toolbarProps}
+                                    calendarMode={calendarMode}
+                                    setCalendarMode={setCalendarMode}
+                                />
+                            )
+                        }}
                         dayLayoutAlgorithm="no-overlap"
                         showAllEvents
                         culture="ja"
