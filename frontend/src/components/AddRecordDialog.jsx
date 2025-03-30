@@ -7,29 +7,11 @@ import {
     DialogActions,
     Button,
     TextField,
-    Typography,
     MenuItem
 } from '@mui/material';
 import { DateTime } from 'luxon';
+import { useActivities } from '../contexts/ActivityContext'
 
-/**
- * AddRecordDialog
- * 
- * Props:
- * - open: bool
- * - onClose: function
- * - onSubmit: function(recordData) => void
- * - activity: { id, unit, name, ... } etc.
- * - initialValue: number (activity.unit===countの場合の回数 or minutes)
- * - initialDate: string (ISO)  # 既存の「created_at」にあたる
- * - isEdit: bool
- * - onDelete: optional, for deletion button
- * 
- * 変更点:
- * - unit==="minutes" のとき、「開始時刻」「終了時刻」のUIを表示
- * - DB保存時は「終了時刻 - 開始時刻」を minutes で計算し、recordData.value に入れる
- * - recordData.created_at = 終了時刻(UTC) をセット
- */
 function AddRecordDialog({
     open,
     onClose,
@@ -40,13 +22,21 @@ function AddRecordDialog({
     isEdit = false,
     onDelete
 }) {
+    const { activities } = useActivities();
+    const [selectedActivity, setSelectedActivity] = useState(activity);
     const [value, setValue] = useState('');
-    const [dateValue, setDateValue] = useState(''); // count用: 既存の記録日時
-    const [startTime, setStartTime] = useState(''); // minutes用
-    const [endTime, setEndTime] = useState('');     // minutes用
+    const [dateValue, setDateValue] = useState(''); // count用: 記録日時
+    const [startTime, setStartTime] = useState(''); // minutes用: 開始日時
+    const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
     const [memo, setMemo] = useState('');
 
+    // activitiesを元のactivityとunitが一致するものに絞り込む
+    const compatibleActivities = activities.filter(a => a.unit === activity.unit);
+
     useEffect(() => {
+        if (!activity) return;
+        setSelectedActivity(activity);
+
         if (activity?.unit === 'count') {
             setValue(initialValue ? String(initialValue) : '');
             if (initialDate) {
@@ -68,7 +58,7 @@ function AddRecordDialog({
                 const startLocal = endLocal.minus({ minutes: durationMinutes });
                 setStartTime(startLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
             } else {
-                // 新規 or no initialDate => デフォルト: 今を終了時刻、今-0を開始
+                // 新規の場合は現在日時を設定
                 const nowLocal = DateTime.local();
                 setEndTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
                 setStartTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
@@ -81,7 +71,8 @@ function AddRecordDialog({
 
     // 保存時処理
     const handleSubmit = () => {
-        if (activity?.unit === 'count') { // 回数ベース
+        if (!selectedActivity) return;
+        if (selectedActivity?.unit === 'count') { // 回数により記録するもの
             const numValue = parseFloat(value);
             if (isNaN(numValue) || numValue < 0) {
                 alert("有効な数値（回数）を入力してください。");
@@ -95,13 +86,13 @@ function AddRecordDialog({
             const dtUtc = dtLocal.toUTC().toISO();
 
             const recordData = {
-                activity_id: activity.id,
+                activity_id: selectedActivity.id,
                 value: numValue,
                 created_at: dtUtc,
                 memo: memo,
             };
             onSubmit(recordData);
-        } else if (activity?.unit === 'minutes') { // 分ベース：開始時刻と終了時刻を記録
+        } else if (selectedActivity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
             const startLocal = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
             const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
@@ -116,9 +107,9 @@ function AddRecordDialog({
             }
 
             const duration = endLocal.diff(startLocal, 'minutes').toObject().minutes ?? 0;
-            // DBに送るのは {value: durationInMinutes, created_at: 終了時刻(UTC)}
+            // DBに送るのは終了時刻と経過時間（分） {value: durationInMinutes, created_at: 終了時刻(UTC)}
             const recordData = {
-                activity_id: activity.id,
+                activity_id: selectedActivity.id,
                 value: duration,
                 created_at: endLocal.toUTC().toISO(),
                 memo: memo,
@@ -142,13 +133,25 @@ function AddRecordDialog({
         <Dialog open={open} onClose={handleClose}>
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
             <DialogContent>
-                {activity && (
-                    <>
-                        <Typography variant="subtitle1">{activity.name}</Typography>
-                    </>
-                )}
+                <TextField
+                    select
+                    label="アクティビティ"
+                    fullWidth
+                    margin="dense"
+                    value={selectedActivity?.id || ''}
+                    onChange={(e) => {
+                        const newAct = activities.find(a => a.id === Number(e.target.value));
+                        if (newAct) setSelectedActivity(newAct);
+                    }}
+                >
+                    {compatibleActivities.map((a) => (
+                        <MenuItem key={a.id} value={a.id}>
+                            {a.name}
+                        </MenuItem>
+                    ))}
+                </TextField>
 
-                {activity?.unit === 'count' && (
+                {selectedActivity?.unit === 'count' && (
                     <>
                         <TextField
                             label="回数"
@@ -178,7 +181,7 @@ function AddRecordDialog({
                     </>
                 )}
 
-                {activity?.unit === 'minutes' && (
+                {selectedActivity?.unit === 'minutes' && (
                     <>
                         <TextField
                             label="開始時刻"

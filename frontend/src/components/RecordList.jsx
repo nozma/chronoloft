@@ -12,6 +12,7 @@ import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 
 function RecordList() {
     const [error] = useState(null);
@@ -21,6 +22,11 @@ function RecordList() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
     const { groups } = useGroups();
+    const { activities } = useActivities();
+    const selectedActivity = recordToEdit
+        ? activities.find(a => a.id === recordToEdit.activity_id)
+        : null;
+
 
     const dataGridRef = useRef(null);
     const containerRef = useRef(null);
@@ -210,7 +216,7 @@ function RecordList() {
                     open={true}
                     onClose={() => setRecordToEdit(null)}
                     onSubmit={handleEditRecordSubmit}
-                    activity={recordToEdit}
+                    activity={selectedActivity}
                     initialValue={recordToEdit.value}
                     initialDate={recordToEdit.created_at}
                     isEdit={true}

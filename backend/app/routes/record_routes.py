@@ -70,9 +70,11 @@ def update_record(record_id):
         return jsonify({'error': 'Record not found'}), 404
 
     try:
-        if 'value' in data:  # value更新
+        if 'activity_id' in data:
+            record.activity_id = data['activity_id']
+        if 'value' in data:
             record.value = data['value']
-        if 'created_at' in data:  # 登録日時更新
+        if 'created_at' in data:
             import datetime
             # ここでは ISO 8601 形式で送信されることを前提とする
             record.created_at = datetime.datetime.fromisoformat(data['created_at'])
