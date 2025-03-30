@@ -13,8 +13,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
-import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, Button } from '@mui/material';
+import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton, Button } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import AddRecordDialog from './AddRecordDialog';
@@ -62,14 +63,23 @@ function aggregateEventsForMonth(events) {
 function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode }) {
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-            {/* ナビゲーション */}
-            <ToggleButtonGroup size="small" exclusive>
-                <ToggleButton value="prev" onClick={() => onNavigate('PREV')}>←</ToggleButton>
-                <ToggleButton value="today" onClick={() => onNavigate('TODAY')}>Today</ToggleButton>
-                <ToggleButton value="next" onClick={() => onNavigate('NEXT')}>→</ToggleButton>
-            </ToggleButtonGroup>
-            {/* 期間ラベル */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mx: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* ナビゲーション */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                    <IconButton
+                        onClick={() => onNavigate('TODAY')}
+                        size='small'
+                        sx={{
+                            borderRadius: 8,
+                            padding: '12px'
+                        }}
+                    >
+                        <span style={{ fontSize: '1rem' }}>Today</span>
+                    </IconButton>
+                    <IconButton onClick={() => onNavigate('PREV')}><KeyboardArrowLeftIcon /></IconButton>
+                    <IconButton onClick={() => onNavigate('NEXT')}><KeyboardArrowRightIcon /></IconButton>
+                </Box>
+                {/* 期間ラベル */}
                 {label}
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -147,7 +157,7 @@ function RecordCalendar() {
                 activity_id: rec.activity_id,
                 activityName: rec.activity_name,
                 value: rec.value,
-                title: `${rec.activity_name} [${formattedTime}]`,
+                title: `${rec.activity_name} (${formattedTime})`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
