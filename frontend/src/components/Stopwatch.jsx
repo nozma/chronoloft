@@ -10,7 +10,6 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { startDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
-    //function Stopwatch({ onComplete, onCancel, discordData, activityName, activityGroup }) {
     const { groups } = useGroups();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
@@ -78,20 +77,12 @@ const Stopwatch = forwardRef((props, ref) => {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
 
-    // ストップウォッチ起動中にタイトルバーを変更する
+    // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
-        // タイトル文字列の変更
-        const totalSeconds = Math.floor(displayTime / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const colon = (totalSeconds % 2 === 0) ? ':' : ' ';
-        const formattedTime = `${String(hours)}${colon}${String(minutes).padStart(2, '0')}`;
-        document.title = `(${formattedTime}) ${props.activityName} - Activity Tracker`;
-        // 停止時のクリーンアップ
-        return () => {
-            document.title = 'Activity Tracker';
-        };
-    }, [displayTime])
+        if (props.onTick) {
+            props.onTick(displayTime);
+        }
+    }, [displayTime, props.onTick]);
 
     return (
         <>
