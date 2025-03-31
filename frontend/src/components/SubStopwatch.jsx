@@ -8,7 +8,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
 
-const SubStopwatch = forwardRef(({ onComplete, onCancel, activityName, activityGroup }, ref) => {
+const SubStopwatch = forwardRef((props, ref) => {
     const { groups } = useGroups();
     const {
         displayTime,
@@ -19,7 +19,7 @@ const SubStopwatch = forwardRef(({ onComplete, onCancel, activityName, activityG
         currentStartTime,
         memo,
         setMemo,
-    } = useStopwatch('subStopwatchState', null, { onComplete, onCancel }); // Discord連携を無効化
+    } = useStopwatch('subStopwatchState', null, { onComplete: props.onComplete, onCancel: props.onCancel }); // Discord連係はしないのでDiscordDataは不要
 
     useImperativeHandle(ref, () => ({
         complete,
@@ -85,8 +85,8 @@ const SubStopwatch = forwardRef(({ onComplete, onCancel, activityName, activityG
                 <Typography variant='caption' color='#555'>Sub Stopwatch</Typography>
                 <Box sx={{ flex: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        {getIconForGroup(activityGroup, groups)}
-                        <Typography variant="body2" sx={{ mr: 1 }}>{activityName}</Typography>
+                        {getIconForGroup(props.activityGroup, groups)}
+                        <Typography variant="body2" sx={{ mr: 1 }}>{props.activityName}</Typography>
                         {isEditingStartTime ? (
                             <>
                                 <TextField

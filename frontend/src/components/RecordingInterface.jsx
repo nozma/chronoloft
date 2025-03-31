@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
@@ -23,16 +23,54 @@ function RecordingInterface() {
     const { refreshActivities } = useActivities();
     const { records, refreshRecords: onRecordUpdate } = useRecords();
 
+    // メインStopwatch
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
+    const [mainDisplayTime, setMainDisplayTime] = useState(0);
 
+    // サブStopwatch
     const [subStopwatchVisible, setSubStopwatchVisible] = useLocalStorageState('subStopwatchVisible', false);
     const [subSelectedActivity, setSubSelectedActivity] = useLocalStorageState('subSelectedActivity', null);
 
     const stopwatchRef = useRef(null);
     const subStopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
+
+    // タイトル更新
+    useEffect(() => {
+        // 1) メインだけ動いている
+        if (stopwatchVisible && selectedActivity && !subStopwatchVisible) {
+            // 経過時間をフォーマット
+            const totalSeconds = Math.floor(mainDisplayTime / 1000);
+            const hh = Math.floor(totalSeconds / 3600);
+            const mm = Math.floor((totalSeconds % 3600) / 60);
+            const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
+            document.title = `(${formattedTime}) ${selectedActivity.name} - Activity Tracker`;
+        }
+        // 2) メインとサブ両方動いている
+        else if (stopwatchVisible && selectedActivity && subStopwatchVisible && subSelectedActivity) {
+            const totalSeconds = Math.floor(mainDisplayTime / 1000);
+            const hh = Math.floor(totalSeconds / 3600);
+            const mm = Math.floor((totalSeconds % 3600) / 60);
+            const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
+            document.title = `(${formattedTime}) ${selectedActivity.name} (${subSelectedActivity.name}) - Activity Tracker`;
+        }
+        // 3) サブだけ動いている
+        else if (!stopwatchVisible && subStopwatchVisible && subSelectedActivity) {
+            document.title = `(${subSelectedActivity.name}) - Activity Tracker`;
+        }
+        // 4) 何も動いていない
+        else {
+            document.title = 'Activity Tracker';
+        }
+    }, [
+        stopwatchVisible,
+        subStopwatchVisible,
+        selectedActivity,
+        subSelectedActivity,
+        mainDisplayTime
+    ]);
 
     // 「記録作成」ハンドラ
     const handleStartRecordFromSelect = async (activity) => {
@@ -150,6 +188,7 @@ function RecordingInterface() {
                     discordData={discordData}
                     activityName={selectedActivity.name}
                     activityGroup={selectedActivity.group_name}
+                    onTick={(time) => setMainDisplayTime(time)}
                 />
             )}
             {subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes' && (
