@@ -13,8 +13,9 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
-import { Box, Typography, Collapse, Tooltip } from '@mui/material';
+import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton, Button } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import AddRecordDialog from './AddRecordDialog';
@@ -58,6 +59,61 @@ function aggregateEventsForMonth(events) {
     return aggregatedArray;
 }
 
+/* ヘッダ部分のツールバーのカスタム定義 */
+function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode }) {
+    return (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* ナビゲーション */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                    <IconButton
+                        onClick={() => onNavigate('TODAY')}
+                        size='small'
+                        sx={{
+                            borderRadius: 8,
+                            padding: '12px'
+                        }}
+                    >
+                        <span style={{ fontSize: '1rem' }}>Today</span>
+                    </IconButton>
+                    <IconButton onClick={() => onNavigate('PREV')}><KeyboardArrowLeftIcon /></IconButton>
+                    <IconButton onClick={() => onNavigate('NEXT')}><KeyboardArrowRightIcon /></IconButton>
+                </Box>
+                {/* 期間ラベル */}
+                {label}
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {/* View切り替え */}
+                <ToggleButtonGroup
+                    value={view}
+                    exclusive
+                    onChange={(e, newView) => {
+                        if (newView) onView(newView);
+                    }}
+                    size="small"
+                >
+                    <ToggleButton value="day">Day</ToggleButton>
+                    <ToggleButton value="week">Week</ToggleButton>
+                    <ToggleButton value="month">Month</ToggleButton>
+                    <ToggleButton value="agenda">Agenda</ToggleButton>
+                </ToggleButtonGroup>
+                {/* 表示モード切り替え */}
+                <ToggleButtonGroup
+                    value={calendarMode}
+                    exclusive
+                    onChange={(e, newMode) => {
+                        if (newMode !== null) setCalendarMode(newMode);
+                    }}
+                    size="small"
+                >
+                    <ToggleButton value="short">Short</ToggleButton>
+                    <ToggleButton value="long">Long</ToggleButton>
+                </ToggleButtonGroup>
+            </Box>
+        </Box>
+    );
+}
+
 function RecordCalendar() {
     const { groups } = useGroups();
     const { activities } = useActivities();
@@ -70,6 +126,7 @@ function RecordCalendar() {
     const selectedActivity = recordToEdit
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
+    const [calendarMode, setCalendarMode] = useState("short");
 
     useEffect(() => {
         const minuteRecords = records.filter((rec) => rec.unit === 'minutes');
@@ -100,7 +157,7 @@ function RecordCalendar() {
                 activity_id: rec.activity_id,
                 activityName: rec.activity_name,
                 value: rec.value,
-                title: `(${formattedTime}) ${rec.activity_name}`,
+                title: `${rec.activity_name} (${formattedTime})`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
@@ -223,8 +280,10 @@ function RecordCalendar() {
                 followCursor
                 placement="top"
             >
-                <Box>{event.title}</Box>
-                <Box sx={{ fontSize: 1 }}>{event.memo}</Box>
+                <Box sx={{ height: '100%' }}>
+                    <Box>{event.title}</Box>
+                    <Box sx={{ fontSize: 1 }}>{event.memo}</Box>
+                </Box>
             </Tooltip>
         );
     }
@@ -257,8 +316,16 @@ function RecordCalendar() {
                         localizer={localizer}
                         events={events}
                         view={currentView}
-                        onView={(view) => setCurrentView(view)}
-                        views={[Views.DAY, Views.WEEK, Views.MONTH]}
+                        onView={(view) => {
+                            if (view === 'agenda') {
+                                // 月曜始まりにしたい場合
+                                const weekStart = DateTime.fromJSDate(currentDate).startOf('week').plus({ days: -1 });
+                                setCurrentDate(weekStart.toJSDate());
+                            }
+                            setCurrentView(view);
+                        }}
+                        length={7}
+                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]}
                         date={currentDate}
                         onNavigate={(newDate) => setCurrentDate(newDate)}
                         tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
@@ -268,11 +335,20 @@ function RecordCalendar() {
                         startAccessor="start"
                         endAccessor="end"
                         step={60}
-                        timeslots={2}
-                        style={{ height: 500 }}
+                        timeslots={calendarMode === "short" ? 2 : 1}
+                        style={{ height: calendarMode === "short" ? 500 : 800 }}
                         titleAccessor="title"
                         formats={formats}
-                        components={{ event: CustomEvent }}
+                        components={{
+                            event: CustomEvent,
+                            toolbar: (toolbarProps) => (
+                                <CustomToolbar
+                                    {...toolbarProps}
+                                    calendarMode={calendarMode}
+                                    setCalendarMode={setCalendarMode}
+                                />
+                            )
+                        }}
                         dayLayoutAlgorithm="no-overlap"
                         showAllEvents
                         culture="ja"
