@@ -56,7 +56,7 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
     const dataMap = new Map();
     filtered.forEach(record => {
         // Luxon を使って record.created_at から期間キーを算出
-        const dt = DateTime.fromISO(record.created_at);
+        const dt = DateTime.fromISO(record.created_at, { zone: 'utc' }).toLocal();
         let periodKey = '';
         if (xAxisUnit === 'day') {
             periodKey = dt.toFormat('yyyy-MM-dd');
