@@ -178,7 +178,7 @@ function ActivityList() {
             {/* グリッド表示または管理画面 */}
             {state.showGrid && (
                 <>
-                    <div style={{ height: 400, width: '100%', maxWidth: '800px' }}>
+                    <div style={{ height: 400, width: '100%' }}>
                         <DataGrid
                             rows={activities}
                             columns={columns}
