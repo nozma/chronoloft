@@ -71,7 +71,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
         <Dialog open={open} onClose={onClose}>
             <DialogContent>
                 <TextField
-                    margin="dence"
+                    margin="dense"
                     label="State"
                     fullWidth
                     select

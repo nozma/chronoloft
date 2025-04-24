@@ -385,6 +385,7 @@ function RecordCalendar() {
                     activity={selectedActivity}
                     initialValue={recordToEdit.value}
                     initialDate={recordToEdit.created_at}
+                    initialMemo={recordToEdit.memo}
                     onDelete={handleDeleteRecord}
                     isEdit={true}
                 />
