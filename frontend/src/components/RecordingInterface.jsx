@@ -14,6 +14,7 @@ import ActivityList from './ActivityList';
 import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
+import { useGroups } from '../contexts/GroupContext';
 
 function RecordingInterface() {
     const { state, dispatch } = useUI();
@@ -22,6 +23,7 @@ function RecordingInterface() {
     const { activities } = useActivities();
     const { refreshActivities } = useActivities();
     const { records, refreshRecords: onRecordUpdate } = useRecords();
+    const { groups } = useGroups();
 
     // メインStopwatch
     const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
@@ -75,19 +77,23 @@ function RecordingInterface() {
     // 「記録作成」ハンドラ
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
-        // ストップウォッチが動いていない場合、
-        // Discord接続中か確認し、接続中ならストップウォッチを開始しない
+
+        // ストップウォッチが動いていない場合、Discord接続中か確認し、接続中ならストップウォッチを開始しない
         // （別のウィンドウでストップウォッチが動作していると考えられるため）
-        if (!stopwatchVisible) {
-            try {
-                const presenceRes = await fetch('/api/discord_presence/status');
-                const presenceData = await presenceRes.json();
-                if (presenceData.connected) {
-                    alert("Discord presence is active. Skipping stopwatch start.");
-                    return;
+        // ただし、groupにclient_idが設定されていない場合は接続をしないので判定を行わない
+        const groupData = groups.find(g => g.name === activity.group_name);
+        if (groupData && groupData.client_id !== "") {
+            if (!stopwatchVisible) {
+                try {
+                    const presenceRes = await fetch('/api/discord_presence/status');
+                    const presenceData = await presenceRes.json();
+                    if (presenceData.connected) {
+                        alert("Discord presence is active. Skipping stopwatch start.");
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to check Discord presence:", e);
                 }
-            } catch (e) {
-                console.error("Failed to check Discord presence:", e);
             }
         }
 
