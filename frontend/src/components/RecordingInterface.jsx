@@ -103,12 +103,15 @@ function RecordingInterface() {
             if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
                 // 既に別ストップウォッチが動いている -> 一旦finishAndReset
                 const details = calculateTimeDetails(activity.id, records);
-                const newDiscordData = {
-                    group: activity.group_name,
-                    activity_name: activity.name,
-                    details: details,
-                    asset_key: activity.asset_key || "default_image"
-                };
+                const prevGroup = groups.find(g => g.name === selectedActivity.group_name);
+                const newDiscordData = (prevGroup?.client_id) // Client IDがないグループはDiscord連携しない
+                    ? {
+                        group: activity.group_name,
+                        activity_name: activity.name,
+                        details,
+                        asset_key: activity.asset_key || "default_image"
+                    }
+                    : null;
                 const { minutes, memo } = await stopwatchRef.current.finishAndReset(newDiscordData);
                 // 既存Activityの記録を作成
                 if (selectedActivity?.id) {
@@ -128,12 +131,18 @@ function RecordingInterface() {
 
             // Discord presence用データ
             const details = calculateTimeDetails(activity.id, records);
-            setDiscordData({
-                group: activity.group_name,
-                activity_name: activity.name,
-                details,
-                asset_key: activity.asset_key || "default_image"
-            });
+            const groupInfo = groups.find(g => g.name === activity.group_name);
+            setDiscordData(
+                groupInfo?.client_id
+                    ? {
+                        group: activity.group_name,
+                        activity_name: activity.name,
+                        details,
+                        asset_key: activity.asset_key || "default_image"
+                    }
+                    : null
+            );
+
             setStopwatchVisible(true);
 
         } else if (activity.unit === 'count') {
