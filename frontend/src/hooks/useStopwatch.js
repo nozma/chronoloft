@@ -157,9 +157,10 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // 今走っているストップウォッチを完了し、すぐ次の計測を開始する
     // -----------------------------------------------
     const finishAndReset = async (newDiscordData) => {
+        const memoSnapshot = memo;
         let totalElapsed = await stopNow();
         await handleStart(newDiscordData, true);
-        return totalElapsed / 60000;
+        return { minutes: totalElapsed / 60000, memo: memoSnapshot };
     };
 
     // -----------------------------------------------

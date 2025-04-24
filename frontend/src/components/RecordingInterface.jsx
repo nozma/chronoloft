@@ -109,10 +109,10 @@ function RecordingInterface() {
                     details: details,
                     asset_key: activity.asset_key || "default_image"
                 };
-                const minutes = await stopwatchRef.current.finishAndReset(newDiscordData);
+                const { minutes, memo } = await stopwatchRef.current.finishAndReset(newDiscordData);
                 // 既存Activityの記録を作成
                 if (selectedActivity?.id) {
-                    await createRecord({ activity_id: selectedActivity.id, value: minutes });
+                    await createRecord({ activity_id: selectedActivity.id, value: minutes, memo: memo });
                     onRecordUpdate();
                 }
             }
@@ -148,8 +148,8 @@ function RecordingInterface() {
         if (!activity || activity.unit === 'count') return;
 
         if (subStopwatchVisible && subSelectedActivity && subSelectedActivity.id !== activity.id && subStopwatchRef.current) {
-            const minutes = await subStopwatchRef.current.finishAndReset();
-            await createRecord({ activity_id: subSelectedActivity.id, value: minutes });
+            const { minutes, memo } = await subStopwatchRef.current.finishAndReset();
+            await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo: memo });
             onRecordUpdate();
         }
         setSubSelectedActivity(activity);
