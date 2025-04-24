@@ -219,6 +219,7 @@ function RecordList() {
                     activity={selectedActivity}
                     initialValue={recordToEdit.value}
                     initialDate={recordToEdit.created_at}
+                    initialMemo={recordToEdit.memo}
                     isEdit={true}
                 />
             )}

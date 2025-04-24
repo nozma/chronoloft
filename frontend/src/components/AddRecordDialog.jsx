@@ -19,6 +19,7 @@ function AddRecordDialog({
     activity,
     initialValue,
     initialDate,
+    initialMemo = '',
     isEdit = false,
     onDelete
 }) {
@@ -64,10 +65,10 @@ function AddRecordDialog({
                 setStartTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
             }
         }
-        if (isEdit && typeof initialValue === 'number' && activity?.memo) {
-            setMemo(activity.memo);
+        if (isEdit) {
+            setMemo(initialMemo ?? '');
         }
-    }, [activity, initialValue, initialDate]);
+    }, [activity, initialValue, initialDate, initialMemo]);
 
     // 保存時処理
     const handleSubmit = () => {
