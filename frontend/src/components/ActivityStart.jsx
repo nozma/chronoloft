@@ -46,22 +46,20 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
         return true;
     });
     // タグに対するフィルターの適用
-    const filteredTags = useMemo(() => {
+    const groupTags = useMemo(() => {
         const encountered = new Set();
         const result = [];
-
-        for (const act of filteredActivities) {
-            if (!act.tags) continue;
-            for (const t of act.tags) {
-                // 初めて出現したタグだけ追加 => 先頭のアクティビティほど最近
+        activities.forEach(act => {
+            if (groupFilter && act.group_name !== groupFilter) return;  // グループフィルタ適用
+            act.tags?.forEach(t => {
                 if (!encountered.has(t.name)) {
                     encountered.add(t.name);
                     result.push(t.name);
                 }
-            }
-        }
+            });
+        });
         return result;
-    }, [filteredActivities]);
+    }, [activities, groupFilter]);
 
 
     // 最近使用した項目を取得
@@ -206,7 +204,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                             <ToggleButton value="" aria-label="All">
                                 All
                             </ToggleButton>
-                            {filteredTags.map(tagName => (
+                            {groupTags.map(tagName => (
                                 <ToggleButton key={tagName} value={tagName}>
                                     {tagName}
                                 </ToggleButton>
@@ -285,12 +283,12 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                     <Typography
                                         variant='caption'
                                         color='#777'
-                                        sx={{ 
-                                            alignItems: 'center', 
-                                            display: 'flex', 
+                                        sx={{
+                                            alignItems: 'center',
+                                            display: 'flex',
                                             cursor: 'pointer',
-                                            my:0.5,
-                                            ml:2 
+                                            my: 0.5,
+                                            ml: 2
                                         }}
                                         onClick={() => setShowRemaining((prev) => !prev)}
                                     >
