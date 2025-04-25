@@ -20,6 +20,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const [currentStartTime, setCurrentStartTime] = useState(null); // 開始時刻
     const [memo, setMemo] = useState(''); // メモ
     const [discordData, setDiscordData] = useState(initialDiscordData); // Discordデータ
+    const [isDiscordBusy, setIsDiscordBusy] = useState(false); // DiscordAPI呼び出し中フラグ
 
     const timerRef = useRef(null); // setIntervalのID保持
     const discordLockRef = useRef(false); // Discord連係処理のリクエストが走っているかのRef
@@ -106,6 +107,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         const discordDataToUse = newDiscordData || discordData;
         setDiscordData(discordDataToUse);
         if (discordDataToUse && !discordLockRef.current) {
+            setIsDiscordBusy(true);
             discordLockRef.current = true;
             try {
                 await startDiscordPresence(discordDataToUse);
@@ -114,6 +116,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
                 console.error('Failed to start Discord presence:', error);
             } finally {
                 discordLockRef.current = false;
+                setIsDiscordBusy(false);
             }
         }
     };
@@ -128,6 +131,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     async function stopNow() {
         // Discord停止
         if (discordData && !discordLockRef.current) {
+            setIsDiscordBusy(true);
             discordLockRef.current = true;
             try {
                 await stopDiscordPresence({ group: discordData.group });
@@ -136,6 +140,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
                 console.error('Failed to stop Discord presence:', error);
             } finally {
                 discordLockRef.current = false;
+                setIsDiscordBusy(false);
             }
         }
         // 経過時間(ms)計算
@@ -203,6 +208,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         finishAndReset,    // 現在の計測を完了し、すぐ次を開始
         memo,              // メモ文字列
         setMemo,           // メモのsetter
+        isDiscordBusy,     // DiscordAPIリクエスト送信中フラグ
     };
 }
 

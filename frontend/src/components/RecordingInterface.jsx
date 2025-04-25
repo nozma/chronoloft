@@ -77,6 +77,7 @@ function RecordingInterface() {
     // 「記録作成」ハンドラ
     const handleStartRecordFromSelect = async (activity) => {
         if (!activity) return;
+        if (stopwatchRef.current?.isDiscordBusy) return; // Discordリクエスト中は操作を受け付けない
 
         // ストップウォッチが動いていない場合、Discord接続中か確認し、接続中ならストップウォッチを開始しない
         // （別のウィンドウでストップウォッチが動作していると考えられるため）
