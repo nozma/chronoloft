@@ -1,4 +1,4 @@
-# Activity Tracker
+# ActyLoft
 
 Discordへのステータス表示機能を備えたアクティビティ記録ツール。
 
@@ -7,8 +7,8 @@ Discordへのステータス表示機能を備えたアクティビティ記録�
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/nozma/activity-tracker.git
-cd activity-tracker
+git clone https://github.com/nozma/actyloft.git
+cd actyloft
 ```
 ### 2. バックエンド
 
@@ -61,7 +61,7 @@ http://localhost:5173/ にアクセス。
 npm run build
 ```
 
-dist以下にアプリケーションファイルが出力される。現状macOS向け.appファイルのみ。
+dist以下にアプリケーションファイルが出力される。現状macOS向けappファイルのみ。
 
 ## 使用方法
 

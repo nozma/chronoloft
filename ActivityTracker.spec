@@ -40,11 +40,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='ActivityTracker',
+    name='Actyloft',
 )
 app = BUNDLE(
     coll,
-    name='ActivityTracker.app',
+    name='Actyloft.app',
     icon=None,
     bundle_identifier=None,
 )

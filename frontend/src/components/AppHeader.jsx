@@ -27,7 +27,7 @@ function AppHeader() {
             : 'rgba(0,0,0,0.04)',      // ライト時背景
       }}
     >
-      <Typography variant="h5">Activity Tracker</Typography>
+      <Typography variant="h5">Actyloft</Typography>
       <OpenBrowserButton />
     </Box>
   );

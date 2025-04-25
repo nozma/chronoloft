@@ -48,7 +48,7 @@ function RecordingInterface() {
             const hh = Math.floor(totalSeconds / 3600);
             const mm = Math.floor((totalSeconds % 3600) / 60);
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `(${formattedTime}) ${selectedActivity.name} - Activity Tracker`;
+            document.title = `(${formattedTime}) ${selectedActivity.name} - Actyloft`;
         }
         // 2) メインとサブ両方動いている
         else if (stopwatchVisible && selectedActivity && subStopwatchVisible && subSelectedActivity) {
@@ -56,15 +56,15 @@ function RecordingInterface() {
             const hh = Math.floor(totalSeconds / 3600);
             const mm = Math.floor((totalSeconds % 3600) / 60);
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `(${formattedTime}) ${selectedActivity.name} (${subSelectedActivity.name}) - Activity Tracker`;
+            document.title = `(${formattedTime}) ${selectedActivity.name} (${subSelectedActivity.name}) - Actyloft`;
         }
         // 3) サブだけ動いている
         else if (!stopwatchVisible && subStopwatchVisible && subSelectedActivity) {
-            document.title = `(${subSelectedActivity.name}) - Activity Tracker`;
+            document.title = `(${subSelectedActivity.name}) - Actyloft`;
         }
         // 4) 何も動いていない
         else {
-            document.title = 'Activity Tracker';
+            document.title = 'Actyloft';
         }
     }, [
         stopwatchVisible,
