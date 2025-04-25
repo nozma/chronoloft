@@ -20,8 +20,10 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const [currentStartTime, setCurrentStartTime] = useState(null); // 開始時刻
     const [memo, setMemo] = useState(''); // メモ
     const [discordData, setDiscordData] = useState(initialDiscordData); // Discordデータ
+    const [isDiscordBusy, setIsDiscordBusy] = useState(false); // DiscordAPI呼び出し中フラグ
 
     const timerRef = useRef(null); // setIntervalのID保持
+    const discordLockRef = useRef(false); // Discord連係処理のリクエストが走っているかのRef
 
     // -----------------------------------------------
     // マウント時の処理： 
@@ -104,12 +106,17 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData || discordData;
         setDiscordData(discordDataToUse);
-        if (discordDataToUse) {
+        if (discordDataToUse && !discordLockRef.current) {
+            setIsDiscordBusy(true);
+            discordLockRef.current = true;
             try {
                 await startDiscordPresence(discordDataToUse);
                 console.log('Discord presence started');
             } catch (error) {
                 console.error('Failed to start Discord presence:', error);
+            } finally {
+                discordLockRef.current = false;
+                setIsDiscordBusy(false);
             }
         }
     };
@@ -123,12 +130,17 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     async function stopNow() {
         // Discord停止
-        if (discordData) {
+        if (discordData && !discordLockRef.current) {
+            setIsDiscordBusy(true);
+            discordLockRef.current = true;
             try {
                 await stopDiscordPresence({ group: discordData.group });
                 console.log('Discord presence stopped');
             } catch (error) {
                 console.error('Failed to stop Discord presence:', error);
+            } finally {
+                discordLockRef.current = false;
+                setIsDiscordBusy(false);
             }
         }
         // 経過時間(ms)計算
@@ -157,9 +169,10 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // 今走っているストップウォッチを完了し、すぐ次の計測を開始する
     // -----------------------------------------------
     const finishAndReset = async (newDiscordData) => {
+        const memoSnapshot = memo;
         let totalElapsed = await stopNow();
         await handleStart(newDiscordData, true);
-        return totalElapsed / 60000;
+        return { minutes: totalElapsed / 60000, memo: memoSnapshot };
     };
 
     // -----------------------------------------------
@@ -195,6 +208,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         finishAndReset,    // 現在の計測を完了し、すぐ次を開始
         memo,              // メモ文字列
         setMemo,           // メモのsetter
+        isDiscordBusy,     // DiscordAPIリクエスト送信中フラグ
     };
 }
 

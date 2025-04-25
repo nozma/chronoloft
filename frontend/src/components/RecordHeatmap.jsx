@@ -10,6 +10,7 @@ import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import 'react-tooltip/dist/react-tooltip.css';
 import { format } from 'date-fns';
+import { DateTime } from 'luxon';
 import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
@@ -71,7 +72,10 @@ function RecordHeatmap() {
         // 日別にレコードを集計する
         const grouped = {};
         recentRecords.forEach(rec => {
-            const dateStr = format(new Date(rec.created_at), 'yyyy-MM-dd');
+            const dateStr = DateTime
+                .fromISO(rec.created_at, { zone: 'utc' })
+                .toLocal()
+                .toFormat('yyyy-MM-dd');
             if (!grouped[dateStr]) {
                 grouped[dateStr] = 0;
             }

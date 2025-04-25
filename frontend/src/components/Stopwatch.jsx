@@ -20,12 +20,14 @@ const Stopwatch = forwardRef((props, ref) => {
         updateStartTime,
         currentStartTime,
         memo,
-        setMemo
+        setMemo,
+        isDiscordBusy
     } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
 
     useImperativeHandle(ref, () => ({
         complete,
-        finishAndReset
+        finishAndReset,
+        isDiscordBusy
     }));
 
     // 編集モード用の状態
@@ -136,10 +138,10 @@ const Stopwatch = forwardRef((props, ref) => {
                     {/* 経過時間と完了・キャンセルアイコン */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                        <IconButton color="primary" onClick={() => complete(memo)} >
+                        <IconButton color="primary" onClick={() => complete(memo)} disabled={isDiscordBusy}>
                             <CheckCircleIcon fontSize='large' />
                         </IconButton>
-                        <IconButton color="error" onClick={cancel} >
+                        <IconButton color="error" onClick={cancel} disabled={isDiscordBusy}>
                             <CancelIcon fontSize='large' />
                         </IconButton>
                     </Box>
@@ -169,6 +171,7 @@ const Stopwatch = forwardRef((props, ref) => {
                             startDiscordPresence(data)
                                 .catch(err => console.error("Failed to update presence:", err));
                         }}
+                        disabled={isDiscordBusy}
                     >
                         Sync Memo
                     </Button>
