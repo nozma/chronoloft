@@ -1,5 +1,5 @@
 {
-    "name": "activity-tracker",
+    "name": "actyloft",
     "private": true,
     "workspaces": [
         "frontend"
