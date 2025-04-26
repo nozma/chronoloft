@@ -454,7 +454,7 @@ function RecordChart() {
                         {/* 表示期間選択 */}
                         <TextField
                             select
-                            label="Period"
+                            label="Date Range"
                             size="small"
                             value={selectedPeriod}
                             onChange={(e) => {
@@ -464,9 +464,9 @@ function RecordChart() {
                             sx={{ minWidth: 120 }}
                         >
                             <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="365d">Year</MenuItem>
-                            <MenuItem value="30d">Month</MenuItem>
-                            <MenuItem value="7d">Week</MenuItem>
+                            <MenuItem value="365d">365 Days</MenuItem>
+                            <MenuItem value="30d">30 Days</MenuItem>
+                            <MenuItem value="7d">7 Days</MenuItem>
                         </TextField>
                         {/* 折れ線グラフ・棒グラフ切り替え */}
                         <TextField
@@ -484,7 +484,7 @@ function RecordChart() {
                         {/* x軸の集計単位切替 */}
                         <TextField
                             select
-                            label="Timescale"
+                            label="Interval"
                             size="small"
                             value={xAxisUnit}
                             onChange={(e) => setXAxisUnit(e.target.value)}
