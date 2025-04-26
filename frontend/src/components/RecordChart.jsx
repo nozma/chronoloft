@@ -1,5 +1,5 @@
-// frontend/src/components/RecordChart.jsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
     Box,
     Typography,
@@ -151,14 +151,14 @@ function RecordChart() {
     const { dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
-    const [chartType, setChartType] = useState('line'); // 'line' または 'bar'
-    const [xAxisUnit, setXAxisUnit] = useState('day'); // 'day' / 'week' / 'month'
-    const [groupBy, setGroupBy] = useState('group'); // 'group' / 'tag' / 'activity'
+    const [chartType, setChartType] = useLocalStorageState('chart.chartType', 'line');; // 'line' または 'bar'
+    const [xAxisUnit, setXAxisUnit] = useLocalStorageState('chart.xAxisUnit', 'day'); // 'day' / 'week' / 'month'
+    const [groupBy, setGroupBy] = useLocalStorageState('chart.groupBy', 'group'); // 'group' / 'tag' / 'activity'
     // 集計単位（"time" または "count"）の状態。自動判定と手動切替の両方をサポート
-    const [aggregationUnit, setAggregationUnit] = useState('time');
-    const [isAggregationManual, setIsAggregationManual] = useState(false);
+    const [aggregationUnit, setAggregationUnit] = useLocalStorageState('chart.aggregationUnit', 'time');
+    const [isAggregationManual, setIsAggregationManual] = useLocalStorageState('chart.aggregationManual', false);
     // 集計期間
-    const [selectedPeriod, setSelectedPeriod] = useState('30d'); // デフォルトは過去30日
+    const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('chart.selectedPeriod', '30d'); // デフォルトは過去30日
 
     // 過去の日付を取得する関数
     const getStartDate = (period) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 
 import { Calendar, Views } from 'react-big-calendar';
 
@@ -118,7 +119,7 @@ function RecordCalendar() {
     const { groups } = useGroups();
     const { activities } = useActivities();
     const [events, setEvents] = useState([]);
-    const [currentView, setCurrentView] = useState(Views.WEEK);
+    const [currentView, setCurrentView] = useLocalStorageState('calendar.view', Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
@@ -126,7 +127,7 @@ function RecordCalendar() {
     const selectedActivity = recordToEdit
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
-    const [calendarMode, setCalendarMode] = useState("short");
+    const [calendarMode, setCalendarMode] = useLocalStorageState('calendar.mode', 'short');
 
     useEffect(() => {
         const minuteRecords = records.filter((rec) => rec.unit === 'minutes');
