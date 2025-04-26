@@ -28,11 +28,11 @@ db = SQLAlchemy(metadata=metadata)
 def get_os_db_path():
     """
     OS推奨のユーザーデータディレクトリに「app.db」を配置するパスを返す。
-    Windows: %APPDATA%/ActivityTracker/
-    macOS:   ~/Library/Application Support/ActivityTracker/
-    Linux:   ~/.local/share/ActivityTracker/
+    Windows: %APPDATA%/Actiloft/
+    macOS:   ~/Library/Application Support/Actiloft/
+    Linux:   ~/.local/share/Actiloft/
     """
-    dirs = PlatformDirs("ActivityTracker")
+    dirs = PlatformDirs("Actiloft")
     db_dir = dirs.user_data_dir
     os.makedirs(db_dir, exist_ok=True)
     return os.path.join(db_dir, "app.db")

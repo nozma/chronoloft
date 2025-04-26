@@ -5,11 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('LICENSE', '.'),
-        ('frontend/dist', 'frontend/dist'), 
-        ('backend/migrations', 'backend/migrations')
-    ],
+    datas=[('frontend/dist', 'frontend/dist'), ('backend/migrations', 'backend/migrations')],
     hiddenimports=['logging.config'],
     hookspath=[],
     hooksconfig={},
@@ -25,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='ActivityTracker',
+    name='Actiloft',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -44,11 +40,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Actyloft',
+    name='Actiloft',
 )
 app = BUNDLE(
     coll,
-    name='Actyloft.app',
+    name='Actiloft.app',
     icon=None,
     bundle_identifier=None,
 )
