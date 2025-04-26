@@ -66,3 +66,11 @@ dist以下にアプリケーションファイルが出力される。現状macO
 ## 使用方法
 
 [Pages · nozma/activity-tracker Wiki](https://github.com/nozma/activity-tracker/wiki)
+
+## ライセンス
+
+本リポジトリのソースコードは **MIT License** の下で公開しています。  
+詳細は [LICENSE](./LICENSE) を参照してください。
+
+依存ライブラリのライセンス一覧は、自動生成された  
+`third_party_licenses_node.json` と `third_party_licenses_python.json` に同梱しています。
