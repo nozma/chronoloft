@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
     Box,
     Typography,
     Collapse,
     TextField,
-    MenuItem
+    MenuItem,
+    IconButton
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -32,6 +33,8 @@ import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
 import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -142,6 +145,28 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
     return dataArray;
 }
 
+function getPeriodRange(period, offset = 0) {
+    // 期間の境界を求める
+    // 今日の 00:00 を基準
+    const today = DateTime.now().startOf('day');
+
+    const PERIOD_DAYS = {
+        '7d': 7,
+        '30d': 30,
+        '90d': 90,
+        '365d': 365,
+    };
+
+    if (period in PERIOD_DAYS) {
+        const days = PERIOD_DAYS[period];
+        const end = today.minus({ days: days * offset });
+        const start = end.minus({ days }).plus({ days: 1 });
+        return [start, end];
+    }
+    // 'all' など期間無制限
+    return [DateTime.fromMillis(0), today];
+}
+
 function RecordChart() {
     // コンテキストから必要なデータを取得
     const { records } = useRecords();
@@ -159,26 +184,15 @@ function RecordChart() {
     const [isAggregationManual, setIsAggregationManual] = useLocalStorageState('chart.aggregationManual', false);
     // 集計期間
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('chart.selectedPeriod', '30d'); // デフォルトは過去30日
-
-    // 過去の日付を取得する関数
-    const getStartDate = (period) => {
-        const now = DateTime.local();
-        switch (period) {
-            case '7d':
-                return now.minus({ days: 7 });
-            case '30d':
-                return now.minus({ days: 30 });
-            case '365d':
-                return now.minus({ days: 365 });
-            case 'all':
-            default:
-                return DateTime.fromMillis(0); // すべてのデータを対象
-        }
-    };
+    const [offset, setOffset] = useState(0); // ページング用オフセット
+    const [periodStart, periodEnd] = useMemo(
+        () => getPeriodRange(selectedPeriod, offset),
+        [selectedPeriod, offset]
+    );
 
     // フィルタ条件を反映して表示に使うレコードをフィルタ
     const filteredRecords = useMemo(() => {
-        const startDate = getStartDate(selectedPeriod);
+        const [start, end] = getPeriodRange(selectedPeriod, offset);
         const filteredByState = records.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
@@ -189,10 +203,10 @@ function RecordChart() {
             return true;
         });
         return filteredByState.filter(r => {
-            const recordDate = DateTime.fromISO(r.created_at);
-            return recordDate >= startDate;
+            const rd = DateTime.fromISO(r.created_at);
+            return rd >= start && rd <= end.endOf('day');
         });
-    }, [records, filterState, selectedPeriod]);
+    }, [records, filterState, selectedPeriod, offset]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -439,7 +453,10 @@ function RecordChart() {
                             label="Period"
                             size="small"
                             value={selectedPeriod}
-                            onChange={(e) => setSelectedPeriod(e.target.value)}
+                            onChange={(e) => {
+                                setSelectedPeriod(e.target.value);
+                                setOffset(0);
+                            }}
                             sx={{ minWidth: 120 }}
                         >
                             <MenuItem value="all">All</MenuItem>
@@ -500,6 +517,35 @@ function RecordChart() {
                             <MenuItem value="count">Count</MenuItem>
                         </TextField>
                     </Box>
+                </Box>
+                {/* 表示期間切り替えUI */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                    {/* 本日ボタン（オフセットをリセットする） */}
+                    <IconButton
+                        onClick={() => setOffset(0)}
+                        size='small'
+                        sx={{
+                            borderRadius: 8,
+                            padding: '12px'
+                        }}
+                    >
+                        <span style={{ fontSize: '1rem' }}>Today</span>
+                    </IconButton>
+                    {/* 前へ */}
+                    <IconButton onClick={() => setOffset(o => o + 1)}>
+                        <ChevronLeftIcon />
+                    </IconButton>
+                    {/* 次へ（最新期間より先には進まない） */}
+                    <IconButton
+                        onClick={() => setOffset(o => Math.max(o - 1, 0))}
+                        disabled={offset === 0}
+                    >
+                        <ChevronRightIcon />
+                    </IconButton>
+                    {/* 表示中の範囲 */}
+                    <Typography variant="subtitle1" sx={{ mx: 0 }}>
+                        {periodStart.toFormat('yyyy-LL-dd')} – {periodEnd.toFormat('yyyy-LL-dd')}
+                    </Typography>
                 </Box>
                 {/* チャート描画部 */}
                 <ResponsiveContainer width="100%" height={250}>
@@ -648,8 +694,8 @@ function RecordChart() {
                                 dataKey='dateValue'
                                 scale='time'
                                 domain={[ // 半日分広げる
-                                    (dataMin) => dataMin - 86400000/2,
-                                    (dataMax) => dataMax + 86400000/2
+                                    (dataMin) => dataMin - 86400000 / 2,
+                                    (dataMax) => dataMax + 86400000 / 2
                                 ]}
                                 tickFormatter={xAxisTickFormatter}
                             />
