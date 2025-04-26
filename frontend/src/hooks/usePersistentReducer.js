@@ -8,27 +8,33 @@ import { useReducer, useEffect } from 'react';
  * @param {string}   storageKey  localStorage のキー
  * @returns {[any, Function]}    [state, dispatch]
  */
+const SCHEMA_VERSION = 1; // 保存されるデータスキーマに変更があった場合、バージョンを更新する
 export default function usePersistentReducer(reducer, initialState, storageKey) {
-  // ─────────────── 初期化 ───────────────
-  const init = () => {
-    try {
-      const loaded = JSON.parse(localStorage.getItem(storageKey));
-      return loaded ? { ...initialState, ...loaded } : initialState;
-    } catch {
-      return initialState;
-    }
-  };
+    // ─────────────── 初期化 ───────────────
+    const init = () => {
+        try {
+            // バージョン不一致なら無視
+            const ver = localStorage.getItem(`${storageKey}:v`);
+            if (ver !== String(SCHEMA_VERSION)) throw new Error('version mismatch');
 
-  const [state, dispatch] = useReducer(reducer, initialState, init);
+            const loaded = JSON.parse(localStorage.getItem(storageKey));
+            return loaded ? { ...initialState, ...loaded } : initialState;
+        } catch {
+            return initialState;
+        }
+    };
 
-  // ─────────────── 保存 ───────────────
-  useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(state));
-    } catch (e) {
-      console.error('Failed to persist UI state:', e);
-    }
-  }, [state, storageKey]);
+    const [state, dispatch] = useReducer(reducer, initialState, init);
 
-  return [state, dispatch];
+    // ─────────────── 保存 ───────────────
+    useEffect(() => {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(state));
+            localStorage.setItem(`${storageKey}:v`, SCHEMA_VERSION);  // ★ バージョン書き込み
+        } catch (e) {
+            console.error('Failed to persist UI state:', e);
+        }
+    }, [state, storageKey]);
+
+    return [state, dispatch];
 }
