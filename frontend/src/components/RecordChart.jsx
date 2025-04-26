@@ -158,6 +158,7 @@ function getPeriodRange(period, offset = 0) {
         '7d': 7,
         '30d': 30,
         '90d': 90,
+        '180d': 180,
         '365d': 365,
     };
 
@@ -465,6 +466,8 @@ function RecordChart() {
                         >
                             <MenuItem value="all">All</MenuItem>
                             <MenuItem value="365d">365 Days</MenuItem>
+                            <MenuItem value="180d">180 Days</MenuItem>
+                            <MenuItem value="90d">90 Days</MenuItem>
                             <MenuItem value="30d">30 Days</MenuItem>
                             <MenuItem value="7d">7 Days</MenuItem>
                         </TextField>
