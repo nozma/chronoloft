@@ -5,7 +5,11 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('frontend/dist', 'frontend/dist'), ('backend/migrations', 'backend/migrations')],
+    datas=[
+        ('LICENSE', '.'),
+        ('frontend/dist', 'frontend/dist'), 
+        ('backend/migrations', 'backend/migrations')
+    ],
     hiddenimports=['logging.config'],
     hookspath=[],
     hooksconfig={},
