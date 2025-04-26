@@ -7,6 +7,7 @@ import { DateTime } from 'luxon';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import SyncIcon from '@mui/icons-material/Sync';
 import { startDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
@@ -146,7 +147,7 @@ const Stopwatch = forwardRef((props, ref) => {
                         </IconButton>
                     </Box>
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ position: 'relative', flex: 1, mt: 1 }}>
                     {/* メモ入力欄 */}
                     <TextField
                         label="Memo"
@@ -155,26 +156,35 @@ const Stopwatch = forwardRef((props, ref) => {
                         fullWidth
                         value={memo}
                         onChange={(e) => setMemo(e.target.value)}
-                        sx={{ mb: 1 }}
                     />
                     {/* Update Presence ボタン */}
-                    <Button
-                        variant="outlined"
-                        size='small'
-                        onClick={() => {
-                            const data = {
-                                group: props.activityGroup,
-                                activity_name: props.activityName,
-                                details: memo,
-                                asset_key: props.discordData?.asset_key || "default_image",
-                            };
-                            startDiscordPresence(data)
-                                .catch(err => console.error("Failed to update presence:", err));
-                        }}
-                        disabled={isDiscordBusy}
-                    >
-                        Sync Memo
-                    </Button>
+                    {props.discordData && (
+                        <IconButton
+                            size="small"
+                            onClick={() => {
+                                const data = {
+                                    group: props.activityGroup,
+                                    activity_name: props.activityName,
+                                    details: memo,
+                                    asset_key: props.discordData?.asset_key || 'default_image',
+                                };
+                                startDiscordPresence(data)
+                                    .catch(err => console.error('Failed to update presence:', err));
+                            }}
+                            disabled={isDiscordBusy}
+                            sx={{
+                                position: 'absolute',
+                                right: 4,
+                                bottom: 8,
+                                p: 0.5,
+                                bgcolor: 'background.paper',
+                                boxShadow: 1,
+                                '&:hover': { bgcolor: 'action.hover' },
+                            }}
+                        >
+                            <SyncIcon fontSize="small" />
+                        </IconButton>
+                    )}
                 </Box>
             </Box>
             <Box sx={{ marginTop: 8 }} />
