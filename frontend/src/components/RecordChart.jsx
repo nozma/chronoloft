@@ -84,6 +84,10 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
             } else {
                 groupKeys.push('No Tag');
             }
+        } else if (groupBy === 'activityMemo') {
+            // Activity 名と memo を連結して 1 つのキーにする
+            const memoPart = record.memo ? ` / ${record.memo}` : '';
+            groupKeys.push((record.activity_name || 'Unknown Activity') + memoPart);
         }
         groupKeys.forEach(key => {
             if (!bucket[key]) {
@@ -501,6 +505,7 @@ function RecordChart() {
                             <MenuItem value="group">Group</MenuItem>
                             <MenuItem value="tag">Tag</MenuItem>
                             <MenuItem value="activity">Activity</MenuItem>
+                            <MenuItem value="activityMemo">Activity + Memo</MenuItem>
                         </TextField>
                         {/* 集計単位の手動切替 */}
                         <TextField
