@@ -1,4 +1,4 @@
-# ActyLoft
+# Actyloft
 
 Discordへのステータス表示機能を備えたアクティビティ記録ツール。
 
