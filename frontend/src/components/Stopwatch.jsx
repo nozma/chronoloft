@@ -8,7 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
-import { startDiscordPresence } from '../services/api';
+import { updateDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
     const { groups } = useGroups();
@@ -168,7 +168,7 @@ const Stopwatch = forwardRef((props, ref) => {
                                     details: memo,
                                     asset_key: props.discordData?.asset_key || 'default_image',
                                 };
-                                startDiscordPresence(data)
+                                updateDiscordPresence(data)
                                     .catch(err => console.error('Failed to update presence:', err));
                             }}
                             disabled={isDiscordBusy}

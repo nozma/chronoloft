@@ -173,6 +173,19 @@ export async function stopDiscordPresence(data) {
     return response.json();
 }
 
+export async function updateDiscordPresence(data) {
+    const res = await fetch('/api/discord_presence/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update presence');
+    }
+    return res.json();
+}
+
 /**
  * タグ一覧を取得
  */

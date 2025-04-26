@@ -63,3 +63,27 @@ def discord_presence_status():
         if mgr.is_connected():
             return jsonify({'connected': True})
     return jsonify({'connected': False})
+
+@discord_bp.route('/api/discord_presence/update', methods=['POST'])
+def discord_presence_update():
+    data = request.get_json()
+    group       = data.get('group')
+    activity    = data.get('activity_name')
+    details     = data.get('details')
+    asset_key   = data.get('asset_key') or "default_image"
+
+    mgr = DISCORD_MANAGERS.get(group)
+    if not mgr or not mgr.is_connected():
+        return jsonify({'error': 'No active Discord session'}), 400
+
+    try:
+        mgr.update_presence(
+            state=activity,
+            large_text=activity,
+            details=details,
+            large_image=asset_key
+        )
+        return jsonify({'message': 'Discord presence updated'}), 200
+    except Exception as e:
+        current_app.logger.error("Update failed: %s", e, exc_info=True)
+        return jsonify({'error': str(e)}), 500
