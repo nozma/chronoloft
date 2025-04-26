@@ -548,178 +548,199 @@ function RecordChart() {
                     </Typography>
                 </Box>
                 {/* チャート描画部 */}
-                <ResponsiveContainer width="100%" height={250}>
-                    {chartType === 'line' ? (
-                        <LineChart data={chartData} margin={{ left: 25, right: longestLabelWidth }}>
-                            <CartesianGrid
-                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
-                            />
-                            <XAxis
-                                type='number'
-                                dataKey='dateValue'
-                                scale='time'
-                                domain={['dataMin', 'dataMax']}
-                                tickFormatter={xAxisTickFormatter}
-                            />
-                            <YAxis
-                                tickCount={8}
-                                tickFormatter={yAxisTimeValueFormatter}
-                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            {/* カスタムラベル */}
-                            <Customized
-                                component={({ xAxisMap, yAxisMap }) => {
-                                    const xKey = Object.keys(xAxisMap)[0];
-                                    const yKey = Object.keys(yAxisMap)[0];
-                                    const xScale = xAxisMap[xKey]?.scale;
-                                    const yScale = yAxisMap[yKey]?.scale;
+                {chartData.length === 0 ? (
+                    /* ----- データが無い場合の表示 ----- */
+                    <Box
+                        sx={{
+                            height: 250,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: 1,
+                            color: theme.palette.text.disabled,
+                            backgroundColor: theme.palette.mode === 'dark'
+                                ? '#222'
+                                : '#fafafa',
+                        }}
+                    >
+                        <Typography variant="subtitle2">
+                            No data in this period
+                        </Typography>
+                    </Box>
+                ) : (
+                    <ResponsiveContainer width="100%" height={250}>
+                        {chartType === 'line' ? (
+                            <LineChart data={chartData} margin={{ left: 25, right: longestLabelWidth }}>
+                                <CartesianGrid
+                                    stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                                />
+                                <XAxis
+                                    type='number'
+                                    dataKey='dateValue'
+                                    scale='time'
+                                    domain={['dataMin', 'dataMax']}
+                                    tickFormatter={xAxisTickFormatter}
+                                />
+                                <YAxis
+                                    tickCount={8}
+                                    tickFormatter={yAxisTimeValueFormatter}
+                                    domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                {/* カスタムラベル */}
+                                <Customized
+                                    component={({ xAxisMap, yAxisMap }) => {
+                                        const xKey = Object.keys(xAxisMap)[0];
+                                        const yKey = Object.keys(yAxisMap)[0];
+                                        const xScale = xAxisMap[xKey]?.scale;
+                                        const yScale = yAxisMap[yKey]?.scale;
 
-                                    if (!xScale || !yScale) return null;
+                                        if (!xScale || !yScale) return null;
 
-                                    const labels = keys.map(key => {
-                                        const last = chartData[chartData.length - 1];
+                                        const labels = keys.map(key => {
+                                            const last = chartData[chartData.length - 1];
 
-                                        return {
-                                            key,
-                                            value: last[key],
-                                            rawX: xScale(last.dateValue),
-                                            rawY: yScale(last[key]),
-                                            y: yScale(last[key]), // 初期y
-                                            color: colorScale(key),
-                                        };
-                                    });
+                                            return {
+                                                key,
+                                                value: last[key],
+                                                rawX: xScale(last.dateValue),
+                                                rawY: yScale(last[key]),
+                                                y: yScale(last[key]), // 初期y
+                                                color: colorScale(key),
+                                            };
+                                        });
 
-                                    // 右端の凡例がなるべく重ならないようにする
-                                    const topPadding = 10;
-                                    const bottomPadding = 30;
-                                    const chartHeight = 250;
-                                    const availableHeight = chartHeight - topPadding - bottomPadding;
-                                    const minGap = 10;
-                                    labels.sort((a, b) => a.rawY - b.rawY);
-                                    // d3-forceによる重なり回避
-                                    const sim = forceSimulation(labels)
-                                        .force('y', forceY(d => d.rawY).strength(1))
-                                        .force('collide', forceCollide(minGap / 2))
-                                        .stop();
-                                    for (let i = 0; i < 300; ++i) sim.tick();
+                                        // 右端の凡例がなるべく重ならないようにする
+                                        const topPadding = 10;
+                                        const bottomPadding = 30;
+                                        const chartHeight = 250;
+                                        const availableHeight = chartHeight - topPadding - bottomPadding;
+                                        const minGap = 10;
+                                        labels.sort((a, b) => a.rawY - b.rawY);
+                                        // d3-forceによる重なり回避
+                                        const sim = forceSimulation(labels)
+                                            .force('y', forceY(d => d.rawY).strength(1))
+                                            .force('collide', forceCollide(minGap / 2))
+                                            .stop();
+                                        for (let i = 0; i < 300; ++i) sim.tick();
 
-                                    // 手動調整で順序を保つ（必要に応じて）
-                                    for (let i = 1; i < labels.length; ++i) {
-                                        const prev = labels[i - 1];
-                                        const curr = labels[i];
-                                        if (curr.y - prev.y < minGap) {
-                                            curr.y = prev.y + minGap;
+                                        // 手動調整で順序を保つ（必要に応じて）
+                                        for (let i = 1; i < labels.length; ++i) {
+                                            const prev = labels[i - 1];
+                                            const curr = labels[i];
+                                            if (curr.y - prev.y < minGap) {
+                                                curr.y = prev.y + minGap;
+                                            }
                                         }
-                                    }
 
-                                    // スケーリング or シフト
-                                    const validYLabels = labels.filter(
-                                        l => typeof l.y === 'number' &&
-                                            !isNaN(l.y) &&
-                                            l.key !== 'date' &&
-                                            l.key !== 'dateValue'
-                                    );
+                                        // スケーリング or シフト
+                                        const validYLabels = labels.filter(
+                                            l => typeof l.y === 'number' &&
+                                                !isNaN(l.y) &&
+                                                l.key !== 'date' &&
+                                                l.key !== 'dateValue'
+                                        );
 
-                                    if (validYLabels.length === 0) return;
+                                        if (validYLabels.length === 0) return;
 
-                                    const yMin = Math.min(...validYLabels.map(l => l.y));
-                                    const yMax = Math.max(...validYLabels.map(l => l.y));
-                                    const labelSpan = yMax - yMin;
+                                        const yMin = Math.min(...validYLabels.map(l => l.y));
+                                        const yMax = Math.max(...validYLabels.map(l => l.y));
+                                        const labelSpan = yMax - yMin;
 
-                                    if (labelSpan > availableHeight) {
-                                        // スケーリングして詰める
-                                        const scale = availableHeight / labelSpan;
-                                        labels.forEach(label => {
-                                            label.y = topPadding + (label.y - yMin) * scale;
-                                        });
-                                    } else {
-                                        // シフトして中央寄せ（または上寄せ）
-                                        const offset = topPadding - yMin;
-                                        labels.forEach(label => {
-                                            label.y += offset;
-                                        });
-                                    }
+                                        if (labelSpan > availableHeight) {
+                                            // スケーリングして詰める
+                                            const scale = availableHeight / labelSpan;
+                                            labels.forEach(label => {
+                                                label.y = topPadding + (label.y - yMin) * scale;
+                                            });
+                                        } else {
+                                            // シフトして中央寄せ（または上寄せ）
+                                            const offset = topPadding - yMin;
+                                            labels.forEach(label => {
+                                                label.y += offset;
+                                            });
+                                        }
 
-                                    return (
-                                        <g>
-                                            {labels.map(label => (
-                                                <g key={`label-${label.key}`}>
-                                                    {/* ガイドライン: 折れ線の終点 → ラベル */}
-                                                    <line
-                                                        x1={label.rawX}
-                                                        y1={label.rawY}
-                                                        x2={label.rawX + 10}
-                                                        y2={label.y}
-                                                        stroke={label.color}
-                                                        strokeWidth={.5}
-                                                    />
-                                                    {/* ラベル */}
-                                                    <text
-                                                        x={label.rawX + 10}
-                                                        y={label.y}
-                                                        fill={label.color}
-                                                        fontSize={12}
-                                                        alignmentBaseline="middle"
-                                                        textAnchor="start"
-                                                    >
-                                                        {label.key}
-                                                    </text>
-                                                </g>
-                                            ))}
-                                        </g>
-                                    );
-                                }}
-                            />
-                            {Object.keys(chartData[0] || {})
-                                .filter(key => key !== 'date')
-                                .filter(key => key !== 'dateValue')
-                                .map((key, index) => (
-                                    <Line
-                                        key={key}
-                                        type="stepAfter"
-                                        dataKey={key}
-                                        stroke={colorScale(key)}
-                                        dot={false}
-                                    />
-                                ))}
-                        </LineChart>
-                    ) : (
-                        <BarChart data={chartData} margin={{ left: 20 }} >
-                            <CartesianGrid
-                                stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
-                            />
-                            <XAxis
-                                type='number'
-                                dataKey='dateValue'
-                                scale='time'
-                                domain={[ // 半日分広げる
-                                    (dataMin) => dataMin - 86400000 / 2,
-                                    (dataMax) => dataMax + 86400000 / 2
-                                ]}
-                                tickFormatter={xAxisTickFormatter}
-                            />
-                            <YAxis
-                                tickCount={8}
-                                tickFormatter={yAxisTimeValueFormatter}
-                                domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend />
-                            {Object.keys(chartData[0] || {})
-                                .filter(key => key !== 'date')
-                                .filter(key => key !== 'dateValue')
-                                .map((key, index) => (
-                                    <Bar
-                                        key={key}
-                                        dataKey={key}
-                                        stackId="a"
-                                        fill={colorScale(key)}
-                                    />
-                                ))}
-                        </BarChart>
-                    )}
-                </ResponsiveContainer>
+                                        return (
+                                            <g>
+                                                {labels.map(label => (
+                                                    <g key={`label-${label.key}`}>
+                                                        {/* ガイドライン: 折れ線の終点 → ラベル */}
+                                                        <line
+                                                            x1={label.rawX}
+                                                            y1={label.rawY}
+                                                            x2={label.rawX + 10}
+                                                            y2={label.y}
+                                                            stroke={label.color}
+                                                            strokeWidth={.5}
+                                                        />
+                                                        {/* ラベル */}
+                                                        <text
+                                                            x={label.rawX + 10}
+                                                            y={label.y}
+                                                            fill={label.color}
+                                                            fontSize={12}
+                                                            alignmentBaseline="middle"
+                                                            textAnchor="start"
+                                                        >
+                                                            {label.key}
+                                                        </text>
+                                                    </g>
+                                                ))}
+                                            </g>
+                                        );
+                                    }}
+                                />
+                                {Object.keys(chartData[0] || {})
+                                    .filter(key => key !== 'date')
+                                    .filter(key => key !== 'dateValue')
+                                    .map((key, index) => (
+                                        <Line
+                                            key={key}
+                                            type="stepAfter"
+                                            dataKey={key}
+                                            stroke={colorScale(key)}
+                                            dot={false}
+                                        />
+                                    ))}
+                            </LineChart>
+                        ) : (
+                            <BarChart data={chartData} margin={{ left: 20 }} >
+                                <CartesianGrid
+                                    stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
+                                />
+                                <XAxis
+                                    type='number'
+                                    dataKey='dateValue'
+                                    scale='time'
+                                    domain={[ // 半日分広げる
+                                        (dataMin) => dataMin - 86400000 / 2,
+                                        (dataMax) => dataMax + 86400000 / 2
+                                    ]}
+                                    tickFormatter={xAxisTickFormatter}
+                                />
+                                <YAxis
+                                    tickCount={8}
+                                    tickFormatter={yAxisTimeValueFormatter}
+                                    domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend />
+                                {Object.keys(chartData[0] || {})
+                                    .filter(key => key !== 'date')
+                                    .filter(key => key !== 'dateValue')
+                                    .map((key, index) => (
+                                        <Bar
+                                            key={key}
+                                            dataKey={key}
+                                            stackId="a"
+                                            fill={colorScale(key)}
+                                        />
+                                    ))}
+                            </BarChart>
+                        )}
+                    </ResponsiveContainer>
+                )}
             </Collapse>
         </Box>
     );
