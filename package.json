@@ -18,7 +18,8 @@
         "build": "npm run build:frontend && npm run build:pyinstaller"
     },
     "devDependencies": {
-        "concurrently": "^7.0.0"
+        "concurrently": "^7.0.0",
+        "license-checker": "^25.0.1"
     },
     "dependencies": {
         "react-activity-calendar": "^2.7.8",
