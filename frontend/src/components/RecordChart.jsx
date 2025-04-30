@@ -285,6 +285,21 @@ function RecordChart() {
         return {};
     }, [selectedPeriod, chartData]);
 
+    // 表示範囲の累積合計値で降順ソートしたキー一覧
+    const sortedKeys = useMemo(() => {
+        const totals = {};
+        chartData.forEach(item => {
+            Object.keys(item).forEach(key => {
+                if (key !== 'date' && key !== 'dateValue') {
+                    totals[key] = (totals[key] || 0) + item[key];
+                }
+            });
+        });
+        return Object.entries(totals)
+            .sort(([, a], [, b]) => b - a)   // 値を降順にソート
+            .map(([key]) => key);
+    }, [chartData]);
+
     // ツールチップ用の数値フォーマット
     const tooltipValueFormatter = (value) => {
         const roundedValue = Math.round(value);
@@ -790,26 +805,18 @@ function RecordChart() {
                                 )}
                                 {selectedPeriod === '1d' ? (
                                     <Legend formatter={(value) => {
-                                        const total = cumulativeMap[value] ?? 0;
+                                        const total = Math.round(cumulativeMap[value] ?? 0);
                                         const h = Math.floor(total / 60);
                                         const m = String(total % 60).padStart(2, '0');
                                         return `(${h}:${m}) ${value}`;
                                     }} />
                                 ) : (
-                                    < Tooltip content={<CustomTooltip />} />
+                                    <Legend />
                                 )}
-                                <Legend />
-                                {Object.keys(chartData[0] || {})
-                                    .filter(key => key !== 'date')
-                                    .filter(key => key !== 'dateValue')
-                                    .map((key, index) => (
-                                        <Bar
-                                            key={key}
-                                            dataKey={key}
-                                            stackId="a"
-                                            fill={colorScale(key)}
-                                        />
-                                    ))}
+                                <Tooltip content={<CustomTooltip />} />
+                                {sortedKeys.map(key => (
+                                    <Bar key={key} dataKey={key} stackId="a" fill={colorScale(key)} />
+                                ))}
                             </BarChart>
                         )}
                     </ResponsiveContainer>
