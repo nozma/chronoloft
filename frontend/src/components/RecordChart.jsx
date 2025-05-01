@@ -454,12 +454,6 @@ function RecordChart() {
         );
     };
 
-    console.log('🛠 RecordChart Debug', {
-        selectedPeriod,   // どのモードが選択されているか
-        chartType,
-        chartData         // 実際に描画用のデータがどうなっているか
-    });
-
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
