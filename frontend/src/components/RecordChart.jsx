@@ -758,7 +758,7 @@ function RecordChart() {
                         ) : (
                             <BarChart
                                 data={chartData}
-                                margin={{ left: 20 }}
+                                margin={selectedPeriod === '1d' ? {} : { left: 20 }}
                                 layout={selectedPeriod === '1d' ? 'vertical' : 'horizontal'}
                             >
                                 <CartesianGrid
@@ -776,6 +776,7 @@ function RecordChart() {
                                     <YAxis
                                         type="category"
                                         dataKey="date"
+                                        tick={false}
                                     />
                                 )}
 
