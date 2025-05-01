@@ -155,6 +155,7 @@ function getPeriodRange(period, offset = 0) {
     const today = DateTime.now().startOf('day');
 
     const PERIOD_DAYS = {
+        '1d': 1,
         '7d': 7,
         '30d': 30,
         '90d': 90,
@@ -208,7 +209,7 @@ function RecordChart() {
             return true;
         });
         return filteredByState.filter(r => {
-            const rd = DateTime.fromISO(r.created_at);
+            const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
     }, [records, filterState, selectedPeriod, offset]);
@@ -269,6 +270,36 @@ function RecordChart() {
         return maxVal;
     }, [chartData]);
 
+    // 1 Day表示でlegendに時間を表示するための累計値
+    const cumulativeMap = useMemo(() => {
+        if (selectedPeriod === '1d' && chartData.length > 0) {
+            const entry = chartData[0];
+            const map = {};
+            Object.keys(entry).forEach(key => {
+                if (key !== 'date' && key !== 'dateValue') {
+                    map[key] = entry[key];
+                }
+            });
+            return map;
+        }
+        return {};
+    }, [selectedPeriod, chartData]);
+
+    // 表示範囲の累積合計値で降順ソートしたキー一覧
+    const sortedKeys = useMemo(() => {
+        const totals = {};
+        chartData.forEach(item => {
+            Object.keys(item).forEach(key => {
+                if (key !== 'date' && key !== 'dateValue') {
+                    totals[key] = (totals[key] || 0) + item[key];
+                }
+            });
+        });
+        return Object.entries(totals)
+            .sort(([, a], [, b]) => b - a)   // 値を降順にソート
+            .map(([key]) => key);
+    }, [chartData]);
+
     // ツールチップ用の数値フォーマット
     const tooltipValueFormatter = (value) => {
         const roundedValue = Math.round(value);
@@ -305,10 +336,12 @@ function RecordChart() {
     // ツールチップの日時のフォーマッタ
     const tooltipLabelFormatter = (val) => {
         if (!val) return '';
-        // val はミリ秒 (timestamp) 
-        const dt = DateTime.fromMillis(val);
+        // number なら fromMillis、string なら fromISO でパース
+        const dt = typeof val === 'number'
+            ? DateTime.fromMillis(val)
+            : DateTime.fromISO(val);
         return dt.isValid ? dt.toFormat('yyyy-MM-dd') : '';
-    }
+    };
 
     // 配色設定
     const theme = useTheme();
@@ -421,8 +454,6 @@ function RecordChart() {
         );
     };
 
-
-
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
@@ -461,6 +492,10 @@ function RecordChart() {
                             onChange={(e) => {
                                 setSelectedPeriod(e.target.value);
                                 setOffset(0);
+                                // 1 Day選択時は棒グラフに変更
+                                if (e.target.value === '1d') {
+                                    setChartType('bar');
+                                }
                             }}
                             sx={{ minWidth: 120 }}
                         >
@@ -470,6 +505,7 @@ function RecordChart() {
                             <MenuItem value="90d">90 Days</MenuItem>
                             <MenuItem value="30d">30 Days</MenuItem>
                             <MenuItem value="7d">7 Days</MenuItem>
+                            <MenuItem value="1d">1 Day</MenuItem>
                         </TextField>
                         {/* 折れ線グラフ・棒グラフ切り替え */}
                         <TextField
@@ -480,6 +516,7 @@ function RecordChart() {
                             value={chartType}
                             onChange={(e) => setChartType(e.target.value)}
                             sx={{ minWidth: 100 }}
+                            disabled={selectedPeriod === '1d'} // 1 Day選択時は変更不可（棒グラフ固定）
                         >
                             <MenuItem value="line">Line</MenuItem>
                             <MenuItem value="bar">Bar</MenuItem>
@@ -552,7 +589,10 @@ function RecordChart() {
                     </IconButton>
                     {/* 表示中の範囲 */}
                     <Typography variant="subtitle1" sx={{ mx: 0 }}>
-                        {periodStart.toFormat('yyyy-LL-dd')} – {periodEnd.toFormat('yyyy-LL-dd')}
+                        {selectedPeriod === '1d'
+                            ? periodStart.toFormat('yyyy-LL-dd')
+                            : `${periodStart.toFormat('yyyy-LL-dd')} – ${periodEnd.toFormat('yyyy-LL-dd')}`
+                        }
                     </Typography>
                 </Box>
                 {/* チャート描画部 */}
@@ -713,38 +753,73 @@ function RecordChart() {
                                     ))}
                             </LineChart>
                         ) : (
-                            <BarChart data={chartData} margin={{ left: 20 }} >
+                            <BarChart
+                                data={chartData}
+                                margin={selectedPeriod === '1d' ? {} : { left: 20 }}
+                                layout={selectedPeriod === '1d' ? 'vertical' : 'horizontal'}
+                            >
                                 <CartesianGrid
                                     stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                                 />
-                                <XAxis
-                                    type='number'
-                                    dataKey='dateValue'
-                                    scale='time'
-                                    domain={[ // 半日分広げる
-                                        (dataMin) => dataMin - 86400000 / 2,
-                                        (dataMax) => dataMax + 86400000 / 2
-                                    ]}
-                                    tickFormatter={xAxisTickFormatter}
-                                />
-                                <YAxis
-                                    tickCount={8}
-                                    tickFormatter={yAxisTimeValueFormatter}
-                                    domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
-                                />
+
+                                {/* 1 Day モード時の軸 */}
+                                {selectedPeriod === '1d' && (
+                                    <XAxis
+                                        type="number"
+                                        tickFormatter={yAxisTimeValueFormatter}
+                                        domain={[0, dataMax =>
+                                            dataMax < 120
+                                                ? Math.ceil(dataMax / 5) * 5
+                                                : Math.ceil(dataMax / 60) * 60
+                                        ]}
+                                    />
+                                )}
+                                {selectedPeriod === '1d' && (
+                                    <YAxis
+                                        type="category"
+                                        dataKey="date"
+                                        tick={false}
+                                    />
+                                )}
+
+                                {/* 通常モード時の軸 */}
+                                {selectedPeriod !== '1d' && (
+                                    <XAxis
+                                        type="number"
+                                        dataKey="dateValue"
+                                        scale="time"
+                                        domain={[
+                                            dataMin => dataMin - 86400000 / 2,
+                                            dataMax => dataMax + 86400000 / 2
+                                        ]}
+                                        tickFormatter={xAxisTickFormatter}
+                                    />
+                                )}
+                                {selectedPeriod !== '1d' && (
+                                    <YAxis
+                                        tickCount={8}
+                                        tickFormatter={yAxisTimeValueFormatter}
+                                        domain={[0, dataMax =>
+                                            dataMax < 120
+                                                ? Math.ceil(dataMax / 5) * 5
+                                                : Math.ceil(dataMax / 60) * 60
+                                        ]}
+                                    />
+                                )}
+                                {selectedPeriod === '1d' ? (
+                                    <Legend formatter={(value) => {
+                                        const total = Math.round(cumulativeMap[value] ?? 0);
+                                        const h = Math.floor(total / 60);
+                                        const m = String(total % 60).padStart(2, '0');
+                                        return `(${h}:${m}) ${value}`;
+                                    }} />
+                                ) : (
+                                    <Legend />
+                                )}
                                 <Tooltip content={<CustomTooltip />} />
-                                <Legend />
-                                {Object.keys(chartData[0] || {})
-                                    .filter(key => key !== 'date')
-                                    .filter(key => key !== 'dateValue')
-                                    .map((key, index) => (
-                                        <Bar
-                                            key={key}
-                                            dataKey={key}
-                                            stackId="a"
-                                            fill={colorScale(key)}
-                                        />
-                                    ))}
+                                {sortedKeys.map(key => (
+                                    <Bar key={key} dataKey={key} stackId="a" fill={colorScale(key)} />
+                                ))}
                             </BarChart>
                         )}
                     </ResponsiveContainer>
