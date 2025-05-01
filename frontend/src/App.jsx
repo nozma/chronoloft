@@ -14,6 +14,7 @@ import { UIProvider } from './contexts/UIContext';
 import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import AppHeader from './components/AppHeader';
 
 function App() {
@@ -46,25 +47,27 @@ function App() {
                 }}
             >
                 <CssBaseline />
-                <GroupProvider>
-                    <TagProvider>
-                        <ActivityProvider>
-                            <RecordProvider>
-                                <UIProvider>
-                                    <FilterProvider>
-                                        <ActiveActivityProvider>
-                                            <div>
-                                                <AppHeader />
-                                                <RecordingInterface />
-                                                <History />
-                                            </div>
-                                        </ActiveActivityProvider>
-                                    </FilterProvider>
-                                </UIProvider>
-                            </RecordProvider>
-                        </ActivityProvider>
-                    </TagProvider>
-                </GroupProvider>
+                <SettingsProvider>
+                    <GroupProvider>
+                        <TagProvider>
+                            <ActivityProvider>
+                                <RecordProvider>
+                                    <UIProvider>
+                                        <FilterProvider>
+                                            <ActiveActivityProvider>
+                                                <div>
+                                                    <AppHeader />
+                                                    <RecordingInterface />
+                                                    <History />
+                                                </div>
+                                            </ActiveActivityProvider>
+                                        </FilterProvider>
+                                    </UIProvider>
+                                </RecordProvider>
+                            </ActivityProvider>
+                        </TagProvider>
+                    </GroupProvider>
+                </SettingsProvider>
             </Box>
         </ThemeProvider>
     );

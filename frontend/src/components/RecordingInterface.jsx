@@ -15,6 +15,7 @@ import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 function RecordingInterface() {
     const { state, dispatch } = useUI();
@@ -38,6 +39,9 @@ function RecordingInterface() {
     const stopwatchRef = useRef(null);
     const subStopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
+
+    // 設定項目
+    const { autoFilterOnSelect } = useSettings();
 
     // タイトル更新
     useEffect(() => {
@@ -124,11 +128,13 @@ function RecordingInterface() {
             setSelectedActivity(activity);
             setActiveActivity(activity);
 
-            // FilterContextに反映するなど
-            setFilterState(prev => ({
-                ...prev,
-                activityNameFilter: activity.name,
-            }));
+            // 自動フィルタ設定がONの場合、アクティビティフィルタを自動で切り替える
+            if (autoFilterOnSelect) {
+                setFilterState(prev => ({
+                    ...prev,
+                    activityNameFilter: activity.name,
+                }));
+            }
 
             // Discord presence用データ
             const details = calculateTimeDetails(activity.id, records);

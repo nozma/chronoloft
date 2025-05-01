@@ -1,32 +1,42 @@
 import React from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    Typography,
+    FormControlLabel,
+    Switch
 } from '@mui/material';
+import { useSettings } from '../contexts/SettingsContext';
 
 function SettingsDialog({ open, onClose }) {
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Settings</DialogTitle>
+    const { autoFilterOnSelect, setAutoFilterOnSelect } = useSettings();
 
-      <DialogContent>
-        {/* ここに実際の設定 UI を追加していく */}
-        <Typography variant="body2" color="text.secondary">
-          Settings will be placed here.
-        </Typography>
-      </DialogContent>
+    return (
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+            <DialogTitle>Settings</DialogTitle>
 
-      <DialogActions>
-        <Button onClick={onClose} variant="contained">
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+            <DialogContent>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={autoFilterOnSelect}
+                            onChange={(e) => setAutoFilterOnSelect(e.target.checked)}
+                        />
+                    }
+                    label="Auto-switch activity filter when activity is selected"
+                />
+            </DialogContent>
+
+            <DialogActions>
+                <Button onClick={onClose} variant="contained">
+                    Close
+                </Button>
+            </DialogActions>
+        </Dialog>
+    );
 }
 
 export default SettingsDialog;
