@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import { Box } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import { useFilter } from '../contexts/FilterContext';
+import { useActivities } from '../contexts/ActivityContext';
 
 function RecordFilter({ onFilterChange, records }) {
     const { filterState, setFilterState } = useFilter();
@@ -30,8 +31,14 @@ function RecordFilter({ onFilterChange, records }) {
         if (activityNameFilter && !names.includes(activityNameFilter)) {
             names.push(activityNameFilter);
         }
-        return names;
-    }, [records, groupFilter, tagFilter, activityNameFilter]);
+        // activityの使用順でソートする
+        const { activities } = useActivities();
+        const ordered = activities
+            .map(act => act.name)
+            .filter(name => names.includes(name));
+        const others = names.filter(name => !ordered.includes(name));
+        return [...ordered, ...others];
+    }, [records, groupFilter, tagFilter, activityNameFilter, useActivities()]);
 
     // フィルター状態の変更を onFilterChange に通知
     useEffect(() => {

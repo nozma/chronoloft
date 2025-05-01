@@ -65,7 +65,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
     // ■ 15日以内に使用した項目を初期表示対象とする
     //  現在時刻と、15日前の境界日時を計算
     const now = new Date();
-    const cutoff = new Date(now); 
+    const cutoff = new Date(now);
     cutoff.setDate(cutoff.getDate() - 15);
     //  過去15日以内に使用したアクティビティのみ抽出
     const recentWithin15 = filteredActivities.filter(act =>
@@ -216,7 +216,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                 }));
                             }}
                             multiple
-                            sx={{ mb: 1, mr: 1 }}
+                            sx={{ mb: 1, mr: 1, flexWrap: 'wrap' }}
                         >
                             <ToggleButton value="" aria-label="All">
                                 All
@@ -226,18 +226,18 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                     {tagName}
                                 </ToggleButton>
                             ))}
+                            {!state.showGrid && !stopwatchVisible && (
+                                <IconButton
+                                    onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                                    sx={{
+                                        opacity: 0,
+                                        transition: 'opacity 0.2s',
+                                        '&:hover': { opacity: 1 },
+                                    }}>
+                                    <SettingsIcon />
+                                </IconButton>
+                            )}
                         </StyledToggleButtonGroup>
-                        {!state.showGrid && !stopwatchVisible && (
-                            <IconButton
-                                onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                                sx={{
-                                    opacity: 0,
-                                    transition: 'opacity 0.2s',
-                                    '&:hover': { opacity: 1 },
-                                }}>
-                                <SettingsIcon />
-                            </IconButton>
-                        )}
                         <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
                     </Box>
                 </Collapse>
