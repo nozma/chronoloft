@@ -43,6 +43,8 @@ function AppHeader() {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={() => setAnchorEl(null)}
+                anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
+                transformOrigin={{horizontal: 'right'}}
             >
                 <MenuItem
                     onClick={() => {
