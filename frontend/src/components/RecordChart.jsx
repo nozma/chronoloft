@@ -589,7 +589,10 @@ function RecordChart() {
                     </IconButton>
                     {/* 表示中の範囲 */}
                     <Typography variant="subtitle1" sx={{ mx: 0 }}>
-                        {periodStart.toFormat('yyyy-LL-dd')} – {periodEnd.toFormat('yyyy-LL-dd')}
+                        {selectedPeriod === '1d'
+                            ? periodStart.toFormat('yyyy-LL-dd')
+                            : `${periodStart.toFormat('yyyy-LL-dd')} – ${periodEnd.toFormat('yyyy-LL-dd')}`
+                        }
                     </Typography>
                 </Box>
                 {/* チャート描画部 */}
