@@ -226,18 +226,18 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                     {tagName}
                                 </ToggleButton>
                             ))}
+                            {!state.showGrid && !stopwatchVisible && (
+                                <IconButton
+                                    onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                                    sx={{
+                                        opacity: 0,
+                                        transition: 'opacity 0.2s',
+                                        '&:hover': { opacity: 1 },
+                                    }}>
+                                    <SettingsIcon />
+                                </IconButton>
+                            )}
                         </StyledToggleButtonGroup>
-                        {!state.showGrid && !stopwatchVisible && (
-                            <IconButton
-                                onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                                sx={{
-                                    opacity: 0,
-                                    transition: 'opacity 0.2s',
-                                    '&:hover': { opacity: 1 },
-                                }}>
-                                <SettingsIcon />
-                            </IconButton>
-                        )}
                         <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
                     </Box>
                 </Collapse>
