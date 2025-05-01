@@ -770,6 +770,11 @@ function RecordChart() {
                                     <XAxis
                                         type="number"
                                         tickFormatter={yAxisTimeValueFormatter}
+                                        domain={[0, dataMax =>
+                                            dataMax < 120
+                                                ? Math.ceil(dataMax / 5) * 5
+                                                : Math.ceil(dataMax / 60) * 60
+                                        ]}
                                     />
                                 )}
                                 {selectedPeriod === '1d' && (
