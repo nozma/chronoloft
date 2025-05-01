@@ -62,9 +62,26 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
     }, [activities, groupFilter]);
 
 
-    // 最近使用した項目を取得
-    const recentActivities = filteredActivities.slice(0, 10);
-    const remainingActivities = filteredActivities.slice(10);
+    // ■ 15日以内に使用した項目を初期表示対象とする
+    //  現在時刻と、15日前の境界日時を計算
+    const now = new Date();
+    const cutoff = new Date(now); 
+    cutoff.setDate(cutoff.getDate() - 15);
+    //  過去15日以内に使用したアクティビティのみ抽出
+    const recentWithin15 = filteredActivities.filter(act =>
+        act.last_record && new Date(act.last_record) >= cutoff
+    );
+    // ■ 15日以内に使用した項目が10件未満の場合は10件まで表示する
+    let recentActivities;
+    if (recentWithin15.length > 10) {
+        recentActivities = recentWithin15;
+    } else {
+        recentActivities = filteredActivities.slice(0, 10);
+    }
+    // 残りを remainingActivities とする
+    const remainingActivities = filteredActivities.filter(act =>
+        !recentActivities.includes(act)
+    );
 
     // トグルボタンのスタイル
     const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
