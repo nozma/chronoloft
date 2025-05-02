@@ -18,7 +18,6 @@ export function SettingsProvider({ children }) {
         () => ({
             autoFilterOnSelect,
             setAutoFilterOnSelect,
-            /* ★ 追加 ↓ */
             themeMode,
             setThemeMode,
         }),
