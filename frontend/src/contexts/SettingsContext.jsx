@@ -9,21 +9,29 @@ const SettingsContext = createContext();
  *   - setAutoFilterOnSelect: (bool) => void
  */
 export function SettingsProvider({ children }) {
-  const [autoFilterOnSelect, setAutoFilterOnSelect] =
-    useLocalStorageState('settings.autoFilterOnSelect', true);
+    const [autoFilterOnSelect, setAutoFilterOnSelect] =
+        useLocalStorageState('settings.autoFilterOnSelect', true);
+    const [themeMode, setThemeMode] =
+        useLocalStorageState('settings.themeMode', 'system');
 
-  const value = useMemo(
-    () => ({ autoFilterOnSelect, setAutoFilterOnSelect }),
-    [autoFilterOnSelect]
-  );
+    const value = useMemo(
+        () => ({
+            autoFilterOnSelect,
+            setAutoFilterOnSelect,
+            /* ★ 追加 ↓ */
+            themeMode,
+            setThemeMode,
+        }),
+        [autoFilterOnSelect, themeMode]
+    );
 
-  return (
-    <SettingsContext.Provider value={value}>
-      {children}
-    </SettingsContext.Provider>
-  );
+    return (
+        <SettingsContext.Provider value={value}>
+            {children}
+        </SettingsContext.Provider>
+    );
 }
 
 export function useSettings() {
-  return useContext(SettingsContext);
+    return useContext(SettingsContext);
 }

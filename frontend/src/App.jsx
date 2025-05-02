@@ -14,17 +14,21 @@ import { UIProvider } from './contexts/UIContext';
 import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
-import { SettingsProvider } from './contexts/SettingsContext';
 import AppHeader from './components/AppHeader';
+import { useSettings } from './contexts/SettingsContext';
 
 function App() {
     // カラーテーマ対応
-    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+    const { themeMode } = useSettings();
+    const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
+    const resolvedMode =
+        themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
+
     const theme = React.useMemo(
         () =>
             createTheme({
                 palette: {
-                    mode: prefersDarkMode ? 'dark' : 'light',
+                    mode: resolvedMode
                 },
                 breakpoints: {
                     values: {
@@ -33,11 +37,11 @@ function App() {
                     },
                 },
             }),
-        [prefersDarkMode]
+        [resolvedMode]
     );
 
     return (
-        <ThemeProvider theme={theme}>
+        <ThemeProvider theme={theme} key={resolvedMode}>
             <Box
                 sx={{
                     width: '100%',
@@ -47,27 +51,25 @@ function App() {
                 }}
             >
                 <CssBaseline />
-                <SettingsProvider>
-                    <GroupProvider>
-                        <TagProvider>
-                            <ActivityProvider>
-                                <RecordProvider>
-                                    <UIProvider>
-                                        <FilterProvider>
-                                            <ActiveActivityProvider>
-                                                <div>
-                                                    <AppHeader />
-                                                    <RecordingInterface />
-                                                    <History />
-                                                </div>
-                                            </ActiveActivityProvider>
-                                        </FilterProvider>
-                                    </UIProvider>
-                                </RecordProvider>
-                            </ActivityProvider>
-                        </TagProvider>
-                    </GroupProvider>
-                </SettingsProvider>
+                <GroupProvider>
+                    <TagProvider>
+                        <ActivityProvider>
+                            <RecordProvider>
+                                <UIProvider>
+                                    <FilterProvider>
+                                        <ActiveActivityProvider>
+                                            <div>
+                                                <AppHeader />
+                                                <RecordingInterface />
+                                                <History />
+                                            </div>
+                                        </ActiveActivityProvider>
+                                    </FilterProvider>
+                                </UIProvider>
+                            </RecordProvider>
+                        </ActivityProvider>
+                    </TagProvider>
+                </GroupProvider>
             </Box>
         </ThemeProvider>
     );
