@@ -41,7 +41,7 @@ function App() {
     );
 
     return (
-        <ThemeProvider theme={theme} key={resolvedMode}>
+        <ThemeProvider theme={theme}>
             <Box
                 sx={{
                     width: '100%',
