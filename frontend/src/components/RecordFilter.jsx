@@ -8,6 +8,7 @@ import { useFilter } from '../contexts/FilterContext';
 import { useActivities } from '../contexts/ActivityContext';
 
 function RecordFilter({ onFilterChange, records }) {
+    const { activities } = useActivities();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter, activityNameFilter } = filterState;
 
@@ -32,7 +33,6 @@ function RecordFilter({ onFilterChange, records }) {
             names.push(activityNameFilter);
         }
         // activityの使用順でソートする
-        const { activities } = useActivities();
         const ordered = activities
             .map(act => act.name)
             .filter(name => names.includes(name));
