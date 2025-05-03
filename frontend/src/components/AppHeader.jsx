@@ -1,9 +1,10 @@
 // frontend/src/components/AppHeader.jsx
 import { useState } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
-import { clearUiSettings } from '../utils/storageReset'; 
+import { clearUiSettings } from '../utils/storageReset';
 import OpenBrowserButton from './OpenBrowserButton';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SettingsDialog from './SettingsDialog';
 
 /**
  * アプリのヘッダー部分。
@@ -14,6 +15,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 function AppHeader() {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     return (
         <Box
@@ -41,7 +43,17 @@ function AppHeader() {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                transformOrigin={{ horizontal: 'right' }}
             >
+                <MenuItem
+                    onClick={() => {
+                        setSettingsOpen(true);     // モーダルを開く
+                        setAnchorEl(null);         // メニューは閉じる
+                    }}
+                >
+                    Settings
+                </MenuItem>
                 <MenuItem
                     onClick={() => {
                         if (confirm('All UI settings will be cleared. Continue?')) {
@@ -52,7 +64,19 @@ function AppHeader() {
                 >
                     Reset UI Settings
                 </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        location.reload();
+                    }}
+                >
+                    Reload
+                </MenuItem>
             </Menu>
+
+            <SettingsDialog
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+            />
         </Box>
     );
 }

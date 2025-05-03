@@ -21,12 +21,14 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 
 function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch }) {
     const { groups } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
+    const { recentDays, recentLimit } = useSettings();
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
     const [contextTargetActivity, setContextTargetActivity] = useState(null);
@@ -61,26 +63,30 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
         return result;
     }, [activities, groupFilter]);
 
-
-    // ■ 15日以内に使用した項目を初期表示対象とする
-    //  現在時刻と、15日前の境界日時を計算
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setDate(cutoff.getDate() - 15);
-    //  過去15日以内に使用したアクティビティのみ抽出
-    const recentWithin15 = filteredActivities.filter(act =>
-        act.last_record && new Date(act.last_record) >= cutoff
-    );
-    // ■ 15日以内に使用した項目が10件未満の場合は10件まで表示する
-    let recentActivities;
-    if (recentWithin15.length > 10) {
-        recentActivities = recentWithin15;
+    // 表示するActivityを設定を反映して絞り込む
+    // 期間フィルタ
+    let recentWithinRange;
+    if (recentDays === 'all') {
+        recentWithinRange = filteredActivities;
     } else {
-        recentActivities = filteredActivities.slice(0, 10);
+        const now = new Date();
+        const cutoff = new Date(now);
+        cutoff.setDate(cutoff.getDate() - Number(recentDays));
+        recentWithinRange = filteredActivities.filter(
+            act => act.last_record && new Date(act.last_record) >= cutoff
+        );
     }
-    // 残りを remainingActivities とする
-    const remainingActivities = filteredActivities.filter(act =>
-        !recentActivities.includes(act)
+
+    // 件数上限
+    const limitCount =
+        recentLimit === 'all'
+            ? recentWithinRange.length
+            : Number(recentLimit);
+
+    // 上限件数ぶんだけ recentActivities とし、残りを remainingActivities に回す
+    const recentActivities = recentWithinRange.slice(0, limitCount);
+    const remainingActivities = filteredActivities.filter(
+        act => !recentActivities.includes(act)
     );
 
     // トグルボタンのスタイル
