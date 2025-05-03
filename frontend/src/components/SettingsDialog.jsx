@@ -5,7 +5,6 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    Typography,
     FormControlLabel,
     Switch,
     FormControl,
@@ -20,6 +19,8 @@ function SettingsDialog({ open, onClose }) {
     const {
         autoFilterOnSelect, setAutoFilterOnSelect,
         themeMode, setThemeMode,
+        recentDays, setRecentDays,
+        recentLimit, setRecentLimit,
     } = useSettings();
 
     return (
@@ -52,6 +53,42 @@ function SettingsDialog({ open, onClose }) {
                             <FormControlLabel value="system" label="System" control={<Radio />} />
                             <FormControlLabel value="light" label="Light" control={<Radio />} />
                             <FormControlLabel value="dark" label="Dark" control={<Radio />} />
+                        </RadioGroup>
+                    </FormControl>
+                    {/* 最近使用した項目を決めるしきい値の日数設定 */}
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Initial-Display Activities Used in</FormLabel>
+                        <RadioGroup
+                            row
+                            value={recentDays}
+                            onChange={(e) => setRecentDays(e.target.value)}
+                        >
+                            {['7', '14', '30', 'all'].map(v =>
+                                <FormControlLabel
+                                    key={v}
+                                    value={v}
+                                    control={<Radio />}
+                                    label={v === 'all' ? 'Unlimited' : `${v}d`}
+                                />
+                            )}
+                        </RadioGroup>
+                    </FormControl>
+                    {/* 最近使用した項目として表示するactivityの件数の上限 */}
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Initial-Display Activities Limit</FormLabel>
+                        <RadioGroup
+                            row
+                            value={recentLimit}
+                            onChange={(e) => setRecentLimit(e.target.value)}
+                        >
+                            {['5', '15', '30', 'all'].map(v =>
+                                <FormControlLabel
+                                    key={v}
+                                    value={v}
+                                    control={<Radio />}
+                                    label={v === 'all' ? 'Unlimited' : v}
+                                />
+                            )}
                         </RadioGroup>
                     </FormControl>
                 </Stack>
