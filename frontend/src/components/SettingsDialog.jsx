@@ -13,8 +13,9 @@ import {
     RadioGroup,
     Stack,
     Divider,
+    Box,
 } from '@mui/material';
-import { useSettings } from '../contexts/SettingsContext';
+import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 
 function SettingsDialog({ open, onClose }) {
     const {
@@ -38,6 +39,15 @@ function SettingsDialog({ open, onClose }) {
             setTmpRecentLimit(recentLimit);
         }
     }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit]);
+
+    // リセット用ハンドラ
+    const handleReset = () => {
+        // 既定値を適用
+        setTmpAutoFilter(DEFAULT_SETTINGS.autoFilterOnSelect);
+        setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
+        setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
+        setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm">
@@ -117,22 +127,33 @@ function SettingsDialog({ open, onClose }) {
             </DialogContent>
 
             <DialogActions>
-                {/* Cancel = 変更を捨てて閉じるだけ */}
-                <Button onClick={onClose}>Cancel</Button>
-
-                {/* Apply = Context に書き戻して閉じる */}
+                {/* Reset = 既定値に選択状態を戻す */}
                 <Button
-                    variant="contained"
-                    onClick={() => {
-                        setAutoFilterOnSelect(tmpAutoFilter);
-                        setThemeMode(tmpThemeMode);
-                        setRecentDays(tmpRecentDays);
-                        setRecentLimit(tmpRecentLimit);
-                        onClose();
-                    }}
+                    onClick={handleReset}
+                    color="inherit"
+                    sx={{ mr: 'auto', textTransform:'none' }}
                 >
-                    Apply
+                    Reset to Defaults
                 </Button>
+
+                <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                    {/* Cancel = 変更を捨てて閉じるだけ */}
+                    <Button onClick={onClose}>Cancel</Button>
+
+                    {/* Apply = Context に書き戻して閉じる */}
+                    <Button
+                        variant="contained"
+                        onClick={() => {
+                            setAutoFilterOnSelect(tmpAutoFilter);
+                            setThemeMode(tmpThemeMode);
+                            setRecentDays(tmpRecentDays);
+                            setRecentLimit(tmpRecentLimit);
+                            onClose();
+                        }}
+                    >
+                        Apply
+                    </Button>
+                </Box>
             </DialogActions>
         </Dialog>
     );

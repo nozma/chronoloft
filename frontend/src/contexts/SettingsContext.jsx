@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
+// ───────── 既定値定義（リセット用に公開する） ─────────
+export const DEFAULT_SETTINGS = {
+    autoFilterOnSelect: true,
+    themeMode: 'system',
+    recentDays: '14',
+    recentLimit: '15',
+};
+
 const SettingsContext = createContext();
 
 /**
@@ -11,16 +19,16 @@ const SettingsContext = createContext();
 export function SettingsProvider({ children }) {
     // アクティビティ選択時に自動でアクティビティフィルタを切り替えるかどうかの設定
     const [autoFilterOnSelect, setAutoFilterOnSelect] =
-        useLocalStorageState('settings.autoFilterOnSelect', true);
+        useLocalStorageState('settings.autoFilterOnSelect', DEFAULT_SETTINGS.autoFilterOnSelect);
     // カラーテーマ設定
     const [themeMode, setThemeMode] =
-        useLocalStorageState('settings.themeMode', 'system');
+        useLocalStorageState('settings.themeMode', DEFAULT_SETTINGS.themeMode);
     // 最近使用した項目として表示するアクティビティを決める日数のしきい値
     const [recentDays, setRecentDays] =
-        useLocalStorageState('settings.recentDays', '14');
+        useLocalStorageState('settings.recentDays', DEFAULT_SETTINGS.recentDays);
     // 最近使用した項目として表示するアクティビティの件数の上限
     const [recentLimit, setRecentLimit] =
-        useLocalStorageState('settings.recentLimit', '15');
+        useLocalStorageState('settings.recentLimit', DEFAULT_SETTINGS.recentLimit);
 
     const value = useMemo(
         () => ({
