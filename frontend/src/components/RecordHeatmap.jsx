@@ -18,7 +18,7 @@ import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
-import { useMediaQuery } from '@mui/material';
+import { useMediaQuery, useTheme } from '@mui/material';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
@@ -30,6 +30,7 @@ function RecordHeatmap() {
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records } = useRecords();
+    const { palette: { mode } } = useTheme();
 
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -216,6 +217,7 @@ function RecordHeatmap() {
                             blockSize={blockSize}
                             blockMargin={2}
                             fontSize={14}
+                            colorScheme={mode}
                             theme={{
                                 light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
                                 dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
