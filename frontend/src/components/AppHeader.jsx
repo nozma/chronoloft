@@ -43,8 +43,8 @@ function AppHeader() {
                 anchorEl={anchorEl}
                 open={open}
                 onClose={() => setAnchorEl(null)}
-                anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}
-                transformOrigin={{horizontal: 'right'}}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                transformOrigin={{ horizontal: 'right' }}
             >
                 <MenuItem
                     onClick={() => {
@@ -63,6 +63,13 @@ function AppHeader() {
                     }}
                 >
                     Reset UI Settings
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        location.reload();
+                    }}
+                >
+                    Reload
                 </MenuItem>
             </Menu>
 
