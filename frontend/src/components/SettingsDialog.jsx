@@ -29,19 +29,6 @@ function SettingsDialog({ open, onClose }) {
 
             <DialogContent dividers>
                 <Stack spacing={3}>
-                    {/* アクティビティフィルタの自動切り替え */}
-                    <FormControl component="fieldset">
-                        <FormLabel component="legend">Activity Filter</FormLabel>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={autoFilterOnSelect}
-                                    onChange={(e) => setAutoFilterOnSelect(e.target.checked)}
-                                />
-                            }
-                            label="Auto-switch activity filter on select"
-                        />
-                    </FormControl>
                     {/* ダークモード・ライトモード切り替え */}
                     <FormControl component="fieldset">
                         <FormLabel component="legend">Theme</FormLabel>
@@ -54,6 +41,19 @@ function SettingsDialog({ open, onClose }) {
                             <FormControlLabel value="light" label="Light" control={<Radio />} />
                             <FormControlLabel value="dark" label="Dark" control={<Radio />} />
                         </RadioGroup>
+                    </FormControl>
+                    {/* アクティビティフィルタの自動切り替え */}
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Activity Filter</FormLabel>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={autoFilterOnSelect}
+                                    onChange={(e) => setAutoFilterOnSelect(e.target.checked)}
+                                />
+                            }
+                            label="Auto-switch activity filter on select"
+                        />
                     </FormControl>
                     {/* 最近使用した項目を決めるしきい値の日数設定 */}
                     <FormControl component="fieldset">
