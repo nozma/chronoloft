@@ -26,12 +26,6 @@ Pythonパッケージのインストール。
 pip install -r requirements.txt
 ```
 
-`/backend/.env`にDB保管場所へのパスを記載（オプション）。
-
-```bash
-APP_DB_PATH=instance/app.db
-```
-
 DB初期化。
 
 ```bash
