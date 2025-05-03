@@ -41,7 +41,10 @@ function RecordingInterface() {
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
 
     // 設定項目
-    const { autoFilterOnSelect } = useSettings();
+    const { 
+        autoFilterOnSelect,
+        discordEnabled,
+    } = useSettings();
 
     // タイトル更新
     useEffect(() => {
@@ -85,9 +88,9 @@ function RecordingInterface() {
 
         // ストップウォッチが動いていない場合、Discord接続中か確認し、接続中ならストップウォッチを開始しない
         // （別のウィンドウでストップウォッチが動作していると考えられるため）
-        // ただし、groupにclient_idが設定されていない場合は接続をしないので判定を行わない
+        // ただし、groupにclient_idが設定されていない場合、Discord連係が無効の場合は接続をしないので判定を行わない
         const groupData = groups.find(g => g.name === activity.group_name);
-        if (groupData && groupData.client_id !== "") {
+        if (groupData && groupData.client_id !== "" && discordEnabled) {
             if (!stopwatchVisible) {
                 try {
                     const presenceRes = await fetch('/api/discord_presence/status');
@@ -109,7 +112,7 @@ function RecordingInterface() {
                 // 既に別ストップウォッチが動いている -> 一旦finishAndReset
                 const details = calculateTimeDetails(activity.id, records);
                 const prevGroup = groups.find(g => g.name === selectedActivity.group_name);
-                const newDiscordData = (prevGroup?.client_id) // Client IDがないグループはDiscord連携しない
+                const newDiscordData = (discordEnabled && prevGroup?.client_id) // 連係有効かつClient IDのあるグループは連係データを組み立てる
                     ? {
                         group: activity.group_name,
                         activity_name: activity.name,
@@ -140,14 +143,15 @@ function RecordingInterface() {
             const details = calculateTimeDetails(activity.id, records);
             const groupInfo = groups.find(g => g.name === activity.group_name);
             setDiscordData(
-                groupInfo?.client_id
+                // Discord連係が有効で、Client IDが設定されている場合のみ設定
+                discordEnabled && groupInfo?.client_id
                     ? {
                         group: activity.group_name,
                         activity_name: activity.name,
                         details,
                         asset_key: activity.asset_key || "default_image"
                     }
-                    : null
+                    : null // nullの場合はDiscord連係は動作しない
             );
 
             setStopwatchVisible(true);

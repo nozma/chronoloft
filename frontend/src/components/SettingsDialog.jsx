@@ -23,6 +23,7 @@ function SettingsDialog({ open, onClose }) {
         themeMode, setThemeMode,
         recentDays, setRecentDays,
         recentLimit, setRecentLimit,
+        discordEnabled, setDiscordEnabled,
     } = useSettings();
 
     // ─── 設定値のローカルコピー ───
@@ -30,6 +31,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpThemeMode, setTmpThemeMode] = useState(themeMode);
     const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
     const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
+    const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open) {
@@ -37,8 +39,9 @@ function SettingsDialog({ open, onClose }) {
             setTmpThemeMode(themeMode);
             setTmpRecentDays(recentDays);
             setTmpRecentLimit(recentLimit);
+            setTmpDiscordEnabled(discordEnabled);
         }
-    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit]);
+    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled]);
 
     // リセット用ハンドラ
     const handleReset = () => {
@@ -47,6 +50,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
         setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
         setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
+        setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
     };
 
     return (
@@ -123,6 +127,22 @@ function SettingsDialog({ open, onClose }) {
                             </RadioGroup>
                         </FormControl>
                     </Stack>
+                    {/* ------------- Discord連係関連設定 ------------- */}
+                    <Stack spacing={3}>
+                        {/* Discord 連係 ON/OFF */}
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">Discord Integration</FormLabel>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={tmpDiscordEnabled}
+                                        onChange={(e) => setTmpDiscordEnabled(e.target.checked)}
+                                    />
+                                }
+                                label="Enable Discord Rich Presence"
+                            />
+                        </FormControl>
+                    </Stack>
                 </Stack>
             </DialogContent>
 
@@ -131,7 +151,7 @@ function SettingsDialog({ open, onClose }) {
                 <Button
                     onClick={handleReset}
                     color="inherit"
-                    sx={{ mr: 'auto', textTransform:'none' }}
+                    sx={{ mr: 'auto', textTransform: 'none' }}
                 >
                     Reset to Defaults
                 </Button>
@@ -148,6 +168,7 @@ function SettingsDialog({ open, onClose }) {
                             setThemeMode(tmpThemeMode);
                             setRecentDays(tmpRecentDays);
                             setRecentLimit(tmpRecentLimit);
+                            setDiscordEnabled(tmpDiscordEnabled);
                             onClose();
                         }}
                     >

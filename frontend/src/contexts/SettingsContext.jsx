@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS = {
     themeMode: 'system',
     recentDays: '14',
     recentLimit: '15',
+    discordEnabled: true,
 };
 
 const SettingsContext = createContext();
@@ -29,17 +30,20 @@ export function SettingsProvider({ children }) {
     // 最近使用した項目として表示するアクティビティの件数の上限
     const [recentLimit, setRecentLimit] =
         useLocalStorageState('settings.recentLimit', DEFAULT_SETTINGS.recentLimit);
+    // ★ Discord 連係の有効/無効（既定: 有効）
+    const [discordEnabled, setDiscordEnabled] =
+        useLocalStorageState('settings.discordEnabled', DEFAULT_SETTINGS.discordEnabled);
 
     const value = useMemo(
         () => ({
             autoFilterOnSelect,
+            themeMode, setThemeMode,
             setAutoFilterOnSelect,
             recentDays, setRecentDays,
             recentLimit, setRecentLimit,
-            themeMode,
-            setThemeMode,
+            discordEnabled, setDiscordEnabled,
         }),
-        [autoFilterOnSelect, themeMode, recentDays, recentLimit]
+        [autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled]
     );
 
     return (
