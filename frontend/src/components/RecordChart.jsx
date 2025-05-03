@@ -600,7 +600,7 @@ function RecordChart() {
                     /* ----- データが無い場合の表示 ----- */
                     <Box
                         sx={{
-                            height: 250,
+                            height: selectedPeriod == '1d' ? 125 : 250,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -616,7 +616,7 @@ function RecordChart() {
                         </Typography>
                     </Box>
                 ) : (
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={selectedPeriod == '1d' ? 125 : 250}>
                         {chartType === 'line' ? (
                             <LineChart data={chartData} margin={{ left: 25, right: longestLabelWidth }}>
                                 <CartesianGrid
