@@ -23,7 +23,7 @@ function SettingsDialog({ open, onClose }) {
     } = useSettings();
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <Dialog open={open} onClose={onClose} maxWidth="sm">
             <DialogTitle>Settings</DialogTitle>
 
             <DialogContent dividers>
