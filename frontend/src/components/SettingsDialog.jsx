@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -24,6 +24,21 @@ function SettingsDialog({ open, onClose }) {
         recentLimit, setRecentLimit,
     } = useSettings();
 
+    // ─── 設定値のローカルコピー ───
+    const [tmpAutoFilter, setTmpAutoFilter] = useState(autoFilterOnSelect);
+    const [tmpThemeMode, setTmpThemeMode] = useState(themeMode);
+    const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
+    const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
+    // ダイアログを開くたびに最新値でリセット
+    useEffect(() => {
+        if (open) {
+            setTmpAutoFilter(autoFilterOnSelect);
+            setTmpThemeMode(themeMode);
+            setTmpRecentDays(recentDays);
+            setTmpRecentLimit(recentLimit);
+        }
+    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit]);
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm">
             <DialogTitle>Settings</DialogTitle>
@@ -37,8 +52,8 @@ function SettingsDialog({ open, onClose }) {
                             <FormLabel component="legend">Theme</FormLabel>
                             <RadioGroup
                                 row
-                                value={themeMode}
-                                onChange={(e) => setThemeMode(e.target.value)}
+                                value={tmpThemeMode}
+                                onChange={(e) => setTmpThemeMode(e.target.value)}
                             >
                                 <FormControlLabel value="system" label="System" control={<Radio />} />
                                 <FormControlLabel value="light" label="Light" control={<Radio />} />
@@ -54,8 +69,8 @@ function SettingsDialog({ open, onClose }) {
                             <FormControlLabel
                                 control={
                                     <Switch
-                                        checked={autoFilterOnSelect}
-                                        onChange={(e) => setAutoFilterOnSelect(e.target.checked)}
+                                        checked={tmpAutoFilter}
+                                        onChange={(e) => setTmpAutoFilter(e.target.checked)}
                                     />
                                 }
                                 label="Auto-switch activity filter on select"
@@ -66,8 +81,8 @@ function SettingsDialog({ open, onClose }) {
                             <FormLabel component="legend">Initial-Display Activities Used in</FormLabel>
                             <RadioGroup
                                 row
-                                value={recentDays}
-                                onChange={(e) => setRecentDays(e.target.value)}
+                                value={tmpRecentDays}
+                                onChange={(e) => setTmpRecentDays(e.target.value)}
                             >
                                 {['7', '14', '30', 'all'].map(v =>
                                     <FormControlLabel
@@ -84,8 +99,8 @@ function SettingsDialog({ open, onClose }) {
                             <FormLabel component="legend">Initial-Display Activities Limit</FormLabel>
                             <RadioGroup
                                 row
-                                value={recentLimit}
-                                onChange={(e) => setRecentLimit(e.target.value)}
+                                value={tmpRecentLimit}
+                                onChange={(e) => setTmpRecentLimit(e.target.value)}
                             >
                                 {['5', '15', '30', 'all'].map(v =>
                                     <FormControlLabel
@@ -102,8 +117,21 @@ function SettingsDialog({ open, onClose }) {
             </DialogContent>
 
             <DialogActions>
-                <Button onClick={onClose} variant="contained">
-                    Close
+                {/* Cancel = 変更を捨てて閉じるだけ */}
+                <Button onClick={onClose}>Cancel</Button>
+
+                {/* Apply = Context に書き戻して閉じる */}
+                <Button
+                    variant="contained"
+                    onClick={() => {
+                        setAutoFilterOnSelect(tmpAutoFilter);
+                        setThemeMode(tmpThemeMode);
+                        setRecentDays(tmpRecentDays);
+                        setRecentLimit(tmpRecentLimit);
+                        onClose();
+                    }}
+                >
+                    Apply
                 </Button>
             </DialogActions>
         </Dialog>
