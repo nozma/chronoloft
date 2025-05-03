@@ -15,6 +15,7 @@ import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
 import AppHeader from './components/AppHeader';
+import AppFooter from './components/AppFooter';
 import { useSettings } from './contexts/SettingsContext';
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
                                                 <AppHeader />
                                                 <RecordingInterface />
                                                 <History />
+                                                <AppFooter />
                                             </div>
                                         </ActiveActivityProvider>
                                     </FilterProvider>
