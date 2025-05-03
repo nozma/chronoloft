@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { version } from '../package.json'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,5 +16,9 @@ export default defineConfig({
                 secure: false,
             },
         },
+    },
+    define: {
+        __APP_VERSION__: JSON.stringify(version),
+        __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev'),
     },
 })
