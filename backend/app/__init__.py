@@ -28,11 +28,11 @@ db = SQLAlchemy(metadata=metadata)
 def get_os_db_path():
     """
     OS推奨のユーザーデータディレクトリに「app.db」を配置するパスを返す。
-    Windows: %APPDATA%/Actiloft/
-    macOS:   ~/Library/Application Support/Actiloft/
-    Linux:   ~/.local/share/Actiloft/
+    Windows: %APPDATA%/Chronoloft/
+    macOS:   ~/Library/Application Support/Chronoloft/
+    Linux:   ~/.local/share/Chronoloft/
     """
-    dirs = PlatformDirs("Actiloft")
+    dirs = PlatformDirs("Chronoloft")
     db_dir = dirs.user_data_dir
     os.makedirs(db_dir, exist_ok=True)
     return os.path.join(db_dir, "app.db")

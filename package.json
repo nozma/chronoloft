@@ -14,7 +14,7 @@
         "start:no_webview": "concurrently \"npm run dev:backend:no_webview\" \"npm run dev:frontend\"",
         "start:no_webview:lan": "concurrently \"npm run dev:backend:no_webview\" \"npm run dev:frontend:lan\"",
         "build:frontend": "cd frontend && npm run build",
-        "build:pyinstaller": "pyinstaller main.py -y --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --add-data \"backend/migrations:backend/migrations\" --add-data \"LICENSE:.\" --windowed -n Actiloft --hidden-import logging.config",
+        "build:pyinstaller": "pyinstaller main.py -y --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --add-data \"backend/migrations:backend/migrations\" --add-data \"LICENSE:.\" --windowed -n Chronoloft --hidden-import logging.config",
         "build": "npm run build:frontend && npm run build:pyinstaller"
     },
     "devDependencies": {
