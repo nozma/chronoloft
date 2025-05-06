@@ -1,4 +1,4 @@
-# Actyloft
+# Chronoloft
 
 Discordへのステータス表示機能を備えたアクティビティ記録ツール。
 
@@ -7,8 +7,8 @@ Discordへのステータス表示機能を備えたアクティビティ記録�
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/nozma/actyloft.git
-cd actyloft
+git clone https://github.com/nozma/chronoloft.git
+cd chronoloft
 ```
 ### 2. バックエンド
 

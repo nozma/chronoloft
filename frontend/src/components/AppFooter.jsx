@@ -34,7 +34,7 @@ function AppFooter() {
 
             {/* GitHub へのリンク。新しいタブで開く */}
             <Link
-                href="https://github.com/nozma/actyloft"
+                href="https://github.com/nozma/chronoloft"
                 target="_blank"
                 rel="noopener"
                 underline="hover"

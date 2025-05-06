@@ -34,7 +34,7 @@ function AppHeader() {
                         : 'rgba(0,0,0,0.04)',      // ライト時背景
             }}
         >
-            <Typography variant="h5">Actyloft</Typography>
+            <Typography variant="h5">Chronoloft</Typography>
             <OpenBrowserButton />
             <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                 <MoreVertIcon />
