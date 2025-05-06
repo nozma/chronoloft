@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # PyWebViewでローカルのFlaskアプリを表示
     api = ApiBridge(app_url)
     webview.create_window(
-        title="Actyloft",
+        title="Chronoloft",
         url=app_url,
         js_api=api,   # フロントエンドから呼び出すAPIを登録
         width=900,
