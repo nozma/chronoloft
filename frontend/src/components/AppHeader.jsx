@@ -5,6 +5,7 @@ import { clearUiSettings } from '../utils/storageReset';
 import OpenBrowserButton from './OpenBrowserButton';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsDialog from './SettingsDialog';
+import AppIcon from '../../favicon.svg?react'
 
 /**
  * アプリのヘッダー部分。
@@ -34,7 +35,10 @@ function AppHeader() {
                         : 'rgba(0,0,0,0.04)',      // ライト時背景
             }}
         >
+            <Box sx={{display: 'flex', gap: 1}}>
+            <AppIcon style={{ width:32, height:32 }}/>
             <Typography variant="h5">Chronoloft</Typography>
+            </Box>
             <OpenBrowserButton />
             <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
                 <MoreVertIcon />
