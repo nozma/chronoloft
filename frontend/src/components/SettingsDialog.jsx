@@ -24,6 +24,7 @@ function SettingsDialog({ open, onClose }) {
         recentDays, setRecentDays,
         recentLimit, setRecentLimit,
         discordEnabled, setDiscordEnabled,
+        recordSaveMode, setRecordSaveMode,
     } = useSettings();
 
     // ─── 設定値のローカルコピー ───
@@ -32,6 +33,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
     const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
     const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
+    const [tmpRecordSaveMode, setTmpRecordSaveMode] = useState(recordSaveMode);
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open) {
@@ -40,8 +42,9 @@ function SettingsDialog({ open, onClose }) {
             setTmpRecentDays(recentDays);
             setTmpRecentLimit(recentLimit);
             setTmpDiscordEnabled(discordEnabled);
+            setTmpRecordSaveMode(recordSaveMode);
         }
-    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled]);
+    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
 
     // リセット用ハンドラ
     const handleReset = () => {
@@ -51,6 +54,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
         setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
         setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
+        setTmpRecordSaveMode(DEFAULT_SETTINGS.recordSaveMode);
     };
 
     return (
@@ -143,6 +147,20 @@ function SettingsDialog({ open, onClose }) {
                             />
                         </FormControl>
                     </Stack>
+                    {/* ------------- レコード保存モード ------------- */}
+                    <Stack spacing={3}>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">Record Save Mode</FormLabel>
+                            <RadioGroup
+                                row
+                                value={tmpRecordSaveMode}
+                                onChange={e => setTmpRecordSaveMode(e.target.value)}
+                            >
+                                <FormControlLabel value="auto" control={<Radio />} label="Auto" />
+                                <FormControlLabel value="confirm" control={<Radio />} label="Confirm" />
+                            </RadioGroup>
+                        </FormControl>
+                    </Stack>
                 </Stack>
             </DialogContent>
 
@@ -169,6 +187,7 @@ function SettingsDialog({ open, onClose }) {
                             setRecentDays(tmpRecentDays);
                             setRecentLimit(tmpRecentLimit);
                             setDiscordEnabled(tmpDiscordEnabled);
+                            setRecordSaveMode(tmpRecordSaveMode);
                             onClose();
                         }}
                     >
