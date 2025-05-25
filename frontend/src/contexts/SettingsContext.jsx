@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS = {
     recentDays: '14',
     recentLimit: '15',
     discordEnabled: true,
+    recordSaveMode: 'auto',
 };
 
 const SettingsContext = createContext();
@@ -33,6 +34,10 @@ export function SettingsProvider({ children }) {
     // ★ Discord 連係の有効/無効（既定: 有効）
     const [discordEnabled, setDiscordEnabled] =
         useLocalStorageState('settings.discordEnabled', DEFAULT_SETTINGS.discordEnabled);
+    // ★ レコード保存モード
+    const [recordSaveMode, setRecordSaveMode] =
+        useLocalStorageState('settings.recordSaveMode', DEFAULT_SETTINGS.recordSaveMode);
+
 
     const value = useMemo(
         () => ({
@@ -42,8 +47,9 @@ export function SettingsProvider({ children }) {
             recentDays, setRecentDays,
             recentLimit, setRecentLimit,
             discordEnabled, setDiscordEnabled,
+            recordSaveMode, setRecordSaveMode,
         }),
-        [autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled]
+        [autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled, recordSaveMode]
     );
 
     return (

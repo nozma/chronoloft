@@ -16,6 +16,7 @@ import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { DateTime } from 'luxon';
 
 function RecordingInterface() {
     const { state, dispatch } = useUI();
@@ -41,10 +42,14 @@ function RecordingInterface() {
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
 
     // 設定項目
-    const { 
+    const {
         autoFilterOnSelect,
         discordEnabled,
+        recordSaveMode,
     } = useSettings();
+
+    // 確認モード時の一時保存データ
+    const [pendingRecord, setPendingRecord] = useState(null);
 
     // タイトル更新
     useEffect(() => {
@@ -188,24 +193,35 @@ function RecordingInterface() {
         }
     };
 
+    // 完了時ハンドラ
+    const handleStopwatchComplete = async (minutes, memo) => {
+        if (recordSaveMode === 'auto') {
+            // 既存の自動レコード作成ロジック
+            await createRecord({
+                activity_id: selectedActivity.id,
+                value: minutes,
+                memo: memo
+            });
+            onRecordUpdate();
+            await refreshActivities();
+            localStorage.removeItem('stopwatchState');
+            setStopwatchVisible(false);
+            setActiveActivity(null);
+        } else {
+            // 確認モード：ダイアログを開く
+            setPendingRecord({ minutes, memo, activity: selectedActivity });
+            setRecordDialogActivity(selectedActivity);
+            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
+        }
+    };
+
     return (
         <Box sx={{ mb: 2 }}>
             {/* Stopwatch */}
             {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
                 <Stopwatch
                     ref={stopwatchRef}
-                    onComplete={async (minutes, memo) => {
-                        await createRecord({
-                            activity_id: selectedActivity.id,
-                            value: minutes,
-                            memo: memo
-                        });
-                        onRecordUpdate();
-                        await refreshActivities();
-                        localStorage.removeItem('stopwatchState');
-                        setStopwatchVisible(false);
-                        setActiveActivity(null);
-                    }}
+                    onComplete={handleStopwatchComplete}
                     onCancel={() => {
                         localStorage.removeItem('stopwatchState');
                         setStopwatchVisible(false);
@@ -282,13 +298,47 @@ function RecordingInterface() {
                 onStartSubStopwatch={handleStartSubStopwatch}
             />
             <ActivityList />
-            {/* Count用ダイアログ */}
-            {state.recordDialogOpen && recordDialogActivity && recordDialogActivity.unit === 'count' && (
+            {/* ダイアログ（回数＋確認モード共通） */}
+            {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
                 <AddRecordDialog
-                    open={state.recordDialogOpen}
-                    onClose={() => dispatch({ type: 'SET_RECORD_DIALOG', payload: false })}
+                    open={true}
+                    onClose={() => {
+                        dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
+                        // 確認モードでキャンセルした場合はストップウォッチも閉じる
+                        if (pendingRecord) {
+                            setPendingRecord(null);
+                            localStorage.removeItem('stopwatchState');
+                            setStopwatchVisible(false);
+                            setActiveActivity(null);
+                        }
+                    }}
+                    onSubmit={async (recordData) => {
+                        // 確認モードの場合は pendingRecord をマージ
+                        if (pendingRecord) {
+                            recordData = {
+                                activity_id: pendingRecord.activity.id,
+                                value: pendingRecord.minutes,
+                                memo: pendingRecord.memo,
+                                ...recordData,
+                            };
+                        }
+                        await createRecord(recordData);
+                        onRecordUpdate();
+                        await refreshActivities();
+                        dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
+                        setPendingRecord(null);
+                        // ストップウォッチを閉じる
+                        if (pendingRecord) {
+                            localStorage.removeItem('stopwatchState');
+                            setStopwatchVisible(false);
+                            setActiveActivity(null);
+                        }
+                    }}
                     activity={recordDialogActivity}
-                    onSubmit={handleRecordCreated}
+                    initialValue={pendingRecord?.minutes}
+                    initialMemo={pendingRecord?.memo}
+                    initialDate={DateTime.local().toISO()}
+                    isEdit={false}
                 />
             )}
         </Box>
