@@ -72,8 +72,12 @@ function RecordList() {
 
     const processRowUpdate = async (newRow, oldRow) => {
         try {
-            await updateRecord(newRow.id, newRow);
-            return newRow;
+            // 変更が無ければ何もしない
+            if (newRow.memo === oldRow.memo) return oldRow;
+            // memo だけをパッチ更新
+            await updateRecord(newRow.id, { memo: newRow.memo });
+            // フロント側の行データは memo だけ差し替えて戻す
+            return { ...oldRow, memo: newRow.memo };
         } catch (error) {
             console.error("Failed to update record:", error);
             throw error;
@@ -132,7 +136,8 @@ function RecordList() {
         {
             field: 'memo',
             headerName: 'memo',
-            width: 200
+            width: 200,
+            editable: true
         },
         {
             field: 'actions',
