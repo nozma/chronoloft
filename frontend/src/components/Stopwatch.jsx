@@ -3,6 +3,7 @@ import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
+import { useRecords } from '../contexts/RecordContext';
 import { DateTime } from 'luxon';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -12,6 +13,7 @@ import { updateDiscordPresence } from '../services/api';
 
 const Stopwatch = forwardRef((props, ref) => {
     const { groups } = useGroups();
+    const { records } = useRecords();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
         displayTime,
@@ -87,6 +89,19 @@ const Stopwatch = forwardRef((props, ref) => {
         }
     }, [displayTime, props.onTick]);
 
+    // 直近のレコード終了時刻を取得して editedStartTime にセット
+    const handleFillPrevEnd = () => {
+        // 作成日時降順ソート
+        const sorted = [...records].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+        const last = sorted[0];
+        const dt = last
+            ? DateTime.fromISO(last.created_at, { zone: 'utc' }).toLocal()
+            : DateTime.local();  // レコードなしは「今」
+        setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
+    };
+
     return (
         <>
             <Box
@@ -120,6 +135,9 @@ const Stopwatch = forwardRef((props, ref) => {
                                     onChange={(e) => setEditedStartTime(e.target.value)}
                                     size='small'
                                 />
+                                <Button size="small" onClick={handleFillPrevEnd}>
+                                    Fill
+                                </Button>
                                 <Button onClick={handleSaveStartTime} variant="contained" color="primary">
                                     Save
                                 </Button>

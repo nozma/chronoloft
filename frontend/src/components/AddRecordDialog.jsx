@@ -7,10 +7,13 @@ import {
     DialogActions,
     Button,
     TextField,
-    MenuItem
+    MenuItem,
+    Box,
+    IconButton
 } from '@mui/material';
 import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
+import { useRecords } from '../contexts/RecordContext';
 
 function AddRecordDialog({
     open,
@@ -24,6 +27,7 @@ function AddRecordDialog({
     onDelete
 }) {
     const { activities } = useActivities();
+    const { records } = useRecords();
     const [selectedActivity, setSelectedActivity] = useState(activity);
     const [value, setValue] = useState('');
     const [dateValue, setDateValue] = useState(''); // count用: 記録日時
@@ -130,6 +134,48 @@ function AddRecordDialog({
         onClose();
     };
 
+    // 時刻を ±n 分ずらす汎用関数
+    const adjustTime = (timeStr, delta, setter) => {
+        const dt = DateTime.fromFormat(timeStr, "yyyy-MM-dd'T'HH:mm");
+        if (!dt.isValid) return;
+        setter(dt.plus({ minutes: delta }).toFormat("yyyy-MM-dd'T'HH:mm"));
+    };
+
+    // 「前のレコードの終了」を開始時刻にセット
+    const fillStartWithPrevEnd = () => {
+        const current = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
+        // current より前の end を集め、最新を取る
+        const prev = records
+            .map(r => DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal())
+            .filter(dt => dt < current)
+            .sort((a, b) => b.valueOf() - a.valueOf())[0];
+        if (prev) {
+            setStartTime(prev.toFormat("yyyy-MM-dd'T'HH:mm"));
+        } else {
+            // レコードがなければ今の時刻
+            setStartTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
+        }
+    };
+
+    // 「次のレコードの開始」を終了時刻にセット（無ければ今の時刻）
+    const fillEndWithNextStart = () => {
+        const current = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
+        // nextRec の開始 = endLocal.minus({ minutes: value })
+        const candidates = records
+            .map(r => {
+                const endLocal = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
+                return { startLocal: endLocal.minus({ minutes: r.value }) };
+            })
+            .filter(o => o.startLocal > current)
+            .sort((a, b) => a.startLocal.valueOf() - b.startLocal.valueOf());
+        if (candidates.length) {
+            setEndTime(candidates[0].startLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
+        } else {
+            setEndTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
+        }
+    };
+
+
     return (
         <Dialog open={open} onClose={handleClose}>
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
@@ -184,22 +230,60 @@ function AddRecordDialog({
 
                 {selectedActivity?.unit === 'minutes' && (
                     <>
-                        <TextField
-                            label="開始時刻"
-                            type="datetime-local"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                            fullWidth
-                            margin="dense"
-                        />
-                        <TextField
-                            label="終了時刻"
-                            type="datetime-local"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                            fullWidth
-                            margin="dense"
-                        />
+                        {/* 開始時刻入力＋ボタン群 */}
+                        <Box display="flex" alignItems="center" mb={1}>
+                            <TextField
+                                label="開始時刻"
+                                type="datetime-local"
+                                value={startTime}
+                                onChange={(e) => setStartTime(e.target.value)}
+                                sx={{ flex: 1 }}
+                                margin="dense"
+                            />
+                            <Button size="small" onClick={fillStartWithPrevEnd}>
+                                fill
+                            </Button>
+                            <IconButton size="small" onClick={() => adjustTime(startTime, -5, setStartTime)}>
+                                −5
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(startTime, -1, setStartTime)}>
+                                −1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(startTime, +1, setStartTime)}>
+                                +1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(startTime, +5, setStartTime)}>
+                                +5
+                            </IconButton>
+                        </Box>
+
+                        {/* 終了時刻入力＋ボタン群 */}
+                        <Box display="flex" alignItems="center" mb={1}>
+                            <TextField
+                                label="終了時刻"
+                                type="datetime-local"
+                                value={endTime}
+                                onChange={(e) => setEndTime(e.target.value)}
+                                sx={{ flex: 1 }}
+                                margin="dense"
+                            />
+                            <Button size="small" onClick={fillEndWithNextStart}>
+                                fill
+                            </Button>
+                            <IconButton size="small" onClick={() => adjustTime(endTime, -5, setEndTime)}>
+                                −5
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(endTime, -1, setEndTime)}>
+                                −1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(endTime, +1, setEndTime)}>
+                                +1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustTime(endTime, +5, setEndTime)}>
+                                +5
+                            </IconButton>
+                        </Box>
+
                         <TextField
                             label="memo"
                             multiline
