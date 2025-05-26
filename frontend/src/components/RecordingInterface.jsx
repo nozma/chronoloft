@@ -50,6 +50,8 @@ function RecordingInterface() {
 
     // 確認モード時の一時保存データ
     const [pendingRecord, setPendingRecord] = useState(null);
+    // 確認モードでダイアログを閉じたあとに開始したいアクティビティ
+    const [nextActivity, setNextActivity] = useState(null);
 
     // タイトル更新
     useEffect(() => {
@@ -126,11 +128,18 @@ function RecordingInterface() {
                     }
                     : null;
                 const { minutes, memo } = await stopwatchRef.current.finishAndReset(newDiscordData);
-                // 既存Activityの記録を作成
-                if (selectedActivity?.id) {
-                    await createRecord({ activity_id: selectedActivity.id, value: minutes, memo: memo });
-                    onRecordUpdate();
+                if (recordSaveMode === 'confirm') {
+                    // 確認モードならダイアログ表示＆次のアクティビティを予約
+                    setPendingRecord({ minutes, memo, activity: selectedActivity });
+                    setRecordDialogActivity(selectedActivity);
+                    dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
+                    setNextActivity(activity);
+                    return;
                 }
+
+                // auto モード: 既存レコードを作成
+                await createRecord({ activity_id: selectedActivity.id, value: minutes, memo });
+                onRecordUpdate();
             }
             // 新しいActivityを選択
             setSelectedActivity(activity);
@@ -311,6 +320,31 @@ function RecordingInterface() {
                             setStopwatchVisible(false);
                             setActiveActivity(null);
                         }
+                        // ダイアログ閉後に予約した nextActivity があれば再開
+                        if (nextActivity) {
+                            setSelectedActivity(nextActivity);
+                            setActiveActivity(nextActivity);
+                            if (autoFilterOnSelect) {
+                                setFilterState(prev => ({
+                                    ...prev,
+                                    activityNameFilter: nextActivity.name,
+                                }));
+                            }
+                            const details = calculateTimeDetails(nextActivity.id, records);
+                            const groupInfo = groups.find(g => g.name === nextActivity.group_name);
+                            setDiscordData(
+                                discordEnabled && groupInfo?.client_id
+                                    ? {
+                                        group: nextActivity.group_name,
+                                        activity_name: nextActivity.name,
+                                        details,
+                                        asset_key: nextActivity.asset_key || 'default_image'
+                                    }
+                                    : null
+                            );
+                            setStopwatchVisible(true);
+                            setNextActivity(null);
+                        }
                     }}
                     onSubmit={async (recordData) => {
                         // 確認モードの場合は pendingRecord をマージ
@@ -327,11 +361,30 @@ function RecordingInterface() {
                         await refreshActivities();
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
                         setPendingRecord(null);
-                        // ストップウォッチを閉じる
-                        if (pendingRecord) {
-                            localStorage.removeItem('stopwatchState');
-                            setStopwatchVisible(false);
-                            setActiveActivity(null);
+                        // ダイアログ送信後に予約した nextActivity があれば再開
+                        if (nextActivity) {
+                            setSelectedActivity(nextActivity);
+                            setActiveActivity(nextActivity);
+                            if (autoFilterOnSelect) {
+                                setFilterState(prev => ({
+                                    ...prev,
+                                    activityNameFilter: nextActivity.name,
+                                }));
+                            }
+                            const details2 = calculateTimeDetails(nextActivity.id, records);
+                            const groupInfo2 = groups.find(g => g.name === nextActivity.group_name);
+                            setDiscordData(
+                                discordEnabled && groupInfo2?.client_id
+                                    ? {
+                                        group: nextActivity.group_name,
+                                        activity_name: nextActivity.name,
+                                        details: details2,
+                                        asset_key: nextActivity.asset_key || 'default_image'
+                                    }
+                                    : null
+                            );
+                            setStopwatchVisible(true);
+                            setNextActivity(null);
                         }
                     }}
                     activity={recordDialogActivity}
