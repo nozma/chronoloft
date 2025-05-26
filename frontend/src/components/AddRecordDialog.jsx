@@ -143,18 +143,25 @@ function AddRecordDialog({
 
     // 「前のレコードの終了」を開始時刻にセット
     const fillStartWithPrevEnd = () => {
-        const current = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
-        // current より前の end を集め、最新を取る
-        const prev = records
-            .map(r => DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal())
-            .filter(dt => dt < current)
-            .sort((a, b) => b.valueOf() - a.valueOf())[0];
-        if (prev) {
-            setStartTime(prev.toFormat("yyyy-MM-dd'T'HH:mm"));
-        } else {
-            // レコードがなければ今の時刻
-            setStartTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
-        }
+        // ① 終了時刻を基準に
+        const baseline = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm"); 
+
+        // ② 全レコードを終了時刻(created_at)降順ソート
+        const sorted = [...records].sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+        );
+
+        // ③ baseline より前のレコードを探す
+        const prevRec = sorted.find(rec => {
+            const endLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
+            return endLocal < baseline;
+        });
+
+        // ④ 見つかったらその終了時刻、無ければ baseline をセット
+        const dt = prevRec
+            ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
+            : baseline;
+        setStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
     };
 
     // 「次のレコードの開始」を終了時刻にセット（無ければ今の時刻）

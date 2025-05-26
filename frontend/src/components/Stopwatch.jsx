@@ -91,14 +91,24 @@ const Stopwatch = forwardRef((props, ref) => {
 
     // 直近のレコード終了時刻を取得して editedStartTime にセット
     const handleFillPrevEnd = () => {
-        // 作成日時降順ソート
+        // ① 終了時刻がまだ無い＝ストップウォッチ動作中なので「現在時刻」を基準に
+        const baseline = DateTime.local();
+
+        // ② 全レコードを終了時刻(created_at)降順ソート
         const sorted = [...records].sort(
             (a, b) => new Date(b.created_at) - new Date(a.created_at)
         );
-        const last = sorted[0];
-        const dt = last
-            ? DateTime.fromISO(last.created_at, { zone: 'utc' }).toLocal()
-            : DateTime.local();  // レコードなしは「今」
+
+        // ③ baseline より前のレコードを探す
+        const prevRec = sorted.find(rec => {
+            const endLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
+            return endLocal < baseline;
+        });
+
+        // ④ 見つかったらその終了時刻、無ければ baseline をセット
+        const dt = prevRec
+            ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
+            : baseline;
         setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
     };
 
