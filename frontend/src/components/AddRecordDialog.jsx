@@ -33,7 +33,7 @@ function AddRecordDialog({
     const [dateValue, setDateValue] = useState(''); // count用: 記録日時
     const [startTime, setStartTime] = useState(''); // minutes用: 開始日時
     const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
-    const [memo, setMemo] = useState('');
+    const [memo, setMemo] = useState(initialMemo || '');
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
     const compatibleActivities = activities.filter(a => a.unit === activity.unit);
@@ -69,9 +69,7 @@ function AddRecordDialog({
                 setStartTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
             }
         }
-        if (isEdit) {
-            setMemo(initialMemo ?? '');
-        }
+        setMemo(initialMemo ?? '');
     }, [activity, initialValue, initialDate, initialMemo]);
 
     // 保存時処理
