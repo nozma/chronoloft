@@ -137,7 +137,17 @@ function RecordList() {
             field: 'memo',
             headerName: 'memo',
             width: 200,
-            editable: true
+            editable: true,
+            renderCell: (params) => (
+                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%' }}>
+                    <Typography
+                        variant='body2'
+                        sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                    >
+                        {params.value}
+                    </Typography>
+                </Box>
+            )
         },
         {
             field: 'actions',
@@ -198,7 +208,8 @@ function RecordList() {
                             rowsPerPageOptions={[5]}
                             disableSelectionOnClick
                             processRowUpdate={processRowUpdate}
-                            rowHeight={38}
+                            getRowHeight={() => 'auto'}
+                            sx={{ '& .MuiDataGrid-cell': { alignItems: 'center' } }}
                             initialState={{
                                 sorting: {
                                     sortModel: [{ field: 'created_at', sort: 'desc' }],
