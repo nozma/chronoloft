@@ -91,7 +91,14 @@ def update_activity(activity_id):
     if 'asset_key' in data:
         activity.asset_key = data['asset_key']
     if 'unit' in data:
-        activity.unit = ActivityUnitType(data['unit'])
+        unit_value = data['unit']
+        if unit_value is None:
+            activity.unit = None
+        else:
+            try:
+                activity.unit = ActivityUnitType(unit_value)
+            except ValueError:
+                return jsonify({'error': 'unit の値が不正です'}), 400
     if 'is_active' in data:
         activity.is_active = data['is_active']
 
