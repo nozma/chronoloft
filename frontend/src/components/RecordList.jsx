@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
-import { Box, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -137,7 +137,30 @@ function RecordList() {
             field: 'memo',
             headerName: 'memo',
             width: 200,
-            editable: true
+            editable: true,
+            renderCell: (params) => (
+                <Typography
+                    variant='body2'
+                    sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                >
+                    {params.value}
+                </Typography>
+            ),
+            renderEditCell: (params) => (
+                <TextField
+                    multiline
+                    minRows={3}
+                    fullWidth
+                    autoFocus
+                    value={params.value || ''}
+                    onChange={(e) =>
+                        params.api.setEditCellValue(
+                            { id: params.id, field: params.field, value: e.target.value },
+                            e
+                        )
+                    }
+                />
+            )
         },
         {
             field: 'actions',
@@ -198,7 +221,7 @@ function RecordList() {
                             rowsPerPageOptions={[5]}
                             disableSelectionOnClick
                             processRowUpdate={processRowUpdate}
-                            rowHeight={38}
+                            getRowHeight={() => 'auto'}
                             initialState={{
                                 sorting: {
                                     sortModel: [{ field: 'created_at', sort: 'desc' }],
