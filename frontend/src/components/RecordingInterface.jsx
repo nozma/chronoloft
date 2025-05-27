@@ -41,6 +41,9 @@ function RecordingInterface() {
     const subStopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
 
+    // ダイアログの初期日時を保持
+    const [recordDialogInitialDate, setRecordDialogInitialDate] = useState(null);
+
     // 設定項目
     const {
         autoFilterOnSelect,
@@ -132,6 +135,7 @@ function RecordingInterface() {
                     // 確認モードならダイアログ表示＆次のアクティビティを予約
                     setPendingRecord({ minutes, memo, activity: selectedActivity });
                     setRecordDialogActivity(selectedActivity);
+                    setRecordDialogInitialDate(DateTime.local().toISO());
                     dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
                     setNextActivity(activity);
                     return;
@@ -173,6 +177,7 @@ function RecordingInterface() {
         } else if (activity.unit === 'count') {
             // 回数 -> レコードダイアログ
             setRecordDialogActivity(activity);
+            setRecordDialogInitialDate(DateTime.local().toISO());
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
         }
     };
@@ -220,6 +225,7 @@ function RecordingInterface() {
             // 確認モード：ダイアログを開く
             setPendingRecord({ minutes, memo, activity: selectedActivity });
             setRecordDialogActivity(selectedActivity);
+            setRecordDialogInitialDate(DateTime.local().toISO());
             dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
         }
     };
@@ -313,6 +319,7 @@ function RecordingInterface() {
                     open={true}
                     onClose={() => {
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
+                        setRecordDialogInitialDate(null);
                         // 確認モードでキャンセルした場合はストップウォッチも閉じる
                         if (pendingRecord) {
                             setPendingRecord(null);
@@ -360,6 +367,7 @@ function RecordingInterface() {
                         onRecordUpdate();
                         await refreshActivities();
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
+                        setRecordDialogInitialDate(null);
                         setPendingRecord(null);
                         // ダイアログ送信後に予約した nextActivity があれば再開
                         if (nextActivity) {
@@ -390,7 +398,7 @@ function RecordingInterface() {
                     activity={recordDialogActivity}
                     initialValue={pendingRecord?.minutes}
                     initialMemo={pendingRecord?.memo}
-                    initialDate={DateTime.local().toISO()}
+                    initialDate={recordDialogInitialDate}
                     isEdit={false}
                 />
             )}
