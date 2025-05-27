@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, gridClasses } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
 import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -139,19 +139,16 @@ function RecordList() {
             width: 200,
             editable: true,
             renderCell: (params) => (
-                <Box sx={{ display: 'flex', alignItems: 'center', height: '100%', width: '100%' }}>
-                    <Typography
-                        variant='body2'
-                        sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
-                    >
-                        {params.value}
-                    </Typography>
-                </Box>
+                <Typography
+                    variant='body2'
+                    sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                >
+                    {params.value}
+                </Typography>
             ),
             renderEditCell: (params) => (
                 <TextField
                     multiline
-                    minRows={1}
                     fullWidth
                     autoFocus
                     value={params.value || ''}
@@ -224,7 +221,12 @@ function RecordList() {
                             disableSelectionOnClick
                             processRowUpdate={processRowUpdate}
                             getRowHeight={() => 'auto'}
-                            sx={{ '& .MuiDataGrid-cell': { alignItems: 'center' } }}
+                            sx={{
+                                [`& .${gridClasses.cell}`]: {
+                                  py: 0,
+                                  alignContent: 'center'
+                                },
+                            }}
                             initialState={{
                                 sorting: {
                                     sortModel: [{ field: 'created_at', sort: 'desc' }],
