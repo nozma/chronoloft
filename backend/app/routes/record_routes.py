@@ -45,12 +45,16 @@ def create_record():
         return jsonify({'error': 'activity_id と value は必須です'}), 400
 
     try:
-        new_record = Record(
-            activity_id=data['activity_id'],
-            value=data['value'],
-            # created_at は Record モデル側で default=datetime.datetime.utcnow などになっている前提
-            memo=data.get('memo')
-        )
+        record_kwargs = {
+            'activity_id': data['activity_id'],
+            'value': data['value'],
+            'memo': data.get('memo')
+        }
+        if 'created_at' in data:
+            import datetime
+            record_kwargs['created_at'] = datetime.datetime.fromisoformat(data['created_at'])
+
+        new_record = Record(**record_kwargs)
         db.session.add(new_record)
         db.session.commit()
         return jsonify({'message': 'Record created', 'id': new_record.id}), 201
