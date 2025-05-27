@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
-import { Box, Collapse, IconButton, Typography } from '@mui/material';
+import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -147,6 +147,21 @@ function RecordList() {
                         {params.value}
                     </Typography>
                 </Box>
+            ),
+            renderEditCell: (params) => (
+                <TextField
+                    multiline
+                    minRows={1}
+                    fullWidth
+                    autoFocus
+                    value={params.value || ''}
+                    onChange={(e) =>
+                        params.api.setEditCellValue(
+                            { id: params.id, field: params.field, value: e.target.value },
+                            e
+                        )
+                    }
+                />
             )
         },
         {
