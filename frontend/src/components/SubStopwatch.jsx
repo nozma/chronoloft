@@ -1,15 +1,17 @@
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { Button, Typography, Box, TextField, IconButton } from '@mui/material';
+import { Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { DateTime } from 'luxon';
-import EditIcon from '@mui/icons-material/Edit';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useRecords } from '../contexts/RecordContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
 
 const SubStopwatch = forwardRef((props, ref) => {
     const { groups } = useGroups();
+    const { records } = useRecords();
     const {
         displayTime,
         complete,
@@ -26,34 +28,62 @@ const SubStopwatch = forwardRef((props, ref) => {
         finishAndReset
     }));
 
-    const [isEditingStartTime, setIsEditingStartTime] = useState(false);
+    const [anchorEl, setAnchorEl] = useState(null);
     const [editedStartTime, setEditedStartTime] = useState("");
 
-    const handleEditStartTime = () => {
+    const handleOpenPicker = (event) => {
         if (currentStartTime) {
             setEditedStartTime(DateTime.fromMillis(currentStartTime).toFormat("yyyy-MM-dd'T'HH:mm"));
         } else {
             setEditedStartTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
         }
-        setIsEditingStartTime(true);
+        setAnchorEl(event.currentTarget);
     };
 
-    const handleSaveStartTime = () => {
-        const newStart = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm").toMillis();
-        if (newStart > Date.now()) {
-            alert("Start time cannot be in the future");
-            return;
+    const handleClosePicker = () => {
+        setAnchorEl(null);
+    };
+
+    const handleChangeStartTime = (value) => {
+        setEditedStartTime(value);
+        const dt = DateTime.fromFormat(value, "yyyy-MM-dd'T'HH:mm");
+        if (dt.isValid) {
+            try {
+                updateStartTime(dt.toMillis());
+            } catch (error) {
+                alert(error.message);
+            }
         }
+    };
+
+    const adjustStartTime = (delta) => {
+        const dt = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm");
+        if (!dt.isValid) return;
+        const newDt = dt.plus({ minutes: delta });
+        setEditedStartTime(newDt.toFormat("yyyy-MM-dd'T'HH:mm"));
         try {
-            updateStartTime(newStart);
-            setIsEditingStartTime(false);
+            updateStartTime(newDt.toMillis());
         } catch (error) {
             alert(error.message);
         }
     };
 
-    const handleCancelEditStartTime = () => {
-        setIsEditingStartTime(false);
+    const handleFillPrevEnd = () => {
+        const baseline = DateTime.local();
+        const sorted = [...records].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const prevRec = sorted.find(rec => {
+            const endLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
+            return endLocal < baseline;
+        });
+        const dt = prevRec
+            ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
+            : baseline;
+        setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
+        try {
+            updateStartTime(dt.toMillis());
+        } catch (error) {
+            alert(error.message);
+        }
     };
 
     const formattedStartTime = currentStartTime
@@ -87,25 +117,30 @@ const SubStopwatch = forwardRef((props, ref) => {
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         {getIconForGroup(props.activityGroup, groups)}
                         <Typography variant="body2" sx={{ mr: 1 }}>{props.activityName}</Typography>
-                        {isEditingStartTime ? (
-                            <>
+                        <Typography variant="body2">Start Time: {formattedStartTime}</Typography>
+                        <IconButton onClick={handleOpenPicker} size='small'>
+                            <CalendarMonthIcon fontSize='small' />
+                        </IconButton>
+                        <Popover
+                            open={Boolean(anchorEl)}
+                            anchorEl={anchorEl}
+                            onClose={handleClosePicker}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+                        >
+                            <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <TextField
                                     type="datetime-local"
                                     value={editedStartTime}
-                                    onChange={(e) => setEditedStartTime(e.target.value)}
+                                    onChange={(e) => handleChangeStartTime(e.target.value)}
                                     size='small'
                                 />
-                                <Button onClick={handleSaveStartTime} variant="contained" color="primary">Save</Button>
-                                <Button onClick={handleCancelEditStartTime} variant="outlined">Cancel</Button>
-                            </>
-                        ) : (
-                            <>
-                                <Typography variant="body2">Start Time: {formattedStartTime}</Typography>
-                                <IconButton onClick={handleEditStartTime} size='small'>
-                                    <EditIcon fontSize='small' />
-                                </IconButton>
-                            </>
-                        )}
+                                <Button size="small" onClick={handleFillPrevEnd}>Fill</Button>
+                                <IconButton size="small" onClick={() => adjustStartTime(-5)}>-5</IconButton>
+                                <IconButton size="small" onClick={() => adjustStartTime(-1)}>-1</IconButton>
+                                <IconButton size="small" onClick={() => adjustStartTime(1)}>+1</IconButton>
+                                <IconButton size="small" onClick={() => adjustStartTime(5)}>+5</IconButton>
+                            </Box>
+                        </Popover>
                     </Box>
 
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: -1 }}>
