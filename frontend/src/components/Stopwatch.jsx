@@ -137,12 +137,12 @@ const Stopwatch = forwardRef((props, ref) => {
                         ? '#222'  // ダークモード用
                         : '#fafafa', // ライトモード用
                     zIndex: 100,
-                    py: 2,
+                    py: 1,
                     px: 8
                 })}
             >
                 <Box sx={{ flex: 1, width: '10%' }} >
-                    <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ mb: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}
                         <Typography variant="h6" sx={{ mr: 2 }}>
@@ -151,15 +151,15 @@ const Stopwatch = forwardRef((props, ref) => {
                     </Box>
                     {/* 経過時間と完了・キャンセルアイコン */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                        <IconButton color="primary" onClick={() => complete(memo)} disabled={isDiscordBusy}>
-                            <CheckCircleIcon fontSize='large' />
+                        <Typography variant="h5" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
+                        <IconButton color="primary" size="small" onClick={() => complete(memo)} disabled={isDiscordBusy}>
+                            <CheckCircleIcon fontSize='medium' />
                         </IconButton>
-                        <IconButton color="error" onClick={cancel} disabled={isDiscordBusy}>
-                            <CancelIcon fontSize='large' />
+                        <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
+                            <CancelIcon fontSize='medium' />
                         </IconButton>
                     </Box>
-                    <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1">Start Time: {formattedStartTime}</Typography>
                         <IconButton onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
                             <CalendarMonthIcon fontSize='small' />
