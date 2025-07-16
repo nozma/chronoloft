@@ -243,6 +243,7 @@ function RecordingInterface() {
                         setActiveActivity(null);
                     }}
                     discordData={discordData}
+                    activityId={selectedActivity.id}
                     activityName={selectedActivity.name}
                     activityGroup={selectedActivity.group_name}
                     onTick={(time) => setMainDisplayTime(time)}

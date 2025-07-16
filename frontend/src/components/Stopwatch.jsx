@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
@@ -89,6 +89,32 @@ const Stopwatch = forwardRef((props, ref) => {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
 
+    // 7日/30日累積時間を計算
+    const { total7d, total30d } = useMemo(() => {
+        const now = new Date();
+        const past30 = new Date(now);
+        past30.setDate(now.getDate() - 30);
+        const past7 = new Date(now);
+        past7.setDate(now.getDate() - 7);
+
+        let sum7 = 0;
+        let sum30 = 0;
+        for (const rec of records) {
+            if (rec.activity_id !== props.activityId) continue;
+            const created = new Date(rec.created_at);
+            if (created >= past30) sum30 += rec.value;
+            if (created >= past7) sum7 += rec.value;
+        }
+        return { total7d: sum7, total30d: sum30 };
+    }, [records, props.activityId]);
+
+    const runningMinutes = displayTime / 60000;
+    const total7Display = total7d + runningMinutes;
+    const total30Display = total30d + runningMinutes;
+
+    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} / 7d`;
+    const totalLabel30 = `${Math.floor(total30Display / 60)} h / 30d`;
+
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
         if (props.onTick) {
@@ -152,6 +178,9 @@ const Stopwatch = forwardRef((props, ref) => {
                     {/* 経過時間と完了・キャンセルアイコン */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Typography variant="h5" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
+                        <Typography variant="caption" color="#cccccc" sx={{ mr: 2 }}>
+                            {`${totalLabel7}　${totalLabel30}`}
+                        </Typography>
                         <IconButton color="primary" size="small" onClick={() => complete(memo)} disabled={isDiscordBusy}>
                             <CheckCircleIcon fontSize='medium' />
                         </IconButton>
