@@ -153,24 +153,24 @@ const Stopwatch = forwardRef((props, ref) => {
                         <IconButton onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
                             <CalendarMonthIcon fontSize='small' />
                         </IconButton>
+                        <Button size="small" onClick={handleFillPrevEnd}>Fill</Button>
+                        <IconButton size="small" onClick={() => adjustStartTime(-5)}>-5</IconButton>
+                        <IconButton size="small" onClick={() => adjustStartTime(-1)}>-1</IconButton>
+                        <IconButton size="small" onClick={() => adjustStartTime(1)}>+1</IconButton>
+                        <IconButton size="small" onClick={() => adjustStartTime(5)}>+5</IconButton>
                         <Popover
                             open={Boolean(anchorEl)}
                             anchorEl={anchorEl}
                             onClose={handleClosePicker}
                             anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
                         >
-                            <Box sx={{ p: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ p: 1 }}>
                                 <TextField
                                     type="datetime-local"
                                     value={editedStartTime}
                                     onChange={(e) => handleChangeStartTime(e.target.value)}
                                     size='small'
                                 />
-                                <Button size="small" onClick={handleFillPrevEnd}>Fill</Button>
-                                <IconButton size="small" onClick={() => adjustStartTime(-5)}>-5</IconButton>
-                                <IconButton size="small" onClick={() => adjustStartTime(-1)}>-1</IconButton>
-                                <IconButton size="small" onClick={() => adjustStartTime(1)}>+1</IconButton>
-                                <IconButton size="small" onClick={() => adjustStartTime(5)}>+5</IconButton>
                             </Box>
                         </Popover>
                     </Box>
