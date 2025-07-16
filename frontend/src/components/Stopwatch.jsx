@@ -148,7 +148,18 @@ const Stopwatch = forwardRef((props, ref) => {
                         <Typography variant="h6" sx={{ mr: 2 }}>
                             {props.activityName}
                         </Typography>
-                        {/* 開始時刻表示と編集UI */}
+                    </Box>
+                    {/* 経過時間と完了・キャンセルアイコン */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                        <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
+                        <IconButton color="primary" onClick={() => complete(memo)} disabled={isDiscordBusy}>
+                            <CheckCircleIcon fontSize='large' />
+                        </IconButton>
+                        <IconButton color="error" onClick={cancel} disabled={isDiscordBusy}>
+                            <CancelIcon fontSize='large' />
+                        </IconButton>
+                    </Box>
+                    <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1">Start Time: {formattedStartTime}</Typography>
                         <IconButton onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
                             <CalendarMonthIcon fontSize='small' />
@@ -173,16 +184,6 @@ const Stopwatch = forwardRef((props, ref) => {
                                 />
                             </Box>
                         </Popover>
-                    </Box>
-                    {/* 経過時間と完了・キャンセルアイコン */}
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <Typography variant="h4" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                        <IconButton color="primary" onClick={() => complete(memo)} disabled={isDiscordBusy}>
-                            <CheckCircleIcon fontSize='large' />
-                        </IconButton>
-                        <IconButton color="error" onClick={cancel} disabled={isDiscordBusy}>
-                            <CancelIcon fontSize='large' />
-                        </IconButton>
                     </Box>
                 </Box>
                 <Box sx={{ position: 'relative', flex: 1, mt: 1 }}>
