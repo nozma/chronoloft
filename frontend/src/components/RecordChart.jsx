@@ -28,6 +28,7 @@ import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { scaleOrdinal } from 'd3-scale';
 import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
 import RecordFilter from './RecordFilter';
@@ -35,6 +36,7 @@ import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChartSettingsDialog from './ChartSettingsDialog';
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -192,6 +194,7 @@ function RecordChart() {
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('chart.selectedPeriod', '30d'); // デフォルトは過去30日
     const [itemLimit, setItemLimit] = useLocalStorageState('chart.itemLimit', 'unlimited');
     const [offset, setOffset] = useState(0); // ページング用オフセット
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const [periodStart, periodEnd] = useMemo(
         () => getPeriodRange(selectedPeriod, offset),
         [selectedPeriod, offset]
@@ -456,22 +459,27 @@ function RecordChart() {
 
     return (
         <Box sx={{ mb: 1 }}>
-            <Typography
-                variant='caption'
-                color='#cccccc'
-                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                onClick={() => uiDispatch({ type: 'SET_CHART_OPEN', payload: !uiState.chartOpen })}
-            >
-                Chart
-                <KeyboardArrowRightIcon
-                    fontSize='small'
-                    sx={{
-                        transition: 'transform 0.15s linear',
-                        transform: uiState.chartOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                        marginLeft: '4px'
-                    }}
-                />
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_CHART_OPEN', payload: !uiState.chartOpen })}
+                >
+                    Chart
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.chartOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
+                <IconButton size="small" onClick={() => setSettingsOpen(true)}>
+                    <SettingsIcon fontSize="small" />
+                </IconButton>
+            </Box>
             <Collapse in={uiState.chartOpen}>
                 {/* 各種コントロール */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -481,101 +489,6 @@ function RecordChart() {
                         onFilterChange={handleFilterChange}
                         records={records}
                     />
-                    {/* チャート表示設定 */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
-                        {/* 表示項目数上限 */}
-                        <TextField
-                            select
-                            label="Item Limit"
-                            size="small"
-                            value={itemLimit}
-                            onChange={(e) => setItemLimit(e.target.value)}
-                            sx={{ minWidth: 120 }}
-                        >
-                            <MenuItem value="unlimited">Unlimited</MenuItem>
-                            <MenuItem value="5">5</MenuItem>
-                            <MenuItem value="10">10</MenuItem>
-                            <MenuItem value="15">15</MenuItem>
-                        </TextField>
-                        {/* 表示期間選択 */}
-                        <TextField
-                            select
-                            label="Date Range"
-                            size="small"
-                            value={selectedPeriod}
-                            onChange={(e) => {
-                                setSelectedPeriod(e.target.value);
-                                setOffset(0);
-                                // 1 Day選択時は棒グラフに変更
-                                if (e.target.value === '1d') {
-                                    setChartType('bar');
-                                }
-                            }}
-                            sx={{ minWidth: 120 }}
-                        >
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="365d">365 Days</MenuItem>
-                            <MenuItem value="180d">180 Days</MenuItem>
-                            <MenuItem value="90d">90 Days</MenuItem>
-                            <MenuItem value="30d">30 Days</MenuItem>
-                            <MenuItem value="7d">7 Days</MenuItem>
-                            <MenuItem value="1d">1 Day</MenuItem>
-                        </TextField>
-                        {/* 折れ線グラフ・棒グラフ切り替え */}
-                        <TextField
-                            select
-                            label="Chart Type"
-                            variant="outlined"
-                            size="small"
-                            value={chartType}
-                            onChange={(e) => setChartType(e.target.value)}
-                            sx={{ minWidth: 100 }}
-                            disabled={selectedPeriod === '1d'} // 1 Day選択時は変更不可（棒グラフ固定）
-                        >
-                            <MenuItem value="line">Line</MenuItem>
-                            <MenuItem value="bar">Bar</MenuItem>
-                        </TextField>
-                        {/* x軸の集計単位切替 */}
-                        <TextField
-                            select
-                            label="Interval"
-                            size="small"
-                            value={xAxisUnit}
-                            onChange={(e) => setXAxisUnit(e.target.value)}
-                            sx={{ minWidth: 100 }}
-                        >
-                            <MenuItem value="day">Day</MenuItem>
-                            <MenuItem value="week">Week</MenuItem>
-                            <MenuItem value="month">Month</MenuItem>
-                        </TextField>
-                        {/* グループ化モード切替 */}
-                        <TextField
-                            select
-                            label="Grouping"
-                            size="small"
-                            value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value)}
-                        >
-                            <MenuItem value="group">Group</MenuItem>
-                            <MenuItem value="tag">Tag</MenuItem>
-                            <MenuItem value="activity">Activity</MenuItem>
-                            <MenuItem value="activityMemo">Activity + Memo</MenuItem>
-                        </TextField>
-                        {/* 集計単位の手動切替 */}
-                        <TextField
-                            select
-                            label="Unit"
-                            size="small"
-                            value={aggregationUnit}
-                            onChange={(e) => {
-                                setAggregationUnit(e.target.value);
-                                setIsAggregationManual(true); // ここは従来のロジックを踏襲
-                            }}
-                        >
-                            <MenuItem value="time">Time</MenuItem>
-                            <MenuItem value="count">Count</MenuItem>
-                        </TextField>
-                    </Box>
                 </Box>
                 {/* 表示期間切り替えUI */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
@@ -836,6 +749,24 @@ function RecordChart() {
                     </ResponsiveContainer>
                 )}
             </Collapse>
+            <ChartSettingsDialog
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+                itemLimit={itemLimit}
+                setItemLimit={setItemLimit}
+                selectedPeriod={selectedPeriod}
+                setSelectedPeriod={setSelectedPeriod}
+                setOffset={setOffset}
+                chartType={chartType}
+                setChartType={setChartType}
+                xAxisUnit={xAxisUnit}
+                setXAxisUnit={setXAxisUnit}
+                groupBy={groupBy}
+                setGroupBy={setGroupBy}
+                aggregationUnit={aggregationUnit}
+                setAggregationUnit={setAggregationUnit}
+                setIsAggregationManual={setIsAggregationManual}
+            />
         </Box>
     );
 }
