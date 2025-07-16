@@ -182,7 +182,7 @@ function RecordChart() {
     const { dispatch: recordListDispatch } = useRecordListState();
 
     // チャート表示用の各種状態
-    const [chartType, setChartType] = useLocalStorageState('chart.chartType', 'line');; // 'line' または 'bar'
+    const [chartType, setChartType] = useLocalStorageState('chart.chartType', 'line'); // 'line' または 'bar'
     const [xAxisUnit, setXAxisUnit] = useLocalStorageState('chart.xAxisUnit', 'day'); // 'day' / 'week' / 'month'
     const [groupBy, setGroupBy] = useLocalStorageState('chart.groupBy', 'group'); // 'group' / 'tag' / 'activity'
     // 集計単位（"time" または "count"）の状態。自動判定と手動切替の両方をサポート
@@ -190,6 +190,7 @@ function RecordChart() {
     const [isAggregationManual, setIsAggregationManual] = useLocalStorageState('chart.aggregationManual', false);
     // 集計期間
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('chart.selectedPeriod', '30d'); // デフォルトは過去30日
+    const [itemLimit, setItemLimit] = useLocalStorageState('chart.itemLimit', 'unlimited');
     const [offset, setOffset] = useState(0); // ページング用オフセット
     const [periodStart, periodEnd] = useMemo(
         () => getPeriodRange(selectedPeriod, offset),
@@ -253,40 +254,8 @@ function RecordChart() {
         return aggregated;
     }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType]);
 
-    // データの最大値を取得
-    const maxValue = useMemo(() => {
-        if (!chartData || chartData.length === 0) return 0;
-        let maxVal = 0;
-        chartData.forEach((row) => {
-            Object.keys(row).forEach((key) => {
-                if (key === 'date') return; // date 以外の値を対象に最大値を計算
-                if (key === 'dateValue') return;
-                const val = row[key];
-                if (typeof val === 'number' && val > maxVal) {
-                    maxVal = val;
-                }
-            });
-        });
-        return maxVal;
-    }, [chartData]);
-
-    // 1 Day表示でlegendに時間を表示するための累計値
-    const cumulativeMap = useMemo(() => {
-        if (selectedPeriod === '1d' && chartData.length > 0) {
-            const entry = chartData[0];
-            const map = {};
-            Object.keys(entry).forEach(key => {
-                if (key !== 'date' && key !== 'dateValue') {
-                    map[key] = entry[key];
-                }
-            });
-            return map;
-        }
-        return {};
-    }, [selectedPeriod, chartData]);
-
-    // 表示範囲の累積合計値で降順ソートしたキー一覧
-    const sortedKeys = useMemo(() => {
+    // 表示範囲の累積合計値で降順ソートしたエントリ
+    const sortedEntries = useMemo(() => {
         const totals = {};
         chartData.forEach(item => {
             Object.keys(item).forEach(key => {
@@ -296,9 +265,50 @@ function RecordChart() {
             });
         });
         return Object.entries(totals)
-            .sort(([, a], [, b]) => b - a)   // 値を降順にソート
-            .map(([key]) => key);
+            .map(([key, total]) => ({ key, total }))
+            .sort((a, b) => b.total - a.total);
     }, [chartData]);
+
+    const sortedKeys = useMemo(() => sortedEntries.map(e => e.key), [sortedEntries]);
+
+    const visibleKeys = useMemo(() => {
+        if (itemLimit === 'unlimited') return sortedKeys;
+        const limit = parseInt(itemLimit, 10);
+        if (sortedEntries.length <= limit) return sortedKeys;
+        const threshold = sortedEntries[limit - 1].total;
+        return sortedEntries
+            .filter(e => e.total >= threshold)
+            .map(e => e.key);
+    }, [sortedEntries, itemLimit]);
+
+    // データの最大値を取得
+    const maxValue = useMemo(() => {
+        if (!chartData || chartData.length === 0) return 0;
+        let maxVal = 0;
+        chartData.forEach((row) => {
+            visibleKeys.forEach((key) => {
+                const val = row[key];
+                if (typeof val === 'number' && val > maxVal) {
+                    maxVal = val;
+                }
+            });
+        });
+        return maxVal;
+    }, [chartData, visibleKeys]);
+
+    // 1 Day表示でlegendに時間を表示するための累計値
+    const cumulativeMap = useMemo(() => {
+        if (selectedPeriod === '1d' && chartData.length > 0) {
+            const entry = chartData[0];
+            const map = {};
+            visibleKeys.forEach(key => {
+                map[key] = entry[key] ?? 0;
+            });
+            return map;
+        }
+        return {};
+    }, [selectedPeriod, chartData, visibleKeys]);
+
 
     // ツールチップ用の数値フォーマット
     const tooltipValueFormatter = (value) => {
@@ -347,18 +357,8 @@ function RecordChart() {
     const theme = useTheme();
     // テーマに応じたパレットを選択
     const colorArray = theme.palette.mode === 'light' ? schemeCategory10 : schemeSet3;
-    // 全系列（集計グループ）のキーを算出
-    const keys = useMemo(() => {
-        if (chartData.length === 0) return [];
-        // すべてのオブジェクトから union を作成
-        const allKeys = new Set();
-        chartData.forEach(item => {
-            Object.keys(item).forEach(key => {
-                if (key !== 'date' && key !== 'date') allKeys.add(key);
-            });
-        });
-        return Array.from(allKeys);
-    }, [chartData]);
+    // 表示対象のキー
+    const keys = useMemo(() => visibleKeys, [visibleKeys]);
 
     // d3 の ordinal scale で色を割り当てる
     const colorScale = useMemo(() => {
@@ -381,14 +381,14 @@ function RecordChart() {
     // Line Chartのラベル関連
     // 最も長いラベルの幅を計算する
     const longestLabelWidth = useMemo(() => {
-        if (!keys || keys.length === 0) return 0; // fallback（初回表示時はkeysが空のため）
+        if (!visibleKeys || visibleKeys.length === 0) return 0; // fallback（初回表示時はkeysが空のため）
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         ctx.font = '12px sans-serif';
 
-        return Math.max(...keys.map(k => ctx.measureText(k).width)) + 12;
-    }, [chartData]);
+        return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
+    }, [visibleKeys]);
 
     // ツールチップ用カスタムコンポーネント
     const CustomTooltip = ({ active, payload, label }) => {
@@ -483,6 +483,20 @@ function RecordChart() {
                     />
                     {/* チャート表示設定 */}
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
+                        {/* 表示項目数上限 */}
+                        <TextField
+                            select
+                            label="Item Limit"
+                            size="small"
+                            value={itemLimit}
+                            onChange={(e) => setItemLimit(e.target.value)}
+                            sx={{ minWidth: 120 }}
+                        >
+                            <MenuItem value="unlimited">Unlimited</MenuItem>
+                            <MenuItem value="5">5</MenuItem>
+                            <MenuItem value="10">10</MenuItem>
+                            <MenuItem value="15">15</MenuItem>
+                        </TextField>
                         {/* 表示期間選択 */}
                         <TextField
                             select
@@ -645,7 +659,7 @@ function RecordChart() {
 
                                         if (!xScale || !yScale) return null;
 
-                                        const labels = keys.map(key => {
+                                        const labels = visibleKeys.map(key => {
                                             const last = chartData[chartData.length - 1];
 
                                             return {
@@ -739,18 +753,15 @@ function RecordChart() {
                                         );
                                     }}
                                 />
-                                {Object.keys(chartData[0] || {})
-                                    .filter(key => key !== 'date')
-                                    .filter(key => key !== 'dateValue')
-                                    .map((key, index) => (
-                                        <Line
-                                            key={key}
-                                            type="stepAfter"
-                                            dataKey={key}
-                                            stroke={colorScale(key)}
-                                            dot={false}
-                                        />
-                                    ))}
+                                {visibleKeys.map(key => (
+                                    <Line
+                                        key={key}
+                                        type="stepAfter"
+                                        dataKey={key}
+                                        stroke={colorScale(key)}
+                                        dot={false}
+                                    />
+                                ))}
                             </LineChart>
                         ) : (
                             <BarChart
@@ -817,7 +828,7 @@ function RecordChart() {
                                     <Legend />
                                 )}
                                 <Tooltip content={<CustomTooltip />} />
-                                {sortedKeys.map(key => (
+                                {visibleKeys.map(key => (
                                     <Bar key={key} dataKey={key} stackId="a" fill={colorScale(key)} />
                                 ))}
                             </BarChart>
