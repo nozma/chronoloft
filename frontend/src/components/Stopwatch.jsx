@@ -165,10 +165,10 @@ const Stopwatch = forwardRef((props, ref) => {
                             <CalendarMonthIcon fontSize='small' />
                         </IconButton>
                         <Button size="small" onClick={handleFillPrevEnd}>Fill</Button>
-                        <IconButton size="small" onClick={() => adjustStartTime(-5)}>-5</IconButton>
-                        <IconButton size="small" onClick={() => adjustStartTime(-1)}>-1</IconButton>
-                        <IconButton size="small" onClick={() => adjustStartTime(1)}>+1</IconButton>
-                        <IconButton size="small" onClick={() => adjustStartTime(5)}>+5</IconButton>
+                        <IconButton size="small" sx={{ p: 0.25, fontSize: '0.75rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
+                        <IconButton size="small" sx={{ p: 0.25, fontSize: '0.75rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
+                        <IconButton size="small" sx={{ p: 0.25, fontSize: '0.75rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
+                        <IconButton size="small" sx={{ p: 0.25, fontSize: '0.75rem' }} onClick={() => adjustStartTime(5)}>+5</IconButton>
                         <Popover
                             open={Boolean(anchorEl)}
                             anchorEl={anchorEl}
