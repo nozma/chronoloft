@@ -112,8 +112,8 @@ const Stopwatch = forwardRef((props, ref) => {
     const total7Display = total7d + runningMinutes;
     const total30Display = total30d + runningMinutes;
 
-    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} / 7d`;
-    const totalLabel30 = `${Math.floor(total30Display / 60)} h / 30d`;
+    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} /7d`;
+    const totalLabel30 = `${Math.floor(total30Display / 60)}:${String((total30Display % 60).toFixed(0)).padStart(2, '0')} /30d`;
 
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
@@ -177,16 +177,16 @@ const Stopwatch = forwardRef((props, ref) => {
                     </Box>
                     {/* 経過時間と完了・キャンセルアイコン */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                        <Typography variant="h5" sx={{ mr: 2 }}>{formatTime(displayTime)}</Typography>
-                        <Typography variant="caption" color="#cccccc" sx={{ mr: 2 }}>
-                            {`${totalLabel7}　${totalLabel30}`}
-                        </Typography>
+                        <Typography variant="h5" sx={{ mr: 1 }}>{formatTime(displayTime)}</Typography>
                         <IconButton color="primary" size="small" onClick={() => complete(memo)} disabled={isDiscordBusy}>
                             <CheckCircleIcon fontSize='medium' />
                         </IconButton>
                         <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                             <CancelIcon fontSize='medium' />
                         </IconButton>
+                        <Typography variant="body2" color="#999" sx={{ ml: 1 }}>
+                            {`${totalLabel7}　${totalLabel30}`}
+                        </Typography>
                     </Box>
                     <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1">Start Time: {formattedStartTime}</Typography>
