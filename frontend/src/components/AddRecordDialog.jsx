@@ -1,5 +1,5 @@
 // AddRecordDialog.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -24,7 +24,9 @@ function AddRecordDialog({
     initialDate,
     initialMemo = '',
     isEdit = false,
-    onDelete
+    onDelete,
+    autoFocusMemo = false,
+    submitOnCtrlEnter = false
 }) {
     const { activities } = useActivities();
     const { records } = useRecords();
@@ -34,6 +36,7 @@ function AddRecordDialog({
     const [startTime, setStartTime] = useState(''); // minutes用: 開始日時
     const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
     const [memo, setMemo] = useState(initialMemo || '');
+    const memoRef = useRef(null);
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
     const compatibleActivities = activities.filter(a => a.unit === activity.unit);
@@ -71,6 +74,12 @@ function AddRecordDialog({
         }
         setMemo(initialMemo ?? '');
     }, [activity, initialValue, initialDate, initialMemo]);
+
+    useEffect(() => {
+        if (open && autoFocusMemo && memoRef.current) {
+            memoRef.current.focus();
+        }
+    }, [open, autoFocusMemo]);
 
     // 保存時処理
     const handleSubmit = () => {
@@ -132,6 +141,13 @@ function AddRecordDialog({
         onClose();
     };
 
+    const handleKeyDown = (e) => {
+        if (submitOnCtrlEnter && e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit();
+        }
+    };
+
     // 時刻を ±n 分ずらす汎用関数
     const adjustTime = (timeStr, delta, setter) => {
         const dt = DateTime.fromFormat(timeStr, "yyyy-MM-dd'T'HH:mm");
@@ -182,7 +198,7 @@ function AddRecordDialog({
 
 
     return (
-        <Dialog open={open} onClose={handleClose}>
+        <Dialog open={open} onClose={handleClose} onKeyDown={handleKeyDown}>
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
             <DialogContent>
                 <TextField
@@ -228,6 +244,7 @@ function AddRecordDialog({
                             fullWidth
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
+                            inputRef={memoRef}
                             sx={{ mt: 2 }}
                         />
                     </>
@@ -296,6 +313,7 @@ function AddRecordDialog({
                             fullWidth
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
+                            inputRef={memoRef}
                             sx={{ mt: 2 }}
                         />
                     </>
