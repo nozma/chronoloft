@@ -64,8 +64,16 @@ const Stopwatch = forwardRef((props, ref) => {
     };
 
     const adjustStartTime = (delta) => {
-        const dt = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm");
-        if (!dt.isValid) return;
+        let dt = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm");
+        if (!dt.isValid) {
+            // 初期値がセットされていない場合は currentStartTime を基準にする
+            if (currentStartTime) {
+                dt = DateTime.fromMillis(currentStartTime);
+                setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
+            } else {
+                return; // 基準が無ければ何もしない
+            }
+        }
         const newDt = dt.plus({ minutes: delta });
         setEditedStartTime(newDt.toFormat("yyyy-MM-dd'T'HH:mm"));
         try {
