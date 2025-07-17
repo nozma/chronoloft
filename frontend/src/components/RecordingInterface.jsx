@@ -318,6 +318,7 @@ function RecordingInterface() {
             {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
                 <AddRecordDialog
                     open={true}
+                    autoFocusMemo={Boolean(pendingRecord)}
                     onClose={() => {
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
                         setRecordDialogInitialDate(null);
