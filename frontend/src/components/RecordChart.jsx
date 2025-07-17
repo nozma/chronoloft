@@ -476,7 +476,11 @@ function RecordChart() {
                         }}
                     />
                 </Typography>
-                <IconButton size="small" onClick={() => setSettingsOpen(true)}>
+                <IconButton
+                    size="small"
+                    aria-label="Open chart settings"
+                    onClick={() => setSettingsOpen(true)}
+                >
                     <SettingsIcon fontSize="small" />
                 </IconButton>
             </Box>
