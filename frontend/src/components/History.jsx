@@ -1,13 +1,16 @@
-import React from 'react';
-import { Box, Typography } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, IconButton } from '@mui/material';
 import RecordList from './RecordList';
 import RecordHeatmap from './RecordHeatmap';
 import RecordCalendar from './RecordCalendar';
 import RecordChart from './RecordChart';
 import { useUI } from '../contexts/UIContext';
+import SettingsIcon from '@mui/icons-material/Settings';
+import HistoryDisplayDialog from './HistoryDisplayDialog';
 
 function History() {
-    const { dispatch: uiDispatch } = useUI();
+    const { state: uiState, dispatch: uiDispatch } = useUI();
+    const [settingsOpen, setSettingsOpen] = useState(false);
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
@@ -51,11 +54,16 @@ function History() {
                 >
                     Close All
                 </Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                <IconButton size="small" onClick={() => setSettingsOpen(true)}>
+                    <SettingsIcon fontSize='small' />
+                </IconButton>
             </Box>
-            <RecordChart />
-            <RecordHeatmap />
-            <RecordCalendar />
-            <RecordList />
+            {uiState.showChart && <RecordChart />}
+            {uiState.showHeatmap && <RecordHeatmap />}
+            {uiState.showCalendar && <RecordCalendar />}
+            {uiState.showRecords && <RecordList />}
+            <HistoryDisplayDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </Box>
     );
 }
