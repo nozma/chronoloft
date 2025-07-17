@@ -25,8 +25,7 @@ function AddRecordDialog({
     initialMemo = '',
     isEdit = false,
     onDelete,
-    autoFocusMemo = false,
-    submitOnCtrlEnter = false
+    autoFocusMemo = false
 }) {
     const { activities } = useActivities();
     const { records } = useRecords();
@@ -142,7 +141,7 @@ function AddRecordDialog({
     };
 
     const handleKeyDown = (e) => {
-        if (submitOnCtrlEnter && e.ctrlKey && e.key === 'Enter') {
+        if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             handleSubmit();
         }
@@ -245,6 +244,7 @@ function AddRecordDialog({
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
                             inputRef={memoRef}
+                            autoFocus={autoFocusMemo}
                             sx={{ mt: 2 }}
                         />
                     </>
@@ -314,6 +314,7 @@ function AddRecordDialog({
                             value={memo}
                             onChange={(e) => setMemo(e.target.value)}
                             inputRef={memoRef}
+                            autoFocus={autoFocusMemo}
                             sx={{ mt: 2 }}
                         />
                     </>

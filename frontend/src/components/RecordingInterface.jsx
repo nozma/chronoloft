@@ -319,7 +319,6 @@ function RecordingInterface() {
                 <AddRecordDialog
                     open={true}
                     autoFocusMemo={Boolean(pendingRecord)}
-                    submitOnCtrlEnter={Boolean(pendingRecord)}
                     onClose={() => {
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
                         setRecordDialogInitialDate(null);
