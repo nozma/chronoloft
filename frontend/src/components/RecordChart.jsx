@@ -191,6 +191,7 @@ function RecordChart() {
     // 集計期間
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('chart.selectedPeriod', '30d'); // デフォルトは過去30日
     const [itemLimit, setItemLimit] = useLocalStorageState('chart.itemLimit', 'unlimited');
+    const [settingsOpen, setSettingsOpen] = useLocalStorageState('chart.settingsOpen', false);
     const [offset, setOffset] = useState(0); // ページング用オフセット
     const [periodStart, periodEnd] = useMemo(
         () => getPeriodRange(selectedPeriod, offset),
@@ -482,7 +483,11 @@ function RecordChart() {
                         records={records}
                     />
                     {/* チャート表示設定 */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'flex-end' }}>
+                    {settingsOpen ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+                            <IconButton size="small" onClick={() => setSettingsOpen(false)}>
+                                <ChevronRightIcon fontSize="small" />
+                            </IconButton>
                         {/* 表示項目数上限 */}
                         <TextField
                             select
@@ -575,7 +580,12 @@ function RecordChart() {
                             <MenuItem value="time">Time</MenuItem>
                             <MenuItem value="count">Count</MenuItem>
                         </TextField>
-                    </Box>
+                        </Box>
+                    ) : (
+                        <IconButton size="small" onClick={() => setSettingsOpen(true)}>
+                            <ChevronLeftIcon fontSize="small" />
+                        </IconButton>
+                    )}
                 </Box>
                 {/* 表示期間切り替えUI */}
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
