@@ -12,6 +12,10 @@ export const initialUIState = {
     heatmapOpen: true,
     calendarOpen: true,
     recordsOpen: true,
+    showChart: true,
+    showHeatmap: true,
+    showCalendar: true,
+    showRecords: true,
 };
 
 export function uiReducer(state, action) {
@@ -44,6 +48,15 @@ export function uiReducer(state, action) {
             return { ...state, calendarOpen: action.payload };
         case 'SET_RECORDS_OPEN':
             return { ...state, recordsOpen: action.payload };
+        // History項目の表示有無
+        case 'SET_SHOW_CHART':
+            return { ...state, showChart: action.payload };
+        case 'SET_SHOW_HEATMAP':
+            return { ...state, showHeatmap: action.payload };
+        case 'SET_SHOW_CALENDAR':
+            return { ...state, showCalendar: action.payload };
+        case 'SET_SHOW_RECORDS':
+            return { ...state, showRecords: action.payload };
         // 一括変更
         case 'UPDATE_UI':
             return { ...state, ...action.payload };
