@@ -97,23 +97,31 @@ const Stopwatch = forwardRef((props, ref) => {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
 
-    // 7日/30日累積時間を計算
-    const { total7d, total30d } = useMemo(() => {
+    // 7日/30日累積時間と1つ前の期間の累積時間を計算
+    const { total7d, total30d, prev7d, prev30d } = useMemo(() => {
         const now = new Date();
         const past30 = new Date(now);
         past30.setDate(now.getDate() - 30);
         const past7 = new Date(now);
         past7.setDate(now.getDate() - 7);
+        const prev30Start = new Date(past30);
+        prev30Start.setDate(prev30Start.getDate() - 30);
+        const prev7Start = new Date(past7);
+        prev7Start.setDate(prev7Start.getDate() - 7);
 
         let sum7 = 0;
         let sum30 = 0;
+        let prevSum7 = 0;
+        let prevSum30 = 0;
         for (const rec of records) {
             if (rec.activity_id !== props.activityId) continue;
             const created = new Date(rec.created_at);
             if (created >= past30) sum30 += rec.value;
             if (created >= past7) sum7 += rec.value;
+            if (created >= prev7Start && created < past7) prevSum7 += rec.value;
+            if (created >= prev30Start && created < past30) prevSum30 += rec.value;
         }
-        return { total7d: sum7, total30d: sum30 };
+        return { total7d: sum7, total30d: sum30, prev7d: prevSum7, prev30d: prevSum30 };
     }, [records, props.activityId]);
 
     const runningMinutes = displayTime / 60000;
@@ -122,6 +130,18 @@ const Stopwatch = forwardRef((props, ref) => {
 
     const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} /7d`;
     const totalLabel30 = `${Math.floor(total30Display / 60)}:${String((total30Display % 60).toFixed(0)).padStart(2, '0')} /30d`;
+
+    const diff7 = Math.round(total7Display - prev7d);
+    const diff30 = Math.round(total30Display - prev30d);
+    const formatDiff = (min) => {
+        const sign = min > 0 ? '+' : min < 0 ? '-' : '';
+        const abs = Math.abs(min);
+        const h = Math.floor(abs / 60);
+        const m = Math.floor(abs % 60);
+        return `${sign}${h}:${String(m).padStart(2, '0')}`;
+    };
+    const diffLabel7 = formatDiff(diff7);
+    const diffLabel30 = formatDiff(diff30);
 
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
@@ -192,9 +212,16 @@ const Stopwatch = forwardRef((props, ref) => {
                         <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                             <CancelIcon fontSize='medium' />
                         </IconButton>
-                        <Typography variant="body2" color="#999" sx={{ ml: 1 }}>
-                            {`${totalLabel7}　${totalLabel30}`}
-                        </Typography>
+                        <Box sx={{ ml: 1, display: 'flex', gap: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel7}</Typography>
+                                <Typography variant="caption" sx={{ lineHeight: 1, mt: 0.5, color: diff7 > 0 ? 'green' : diff7 < 0 ? 'red' : undefined }}>{diffLabel7}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel30}</Typography>
+                                <Typography variant="caption" sx={{ lineHeight: 1, mt: 0.5, color: diff30 > 0 ? 'green' : diff30 < 0 ? 'red' : undefined }}>{diffLabel30}</Typography>
+                            </Box>
+                        </Box>
                     </Box>
                     <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1">Start Time: {formattedStartTime}</Typography>
