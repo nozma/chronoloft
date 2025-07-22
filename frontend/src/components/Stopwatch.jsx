@@ -214,12 +214,12 @@ const Stopwatch = forwardRef((props, ref) => {
                         </IconButton>
                         <Box sx={{ ml: 1, display: 'flex', gap: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <Typography variant="body2" color="#999">{totalLabel7}</Typography>
-                                <Typography variant="caption" sx={{ color: diff7 > 0 ? 'green' : diff7 < 0 ? 'red' : undefined }}>{diffLabel7}</Typography>
+                                <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel7}</Typography>
+                                <Typography variant="caption" sx={{ lineHeight: 1, mt: -0.25, color: diff7 > 0 ? 'green' : diff7 < 0 ? 'red' : undefined }}>{diffLabel7}</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <Typography variant="body2" color="#999">{totalLabel30}</Typography>
-                                <Typography variant="caption" sx={{ color: diff30 > 0 ? 'green' : diff30 < 0 ? 'red' : undefined }}>{diffLabel30}</Typography>
+                                <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel30}</Typography>
+                                <Typography variant="caption" sx={{ lineHeight: 1, mt: -0.25, color: diff30 > 0 ? 'green' : diff30 < 0 ? 'red' : undefined }}>{diffLabel30}</Typography>
                             </Box>
                         </Box>
                     </Box>
