@@ -212,15 +212,15 @@ const Stopwatch = forwardRef((props, ref) => {
                         <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                             <CancelIcon fontSize='medium' />
                         </IconButton>
-                        <Box sx={{ ml: 1, display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant="body2" color="#999">
-                                {`${totalLabel7}　${totalLabel30}`}
-                            </Typography>
-                            <Typography variant="caption">
-                                <span style={{ color: diff7 > 0 ? 'green' : diff7 < 0 ? 'red' : undefined }}>{diffLabel7}</span>
-                                {'\u3000'}
-                                <span style={{ color: diff30 > 0 ? 'green' : diff30 < 0 ? 'red' : undefined }}>{diffLabel30}</span>
-                            </Typography>
+                        <Box sx={{ ml: 1, display: 'flex', gap: 2 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <Typography variant="body2" color="#999">{totalLabel7}</Typography>
+                                <Typography variant="caption" sx={{ color: diff7 > 0 ? 'green' : diff7 < 0 ? 'red' : undefined }}>{diffLabel7}</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                <Typography variant="body2" color="#999">{totalLabel30}</Typography>
+                                <Typography variant="caption" sx={{ color: diff30 > 0 ? 'green' : diff30 < 0 ? 'red' : undefined }}>{diffLabel30}</Typography>
+                            </Box>
                         </Box>
                     </Box>
                     <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
