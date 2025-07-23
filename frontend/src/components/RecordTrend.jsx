@@ -193,10 +193,10 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Increase Ranking</TableCell>
-                                    <TableCell onClick={() => setIncSortBy('7day')} sx={headerStyle}>
+                                    <TableCell onClick={() => setIncSortBy('7day')} sx={headerStyle} align='center'>
                                         7day {incSortBy === '7day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
-                                    <TableCell onClick={() => setIncSortBy('30day')} sx={headerStyle}>
+                                    <TableCell onClick={() => setIncSortBy('30day')} sx={headerStyle} align='center'>
                                         30day {incSortBy === '30day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                 </TableRow>
@@ -206,6 +206,7 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell
+                                            align='center'
                                             sx={(theme) => ({
                                                 color:
                                                     row.diff7 > 0
@@ -225,6 +226,7 @@ function RecordTrend() {
                                             ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
                                         <TableCell
+                                            align='center'
                                             sx={(theme) => ({
                                                 color:
                                                     row.diff30 > 0
@@ -254,6 +256,7 @@ function RecordTrend() {
                             onPageChange={(e, p) => setIncPage(p)}
                             rowsPerPage={10}
                             rowsPerPageOptions={[10]}
+                            sx={{ '& .MuiToolbar-root': { minHeight: 36, height: 36 } }}
                         />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
@@ -261,10 +264,10 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Decrease Ranking</TableCell>
-                                    <TableCell onClick={() => setDecSortBy('7day')} sx={headerStyle}>
+                                    <TableCell onClick={() => setDecSortBy('7day')} sx={headerStyle} align='center'>
                                         7day {decSortBy === '7day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
-                                    <TableCell onClick={() => setDecSortBy('30day')} sx={headerStyle}>
+                                    <TableCell onClick={() => setDecSortBy('30day')} sx={headerStyle} align='center'>
                                         30day {decSortBy === '30day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                 </TableRow>
@@ -274,6 +277,7 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell
+                                            align='center'
                                             sx={(theme) => ({
                                                 color:
                                                     row.diff7 > 0
@@ -293,6 +297,7 @@ function RecordTrend() {
                                             ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
                                         <TableCell
+                                            align='center'
                                             sx={(theme) => ({
                                                 color:
                                                     row.diff30 > 0
@@ -322,6 +327,7 @@ function RecordTrend() {
                             onPageChange={(e, p) => setDecPage(p)}
                             rowsPerPage={10}
                             rowsPerPageOptions={[10]}
+                            sx={{ '& .MuiToolbar-root': { minHeight: 36, height: 36 } }}
                         />
                     </Box>
                 </Box>

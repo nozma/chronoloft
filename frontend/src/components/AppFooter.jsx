@@ -17,7 +17,7 @@ function AppFooter() {
             component="footer"
             sx={{
                 mt: 4,                 // 本文と分けるマージン
-                py: 2,
+                py: 1,
                 borderTop: 1,
                 borderColor: 'divider',
                 display: 'flex',
