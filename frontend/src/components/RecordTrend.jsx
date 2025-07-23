@@ -189,16 +189,10 @@ function RecordTrend() {
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                        <Typography
-                            variant='subtitle2'
-                            sx={(theme) => ({ px: 1, py: 0.5, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}
-                        >
-                            Increase Ranking
-                        </Typography>
                         <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell />
+                                    <TableCell>Increase Ranking</TableCell>
                                     <TableCell onClick={() => setIncSortBy('7day')} sx={headerStyle}>
                                         7day {incSortBy === '7day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
@@ -212,10 +206,16 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            {formatDiff(row.diff7, row.unit)}
+                                            {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            <br />
+                                            ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
                                         <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            {formatDiff(row.diff30, row.unit)}
+                                            {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            <br />
+                                            ({formatRate(row.total30, row.prev30)})
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -231,16 +231,10 @@ function RecordTrend() {
                         />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                        <Typography
-                            variant='subtitle2'
-                            sx={(theme) => ({ px: 1, py: 0.5, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}
-                        >
-                            Decrease Ranking
-                        </Typography>
                         <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell />
+                                    <TableCell>Decrease Ranking</TableCell>
                                     <TableCell onClick={() => setDecSortBy('7day')} sx={headerStyle}>
                                         7day {decSortBy === '7day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
@@ -254,10 +248,16 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            {formatDiff(row.diff7, row.unit)}
+                                            {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            <br />
+                                            ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
                                         <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            {formatDiff(row.diff30, row.unit)}
+                                            {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                            <br />
+                                            ({formatRate(row.total30, row.prev30)})
                                         </TableCell>
                                     </TableRow>
                                 ))}
