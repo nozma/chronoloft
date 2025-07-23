@@ -13,6 +13,10 @@ import {
     MenuItem
 } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useUI } from '../contexts/UIContext';
@@ -184,16 +188,22 @@ function RecordTrend() {
                     </TextField>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Box sx={{ flex: 1, minWidth: 320 }}>
-                        <Table size='small'>
-                            <TableHead>
+                    <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                        <Typography
+                            variant='subtitle2'
+                            sx={(theme) => ({ px: 1, py: 0.5, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}
+                        >
+                            Increase Ranking
+                        </Typography>
+                        <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
+                            <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell>項目名</TableCell>
+                                    <TableCell />
                                     <TableCell onClick={() => setIncSortBy('7day')} sx={headerStyle}>
-                                        7day {incSortBy === '7day' ? '↓' : ''}
+                                        7day {incSortBy === '7day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                     <TableCell onClick={() => setIncSortBy('30day')} sx={headerStyle}>
-                                        30day {incSortBy === '30day' ? '↓' : ''}
+                                        30day {incSortBy === '30day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                 </TableRow>
                             </TableHead>
@@ -202,10 +212,10 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? '↗' : row.diff7 < 0 ? '↘' : ''}
+                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                         </TableCell>
                                         <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? '↗' : row.diff30 < 0 ? '↘' : ''}
+                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -220,16 +230,22 @@ function RecordTrend() {
                             rowsPerPageOptions={[10]}
                         />
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 320 }}>
-                        <Table size='small'>
-                            <TableHead>
+                    <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                        <Typography
+                            variant='subtitle2'
+                            sx={(theme) => ({ px: 1, py: 0.5, backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}
+                        >
+                            Decrease Ranking
+                        </Typography>
+                        <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
+                            <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell>項目名</TableCell>
+                                    <TableCell />
                                     <TableCell onClick={() => setDecSortBy('7day')} sx={headerStyle}>
-                                        7day {decSortBy === '7day' ? '↑' : ''}
+                                        7day {decSortBy === '7day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                     <TableCell onClick={() => setDecSortBy('30day')} sx={headerStyle}>
-                                        30day {decSortBy === '30day' ? '↑' : ''}
+                                        30day {decSortBy === '30day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
                                     </TableCell>
                                 </TableRow>
                             </TableHead>
@@ -238,10 +254,10 @@ function RecordTrend() {
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
                                         <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? '↗' : row.diff7 < 0 ? '↘' : ''}
+                                            {formatDiff(row.diff7, row.unit)} ({formatRate(row.total7, row.prev7)}){row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                         </TableCell>
                                         <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
-                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? '↗' : row.diff30 < 0 ? '↘' : ''}
+                                            {formatDiff(row.diff30, row.unit)} ({formatRate(row.total30, row.prev30)}){row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                         </TableCell>
                                     </TableRow>
                                 ))}
