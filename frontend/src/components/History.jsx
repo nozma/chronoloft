@@ -4,6 +4,7 @@ import RecordList from './RecordList';
 import RecordHeatmap from './RecordHeatmap';
 import RecordCalendar from './RecordCalendar';
 import RecordChart from './RecordChart';
+import RecordTrend from './RecordTrend';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import HistoryDisplayDialog from './HistoryDisplayDialog';
@@ -15,6 +16,7 @@ function History() {
     const componentsMap = {
         chart: uiState.showChart ? <RecordChart key="chart" /> : null,
         heatmap: uiState.showHeatmap ? <RecordHeatmap key="heatmap" /> : null,
+        trend: uiState.showTrend ? <RecordTrend key="trend" /> : null,
         calendar: uiState.showCalendar ? <RecordCalendar key="calendar" /> : null,
         records: uiState.showRecords ? <RecordList key="records" /> : null,
     };
@@ -36,6 +38,7 @@ function History() {
                                 chartOpen: true,
                                 recordsOpen: true,
                                 heatmapOpen: true,
+                                trendOpen: true,
                                 calendarOpen: true,
                             }
                         })
@@ -54,6 +57,7 @@ function History() {
                                 chartOpen: false,
                                 recordsOpen: false,
                                 heatmapOpen: false,
+                                trendOpen: false,
                                 calendarOpen: false,
                             }
                         })

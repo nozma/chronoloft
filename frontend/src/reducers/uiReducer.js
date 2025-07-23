@@ -1,6 +1,7 @@
 export const DEFAULT_HISTORY_ORDER = [
     'chart',
     'heatmap',
+    'trend',
     'calendar',
     'records',
 ];
@@ -19,10 +20,12 @@ export const initialUIState = {
     heatmapOpen: true,
     calendarOpen: true,
     recordsOpen: true,
+    trendOpen: true,
     showChart: true,
     showHeatmap: true,
     showCalendar: true,
     showRecords: true,
+    showTrend: true,
     historyOrder: [...DEFAULT_HISTORY_ORDER],
 };
 
@@ -56,6 +59,8 @@ export function uiReducer(state, action) {
             return { ...state, calendarOpen: action.payload };
         case 'SET_RECORDS_OPEN':
             return { ...state, recordsOpen: action.payload };
+        case 'SET_TREND_OPEN':
+            return { ...state, trendOpen: action.payload };
         // History項目の表示有無
         case 'SET_SHOW_CHART':
             return { ...state, showChart: action.payload };
@@ -65,6 +70,8 @@ export function uiReducer(state, action) {
             return { ...state, showCalendar: action.payload };
         case 'SET_SHOW_RECORDS':
             return { ...state, showRecords: action.payload };
+        case 'SET_SHOW_TREND':
+            return { ...state, showTrend: action.payload };
         case 'SET_HISTORY_ORDER':
             return { ...state, historyOrder: action.payload };
         // 一括変更
