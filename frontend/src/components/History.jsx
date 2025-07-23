@@ -11,6 +11,14 @@ import HistoryDisplayDialog from './HistoryDisplayDialog';
 function History() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const componentsMap = {
+        chart: uiState.showChart ? <RecordChart key="chart" /> : null,
+        heatmap: uiState.showHeatmap ? <RecordHeatmap key="heatmap" /> : null,
+        calendar: uiState.showCalendar ? <RecordCalendar key="calendar" /> : null,
+        records: uiState.showRecords ? <RecordList key="records" /> : null,
+    };
+
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
@@ -59,10 +67,7 @@ function History() {
                     <SettingsIcon fontSize='small' />
                 </IconButton>
             </Box>
-            {uiState.showChart && <RecordChart />}
-            {uiState.showHeatmap && <RecordHeatmap />}
-            {uiState.showCalendar && <RecordCalendar />}
-            {uiState.showRecords && <RecordList />}
+            {uiState.historyOrder.map(key => componentsMap[key])}
             <HistoryDisplayDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
         </Box>
     );

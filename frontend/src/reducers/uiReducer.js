@@ -1,3 +1,10 @@
+export const DEFAULT_HISTORY_ORDER = [
+    'chart',
+    'heatmap',
+    'calendar',
+    'records',
+];
+
 export const initialUIState = {
     showGrid: false,
     groupDialogOpen: false,
@@ -16,6 +23,7 @@ export const initialUIState = {
     showHeatmap: true,
     showCalendar: true,
     showRecords: true,
+    historyOrder: [...DEFAULT_HISTORY_ORDER],
 };
 
 export function uiReducer(state, action) {
@@ -57,6 +65,8 @@ export function uiReducer(state, action) {
             return { ...state, showCalendar: action.payload };
         case 'SET_SHOW_RECORDS':
             return { ...state, showRecords: action.payload };
+        case 'SET_HISTORY_ORDER':
+            return { ...state, historyOrder: action.payload };
         // 一括変更
         case 'UPDATE_UI':
             return { ...state, ...action.payload };
