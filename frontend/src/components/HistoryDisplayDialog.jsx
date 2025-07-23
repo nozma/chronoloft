@@ -12,6 +12,9 @@ import {
     Box,
 } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { DEFAULT_HISTORY_ORDER } from '../reducers/uiReducer';
 
 const DEFAULT_VISIBILITY = {
     showChart: true,
@@ -27,6 +30,39 @@ function HistoryDisplayDialog({ open, onClose }) {
     const [tmpShowHeatmap, setTmpShowHeatmap] = useState(uiState.showHeatmap);
     const [tmpShowCalendar, setTmpShowCalendar] = useState(uiState.showCalendar);
     const [tmpShowRecords, setTmpShowRecords] = useState(uiState.showRecords);
+    const [tmpOrder, setTmpOrder] = useState(uiState.historyOrder);
+
+    const labelMap = {
+        chart: 'Chart',
+        heatmap: 'Heatmap',
+        calendar: 'Calendar',
+        records: 'Records',
+    };
+
+    const visibilityMap = {
+        chart: [tmpShowChart, setTmpShowChart],
+        heatmap: [tmpShowHeatmap, setTmpShowHeatmap],
+        calendar: [tmpShowCalendar, setTmpShowCalendar],
+        records: [tmpShowRecords, setTmpShowRecords],
+    };
+
+    const moveUp = (index) => {
+        if (index === 0) return;
+        setTmpOrder(prev => {
+            const arr = [...prev];
+            [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+            return arr;
+        });
+    };
+
+    const moveDown = (index) => {
+        if (index === tmpOrder.length - 1) return;
+        setTmpOrder(prev => {
+            const arr = [...prev];
+            [arr[index + 1], arr[index]] = [arr[index], arr[index + 1]];
+            return arr;
+        });
+    };
 
     useEffect(() => {
         if (open) {
@@ -34,6 +70,7 @@ function HistoryDisplayDialog({ open, onClose }) {
             setTmpShowHeatmap(uiState.showHeatmap);
             setTmpShowCalendar(uiState.showCalendar);
             setTmpShowRecords(uiState.showRecords);
+            setTmpOrder(uiState.historyOrder);
         }
     }, [open, uiState]);
 
@@ -42,6 +79,7 @@ function HistoryDisplayDialog({ open, onClose }) {
         setTmpShowHeatmap(DEFAULT_VISIBILITY.showHeatmap);
         setTmpShowCalendar(DEFAULT_VISIBILITY.showCalendar);
         setTmpShowRecords(DEFAULT_VISIBILITY.showRecords);
+        setTmpOrder([...DEFAULT_HISTORY_ORDER]);
     };
 
     return (
@@ -49,23 +87,26 @@ function HistoryDisplayDialog({ open, onClose }) {
             <DialogTitle>History Items</DialogTitle>
 
             <DialogContent dividers>
-                <Stack spacing={1} >
-                    <FormControlLabel
-                        control={<Switch checked={tmpShowChart} onChange={e => setTmpShowChart(e.target.checked)} />}
-                        label="Chart"
-                    />
-                    <FormControlLabel
-                        control={<Switch checked={tmpShowHeatmap} onChange={e => setTmpShowHeatmap(e.target.checked)} />}
-                        label="Heatmap"
-                    />
-                    <FormControlLabel
-                        control={<Switch checked={tmpShowCalendar} onChange={e => setTmpShowCalendar(e.target.checked)} />}
-                        label="Calendar"
-                    />
-                    <FormControlLabel
-                        control={<Switch checked={tmpShowRecords} onChange={e => setTmpShowRecords(e.target.checked)} />}
-                        label="Records"
-                    />
+                <Stack spacing={1}>
+                    {tmpOrder.map((key, index) => {
+                        const [checked, setter] = visibilityMap[key];
+                        return (
+                            <Box key={key} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <FormControlLabel
+                                    control={<Switch checked={checked} onChange={e => setter(e.target.checked)} />}
+                                    label={labelMap[key]}
+                                />
+                                <Box>
+                                    <IconButton onClick={() => moveUp(index)} disabled={index === 0} size="small">
+                                        <ArrowUpwardIcon fontSize="inherit" />
+                                    </IconButton>
+                                    <IconButton onClick={() => moveDown(index)} disabled={index === tmpOrder.length - 1} size="small">
+                                        <ArrowDownwardIcon fontSize="inherit" />
+                                    </IconButton>
+                                </Box>
+                            </Box>
+                        );
+                    })}
                 </Stack>
             </DialogContent>
 
@@ -85,6 +126,7 @@ function HistoryDisplayDialog({ open, onClose }) {
                                     showHeatmap: tmpShowHeatmap,
                                     showCalendar: tmpShowCalendar,
                                     showRecords: tmpShowRecords,
+                                    historyOrder: tmpOrder,
                                 },
                             });
                             onClose();
