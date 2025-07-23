@@ -10,6 +10,7 @@ import {
     Stack,
     Divider,
     Box,
+    IconButton,
 } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
