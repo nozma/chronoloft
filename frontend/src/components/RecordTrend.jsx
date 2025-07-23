@@ -18,8 +18,6 @@ import { useRecords } from '../contexts/RecordContext';
 import { useUI } from '../contexts/UIContext';
 import { useFilter } from '../contexts/FilterContext';
 import useLocalStorageState from '../hooks/useLocalStorageState';
-import RecordFilter from './RecordFilter';
-import { useGroups } from '../contexts/GroupContext';
 
 function groupRecords(records, groupBy) {
     const now = DateTime.local();
@@ -132,8 +130,7 @@ function sortDecrease(data, by) {
 function RecordTrend() {
     const { records } = useRecords();
     const { state: uiState, dispatch: uiDispatch } = useUI();
-    const { filterState, setFilterState } = useFilter();
-    const { groups } = useGroups();
+    const { filterState } = useFilter();
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
     const [incSortBy, setIncSortBy] = useLocalStorageState('trend.incSortBy', '7day');
     const [decSortBy, setDecSortBy] = useLocalStorageState('trend.decSortBy', '7day');
@@ -147,7 +144,6 @@ function RecordTrend() {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
                 if (!tagNames.includes(filterState.tagFilter)) return false;
             }
-            if (filterState.activityNameFilter && r.activity_name !== filterState.activityNameFilter) return false;
             return true;
         });
     }, [records, filterState]);
@@ -158,8 +154,6 @@ function RecordTrend() {
 
     const incRows = increase.slice(incPage * 10, incPage * 10 + 10);
     const decRows = decrease.slice(decPage * 10, decPage * 10 + 10);
-
-    const handleFilterChange = newCriteria => setFilterState(newCriteria);
 
     const headerStyle = { cursor: 'pointer', userSelect: 'none' };
 
@@ -182,8 +176,7 @@ function RecordTrend() {
                 />
             </Typography>
             <Collapse in={uiState.trendOpen}>
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <RecordFilter groups={groups} onFilterChange={handleFilterChange} records={records} />
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                     <TextField select size='small' label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
                         <MenuItem value='activity'>Activity</MenuItem>
                         <MenuItem value='tag'>Tag</MenuItem>
