@@ -222,7 +222,7 @@ function RecordTrend() {
                                         >
                                             {formatDiff(row.diff7, row.unit)}
                                             {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.8rem', display: 'block', marginTop: 4 }}>
+                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                 {formatRate(row.total7, row.prev7)}
                                             </span>
                                         </TableCell>
@@ -243,7 +243,7 @@ function RecordTrend() {
                                         >
                                             {formatDiff(row.diff30, row.unit)}
                                             {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.8rem', display: 'block', marginTop: 4 }}>
+                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                 {formatRate(row.total30, row.prev30)}
                                             </span>
                                         </TableCell>
@@ -295,7 +295,7 @@ function RecordTrend() {
                                         >
                                             {formatDiff(row.diff7, row.unit)}
                                             {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.8rem', display: 'block', marginTop: 4 }}>
+                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                 {formatRate(row.total7, row.prev7)}
                                             </span>
                                         </TableCell>
@@ -316,7 +316,7 @@ function RecordTrend() {
                                         >
                                             {formatDiff(row.diff30, row.unit)}
                                             {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.8rem', display: 'block', marginTop: 4 }}>
+                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                 {formatRate(row.total30, row.prev30)}
                                             </span>
                                         </TableCell>
