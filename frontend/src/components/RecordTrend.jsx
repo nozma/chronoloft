@@ -205,13 +205,39 @@ function RecordTrend() {
                                 {incRows.map(row => (
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
-                                        <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
+                                        <TableCell
+                                            sx={(theme) => ({
+                                                color:
+                                                    row.diff7 > 0
+                                                        ? theme.palette.mode === 'dark'
+                                                            ? theme.palette.success.light
+                                                            : theme.palette.success.dark
+                                                        : row.diff7 < 0
+                                                            ? theme.palette.mode === 'dark'
+                                                                ? theme.palette.error.light
+                                                                : theme.palette.error.dark
+                                                            : 'inherit',
+                                            })}
+                                        >
                                             {formatDiff(row.diff7, row.unit)}
                                             {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                             <br />
                                             ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
-                                        <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
+                                        <TableCell
+                                            sx={(theme) => ({
+                                                color:
+                                                    row.diff30 > 0
+                                                        ? theme.palette.mode === 'dark'
+                                                            ? theme.palette.success.light
+                                                            : theme.palette.success.dark
+                                                        : row.diff30 < 0
+                                                            ? theme.palette.mode === 'dark'
+                                                                ? theme.palette.error.light
+                                                                : theme.palette.error.dark
+                                                            : 'inherit',
+                                            })}
+                                        >
                                             {formatDiff(row.diff30, row.unit)}
                                             {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                             <br />
@@ -247,13 +273,39 @@ function RecordTrend() {
                                 {decRows.map(row => (
                                     <TableRow key={row.name}>
                                         <TableCell>{row.name}</TableCell>
-                                        <TableCell sx={{ color: row.diff7 > 0 ? 'green' : row.diff7 < 0 ? 'red' : 'inherit' }}>
+                                        <TableCell
+                                            sx={(theme) => ({
+                                                color:
+                                                    row.diff7 > 0
+                                                        ? theme.palette.mode === 'dark'
+                                                            ? theme.palette.success.light
+                                                            : theme.palette.success.dark
+                                                        : row.diff7 < 0
+                                                            ? theme.palette.mode === 'dark'
+                                                                ? theme.palette.error.light
+                                                                : theme.palette.error.dark
+                                                            : 'inherit',
+                                            })}
+                                        >
                                             {formatDiff(row.diff7, row.unit)}
                                             {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                             <br />
                                             ({formatRate(row.total7, row.prev7)})
                                         </TableCell>
-                                        <TableCell sx={{ color: row.diff30 > 0 ? 'green' : row.diff30 < 0 ? 'red' : 'inherit' }}>
+                                        <TableCell
+                                            sx={(theme) => ({
+                                                color:
+                                                    row.diff30 > 0
+                                                        ? theme.palette.mode === 'dark'
+                                                            ? theme.palette.success.light
+                                                            : theme.palette.success.dark
+                                                        : row.diff30 < 0
+                                                            ? theme.palette.mode === 'dark'
+                                                                ? theme.palette.error.light
+                                                                : theme.palette.error.dark
+                                                            : 'inherit',
+                                            })}
+                                        >
                                             {formatDiff(row.diff30, row.unit)}
                                             {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                             <br />
