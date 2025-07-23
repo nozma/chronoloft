@@ -22,6 +22,7 @@ const DEFAULT_VISIBILITY = {
     showHeatmap: true,
     showCalendar: true,
     showRecords: true,
+    showTrend: true,
 };
 
 function HistoryDisplayDialog({ open, onClose }) {
@@ -31,11 +32,13 @@ function HistoryDisplayDialog({ open, onClose }) {
     const [tmpShowHeatmap, setTmpShowHeatmap] = useState(uiState.showHeatmap);
     const [tmpShowCalendar, setTmpShowCalendar] = useState(uiState.showCalendar);
     const [tmpShowRecords, setTmpShowRecords] = useState(uiState.showRecords);
+    const [tmpShowTrend, setTmpShowTrend] = useState(uiState.showTrend);
     const [tmpOrder, setTmpOrder] = useState(uiState.historyOrder);
 
     const labelMap = {
         chart: 'Chart',
         heatmap: 'Heatmap',
+        trend: 'Trend',
         calendar: 'Calendar',
         records: 'Records',
     };
@@ -43,6 +46,7 @@ function HistoryDisplayDialog({ open, onClose }) {
     const visibilityMap = {
         chart: [tmpShowChart, setTmpShowChart],
         heatmap: [tmpShowHeatmap, setTmpShowHeatmap],
+        trend: [tmpShowTrend, setTmpShowTrend],
         calendar: [tmpShowCalendar, setTmpShowCalendar],
         records: [tmpShowRecords, setTmpShowRecords],
     };
@@ -71,6 +75,7 @@ function HistoryDisplayDialog({ open, onClose }) {
             setTmpShowHeatmap(uiState.showHeatmap);
             setTmpShowCalendar(uiState.showCalendar);
             setTmpShowRecords(uiState.showRecords);
+            setTmpShowTrend(uiState.showTrend);
             setTmpOrder(uiState.historyOrder);
         }
     }, [open, uiState]);
@@ -80,6 +85,7 @@ function HistoryDisplayDialog({ open, onClose }) {
         setTmpShowHeatmap(DEFAULT_VISIBILITY.showHeatmap);
         setTmpShowCalendar(DEFAULT_VISIBILITY.showCalendar);
         setTmpShowRecords(DEFAULT_VISIBILITY.showRecords);
+        setTmpShowTrend(DEFAULT_VISIBILITY.showTrend);
         setTmpOrder([...DEFAULT_HISTORY_ORDER]);
     };
 
@@ -127,6 +133,7 @@ function HistoryDisplayDialog({ open, onClose }) {
                                     showHeatmap: tmpShowHeatmap,
                                     showCalendar: tmpShowCalendar,
                                     showRecords: tmpShowRecords,
+                                    showTrend: tmpShowTrend,
                                     historyOrder: tmpOrder,
                                 },
                             });
