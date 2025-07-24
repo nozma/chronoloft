@@ -90,6 +90,17 @@ function formatDiff(val, unit) {
     return `${sign}${Math.round(abs)}`;
 }
 
+function formatValue(val, unit) {
+    const abs = Math.abs(val);
+    const sign = val < 0 ? '-' : '';
+    if (unit === 'minutes') {
+        const hours = Math.floor(abs / 60);
+        const minutes = Math.floor(abs % 60);
+        return `${sign}${hours}:${String(minutes).padStart(2, '0')}`;
+    }
+    return `${sign}${Math.round(abs)}`;
+}
+
 function formatRate(total, prev) {
     if (total === 0 && prev === 0) return ' - ';
     if (total !== 0 && prev === 0) return 'new!!';
@@ -204,7 +215,7 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>{formatDiff(total, row.unit)}</TableCell>
+                                            <TableCell align='right'>{formatValue(total, row.unit)}</TableCell>
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
@@ -258,7 +269,7 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>{formatDiff(total, row.unit)}</TableCell>
+                                            <TableCell align='right'>{formatValue(total, row.unit)}</TableCell>
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
