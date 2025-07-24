@@ -13,8 +13,6 @@ import {
     MenuItem
 } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { DateTime } from 'luxon';
@@ -136,8 +134,7 @@ function RecordTrend() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { filterState } = useFilter();
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
-    const [incSortBy, setIncSortBy] = useLocalStorageState('trend.incSortBy', '7day');
-    const [decSortBy, setDecSortBy] = useLocalStorageState('trend.decSortBy', '7day');
+    const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('trend.selectedPeriod', '30day');
     const [incPage, setIncPage] = useState(0);
     const [decPage, setDecPage] = useState(0);
 
@@ -153,13 +150,11 @@ function RecordTrend() {
     }, [records, filterState]);
 
     const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
-    const increase = useMemo(() => sortIncrease(grouped, incSortBy), [grouped, incSortBy]);
-    const decrease = useMemo(() => sortDecrease(grouped, decSortBy), [grouped, decSortBy]);
+    const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
+    const decrease = useMemo(() => sortDecrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
 
     const incRows = increase.slice(incPage * 10, incPage * 10 + 10);
     const decRows = decrease.slice(decPage * 10, decPage * 10 + 10);
-
-    const headerStyle = { cursor: 'pointer', userSelect: 'none' };
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -180,11 +175,15 @@ function RecordTrend() {
                 />
             </Typography>
             <Collapse in={uiState.trendOpen}>
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
                     <TextField select size='small' label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
                         <MenuItem value='activity'>Activity</MenuItem>
                         <MenuItem value='tag'>Tag</MenuItem>
                         <MenuItem value='group'>Group</MenuItem>
+                    </TextField>
+                    <TextField select size='small' label='Date Range' value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
+                        <MenuItem value='30day'>30 Days</MenuItem>
+                        <MenuItem value='7day'>7 Days</MenuItem>
                     </TextField>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -193,62 +192,43 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Increase Ranking</TableCell>
-                                    <TableCell onClick={() => setIncSortBy('7day')} sx={headerStyle} align='center'>
-                                        7day {incSortBy === '7day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
-                                    </TableCell>
-                                    <TableCell onClick={() => setIncSortBy('30day')} sx={headerStyle} align='center'>
-                                        30day {incSortBy === '30day' ? <ArrowDownwardIcon fontSize='inherit' /> : null}
-                                    </TableCell>
+                                    <TableCell align='right'>Total</TableCell>
+                                    <TableCell align='center'>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {incRows.map(row => (
-                                    <TableRow key={row.name}>
-                                        <TableCell>{row.name}</TableCell>
-                                        <TableCell
-                                            align='center'
-                                            sx={(theme) => ({
-                                                color:
-                                                    row.diff7 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : row.diff7 < 0
+                                {incRows.map(row => {
+                                    const diff = selectedPeriod === '7day' ? row.diff7 : row.diff30;
+                                    const total = selectedPeriod === '7day' ? row.total7 : row.total30;
+                                    const prev = selectedPeriod === '7day' ? row.prev7 : row.prev30;
+                                    return (
+                                        <TableRow key={row.name}>
+                                            <TableCell>{row.name}</TableCell>
+                                            <TableCell align='right'>{formatDiff(total, row.unit)}</TableCell>
+                                            <TableCell
+                                                align='center'
+                                                sx={(theme) => ({
+                                                    color:
+                                                        diff > 0
                                                             ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : 'inherit',
-                                            })}
-                                        >
-                                            {formatDiff(row.diff7, row.unit)}
-                                            {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                {formatRate(row.total7, row.prev7)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell
-                                            align='center'
-                                            sx={(theme) => ({
-                                                color:
-                                                    row.diff30 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : row.diff30 < 0
-                                                            ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : 'inherit',
-                                            })}
-                                        >
-                                            {formatDiff(row.diff30, row.unit)}
-                                            {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                {formatRate(row.total30, row.prev30)}
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                                                ? theme.palette.success.light
+                                                                : theme.palette.success.dark
+                                                            : diff < 0
+                                                                ? theme.palette.mode === 'dark'
+                                                                    ? theme.palette.error.light
+                                                                    : theme.palette.error.dark
+                                                                : 'inherit',
+                                                })}
+                                            >
+                                                {formatDiff(diff, row.unit)}
+                                                {diff > 0 ? <TrendingUpIcon fontSize='inherit' /> : diff < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                                <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
+                                                    {formatRate(total, prev)}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                         <TablePagination
@@ -266,62 +246,43 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Decrease Ranking</TableCell>
-                                    <TableCell onClick={() => setDecSortBy('7day')} sx={headerStyle} align='center'>
-                                        7day {decSortBy === '7day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
-                                    </TableCell>
-                                    <TableCell onClick={() => setDecSortBy('30day')} sx={headerStyle} align='center'>
-                                        30day {decSortBy === '30day' ? <ArrowUpwardIcon fontSize='inherit' /> : null}
-                                    </TableCell>
+                                    <TableCell align='right'>Total</TableCell>
+                                    <TableCell align='center'>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {decRows.map(row => (
-                                    <TableRow key={row.name}>
-                                        <TableCell>{row.name}</TableCell>
-                                        <TableCell
-                                            align='center'
-                                            sx={(theme) => ({
-                                                color:
-                                                    row.diff7 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : row.diff7 < 0
+                                {decRows.map(row => {
+                                    const diff = selectedPeriod === '7day' ? row.diff7 : row.diff30;
+                                    const total = selectedPeriod === '7day' ? row.total7 : row.total30;
+                                    const prev = selectedPeriod === '7day' ? row.prev7 : row.prev30;
+                                    return (
+                                        <TableRow key={row.name}>
+                                            <TableCell>{row.name}</TableCell>
+                                            <TableCell align='right'>{formatDiff(total, row.unit)}</TableCell>
+                                            <TableCell
+                                                align='center'
+                                                sx={(theme) => ({
+                                                    color:
+                                                        diff > 0
                                                             ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : 'inherit',
-                                            })}
-                                        >
-                                            {formatDiff(row.diff7, row.unit)}
-                                            {row.diff7 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff7 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                {formatRate(row.total7, row.prev7)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell
-                                            align='center'
-                                            sx={(theme) => ({
-                                                color:
-                                                    row.diff30 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : row.diff30 < 0
-                                                            ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : 'inherit',
-                                            })}
-                                        >
-                                            {formatDiff(row.diff30, row.unit)}
-                                            {row.diff30 > 0 ? <TrendingUpIcon fontSize='inherit' /> : row.diff30 < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
-                                            <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                {formatRate(row.total30, row.prev30)}
-                                            </span>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                                                ? theme.palette.success.light
+                                                                : theme.palette.success.dark
+                                                            : diff < 0
+                                                                ? theme.palette.mode === 'dark'
+                                                                    ? theme.palette.error.light
+                                                                    : theme.palette.error.dark
+                                                                : 'inherit',
+                                                })}
+                                            >
+                                                {formatDiff(diff, row.unit)}
+                                                {diff > 0 ? <TrendingUpIcon fontSize='inherit' /> : diff < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
+                                                <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
+                                                    {formatRate(total, prev)}
+                                                </span>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                         <TablePagination
