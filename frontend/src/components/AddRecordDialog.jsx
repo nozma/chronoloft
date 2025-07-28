@@ -154,6 +154,15 @@ function AddRecordDialog({
         setter(dt.plus({ minutes: delta }).toFormat("yyyy-MM-dd'T'HH:mm"));
     };
 
+    // 回数を増減させる
+    const adjustCount = (delta) => {
+        setValue(prev => {
+            const current = parseFloat(prev) || 0;
+            const updated = Math.max(0, current + delta);
+            return String(updated);
+        });
+    };
+
     // 「前のレコードの終了」を開始時刻にセット
     const fillStartWithPrevEnd = () => {
         // ① 終了時刻を基準に
@@ -197,7 +206,11 @@ function AddRecordDialog({
 
 
     return (
-        <Dialog open={open} onClose={handleClose} onKeyDown={handleKeyDown}>
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            onKeyDown={handleKeyDown}
+        >
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
             <DialogContent>
                 <TextField
@@ -220,14 +233,28 @@ function AddRecordDialog({
 
                 {selectedActivity?.unit === 'count' && (
                     <>
-                        <TextField
-                            label="回数"
-                            type="number"
-                            value={value}
-                            onChange={(e) => setValue(e.target.value)}
-                            fullWidth
-                            margin="dense"
-                        />
+                        <Box display="flex" alignItems="center" mb={1}>
+                            <TextField
+                                label="回数"
+                                type="number"
+                                value={value}
+                                onChange={(e) => setValue(e.target.value)}
+                                sx={{ flex: 1 }}
+                                margin="dense"
+                            />
+                            <IconButton size="small" onClick={() => adjustCount(-5)}>
+                                −5
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustCount(-1)}>
+                                −1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustCount(+1)}>
+                                +1
+                            </IconButton>
+                            <IconButton size="small" onClick={() => adjustCount(+5)}>
+                                +5
+                            </IconButton>
+                        </Box>
                         <TextField
                             label="記録日時"
                             type="datetime-local"
