@@ -210,7 +210,6 @@ function AddRecordDialog({
             open={open}
             onClose={handleClose}
             onKeyDown={handleKeyDown}
-            {...(selectedActivity?.unit === 'count' ? { maxWidth: 'sm', fullWidth: true } : {})}
         >
             <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
             <DialogContent>
