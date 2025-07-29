@@ -10,7 +10,6 @@ import ActivityStart from './ActivityStart';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 import SubStopwatch from './SubStopwatch';
-import ActivityList from './ActivityList';
 import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
@@ -313,7 +312,6 @@ function RecordingInterface() {
                 stopwatchVisible={stopwatchVisible}
                 onStartSubStopwatch={handleStartSubStopwatch}
             />
-            <ActivityList />
             {/* ダイアログ（回数＋確認モード共通） */}
             {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
                 <AddRecordDialog
