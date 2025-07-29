@@ -34,10 +34,7 @@ function ActivityManagementDialog({ open, onClose }) {
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const { state, dispatch } = useUI();
     const theme = useTheme();
-    const tagBgColor = theme.palette.mode === 'dark'
-        ? theme.palette.primary.dark
-        : theme.palette.primary.light;
-    const tagTextColor = theme.palette.getContrastText(tagBgColor);
+    const tagColor = theme.palette.text.primary;
 
     const handleAddClick = () => setDialogOpen(true);
     const handleDialogClose = () => setDialogOpen(false);
@@ -141,8 +138,9 @@ function ActivityManagementDialog({ open, onClose }) {
                                     label={tag.name}
                                     size='small'
                                     sx={{
-                                        backgroundColor: tagBgColor,
-                                        color: tagTextColor,
+                                        backgroundColor: 'transparent',
+                                        border: `1px solid ${tagColor}`,
+                                        color: tagColor,
                                         mr: 1
                                     }}
                                 />
