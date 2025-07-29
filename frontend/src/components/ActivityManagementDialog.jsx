@@ -153,13 +153,14 @@ function ActivityManagementDialog({ open, onClose }) {
         <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
             <DialogTitle>アクティビティの管理</DialogTitle>
             <DialogContent>
-                <Box sx={{ height: 400, width: '100%' }}>
+                <Box sx={{ width: '100%' }}>
                     <DataGrid
                         rows={activities}
                         columns={columns}
                         pageSize={5}
                         rowsPerPageOptions={[5]}
                         disableSelectionOnClick
+                        autoHeight
                         processRowUpdate={processRowUpdate}
                         slots={{ toolbar: CustomToolbar }}
                         slotProps={{ toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick } }}
