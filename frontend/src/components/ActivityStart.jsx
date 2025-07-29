@@ -13,6 +13,7 @@ import ToggleButtonGroup, {
 } from '@mui/material/ToggleButtonGroup';
 import GroupManagementDialog from './GroupManagementDialog';
 import TagManagementDialog from './TagManagementDialog';
+import ActivityManagementDialog from './ActivityManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useFilter } from '../contexts/FilterContext';
@@ -176,7 +177,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                 </ToggleButton>
                             ))}
                         </ToggleButtonGroup>
-                        {!state.showGrid && !stopwatchVisible && (
+                        {!state.activityDialogOpen && !stopwatchVisible && (
                             <IconButton
                                 onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
                                 sx={{
@@ -232,7 +233,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                     {tagName}
                                 </ToggleButton>
                             ))}
-                            {!state.showGrid && !stopwatchVisible && (
+                            {!state.activityDialogOpen && !stopwatchVisible && (
                                 <IconButton
                                     onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                                     sx={{
@@ -248,7 +249,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                     </Box>
                 </Collapse>
                 {/* アクティビティ表示 */}
-                {!state.showGrid && (
+                {!state.activityDialogOpen && (
                     <>
                         <Typography
                             variant='caption'
@@ -288,9 +289,9 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         </Button>
                                     ))}
                                     {/* 設定アイコンの表示 */}
-                                    {!state.showGrid && !stopwatchVisible && (
+                                    {!state.activityDialogOpen && !stopwatchVisible && (
                                         <IconButton
-                                            variant="contained" onClick={() => dispatch({ type: 'SET_SHOW_GRID', payload: true })}
+                                            variant="contained" onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
                                             sx={{
                                                 opacity: 0,
                                                 transition: 'opacity 0.3s',
@@ -364,6 +365,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                         </Collapse>
                     </>
                 )}
+                <ActivityManagementDialog
+                    open={state.activityDialogOpen}
+                    onClose={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: false })}
+                />
             </Box>
         </>
     );

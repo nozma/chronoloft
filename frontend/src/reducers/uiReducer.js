@@ -7,7 +7,7 @@ export const DEFAULT_HISTORY_ORDER = [
 ];
 
 export const initialUIState = {
-    showGrid: false,
+    activityDialogOpen: false,
     groupDialogOpen: false,
     editDialogOpen: false,
     confirmDialogOpen: false,
@@ -31,8 +31,8 @@ export const initialUIState = {
 
 export function uiReducer(state, action) {
     switch (action.type) {
-        case 'SET_SHOW_GRID':
-            return { ...state, showGrid: action.payload };
+        case 'SET_ACTIVITY_DIALOG':
+            return { ...state, activityDialogOpen: action.payload };
         case 'SET_GROUP_DIALOG':
             return { ...state, groupDialogOpen: action.payload };
         case 'SET_TAG_DIALOG':
