@@ -24,7 +24,7 @@ import { useFilter } from '../contexts/FilterContext';
 import { setActivityTags } from '../services/api';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
-function ActivityManagementDialog({ open, onClose }) {
+function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     const { groups } = useGroups();
     const { activities, createActivity, modifyActivity, removeActivity, refreshActivities } = useActivities();
     const { filterState } = useFilter();
@@ -48,6 +48,7 @@ function ActivityManagementDialog({ open, onClose }) {
     };
 
     const handleDeleteButtonClick = (activityId) => {
+        if (runningActivityIds.includes(activityId)) return;
         setSelectedActivityId(activityId);
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: true });
     };
@@ -78,6 +79,7 @@ function ActivityManagementDialog({ open, onClose }) {
     };
 
     const handleEditActivity = (activity) => {
+        if (runningActivityIds.includes(activity.id)) return;
         setSelectedActivity(activity);
         dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
@@ -154,16 +156,19 @@ function ActivityManagementDialog({ open, onClose }) {
             headerName: 'Actions',
             sortable: false,
             filterable: false,
-            renderCell: (params) => (
-                <>
-                    <IconButton onClick={() => handleEditActivity(params.row)}>
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton onClick={() => handleDeleteButtonClick(params.row.id)}>
-                        <DeleteIcon />
-                    </IconButton>
-                </>
-            )
+            renderCell: (params) => {
+                const disabled = runningActivityIds.includes(params.row.id);
+                return (
+                    <>
+                        <IconButton onClick={() => handleEditActivity(params.row)} disabled={disabled}>
+                            <EditIcon />
+                        </IconButton>
+                        <IconButton onClick={() => handleDeleteButtonClick(params.row.id)} disabled={disabled}>
+                            <DeleteIcon />
+                        </IconButton>
+                    </>
+                );
+            }
         }
     ];
 
