@@ -172,12 +172,15 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         }
     ];
 
+    const gridKey = runningActivityIds.join('-');
+
     return (
         <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
             <DialogTitle>アクティビティの管理</DialogTitle>
             <DialogContent>
                 <Box sx={{ width: '100%' }}>
                     <DataGrid
+                        key={gridKey}
                         rows={filteredActivities}
                         columns={columns}
                         pageSize={5}
