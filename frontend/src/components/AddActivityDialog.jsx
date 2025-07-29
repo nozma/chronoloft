@@ -10,12 +10,18 @@ import {
     Chip,
     MenuItem
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useTags } from '../contexts/TagContext';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
     const { groups } = useGroups();
     const { tags } = useTags();
+    const theme = useTheme();
+    const tagBgColor = theme.palette.mode === 'dark'
+        ? theme.palette.primary.dark
+        : theme.palette.primary.light;
+    const tagTextColor = theme.palette.getContrastText(tagBgColor);
     const [name, setName] = useState('');
     const [groupId, setGroupId] = useState('');
     const [unit, setUnit] = useState('count');
@@ -138,7 +144,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
                                     key={option.id}
                                     {...other}
                                     label={option.name}
-                                    style={{ backgroundColor: option.color || '#ccc' }}
+                                    style={{ backgroundColor: tagBgColor, color: tagTextColor }}
                                 />
                             );
                         })

@@ -9,6 +9,7 @@ import {
     IconButton,
     Chip
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,6 +33,11 @@ function ActivityManagementDialog({ open, onClose }) {
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const { state, dispatch } = useUI();
+    const theme = useTheme();
+    const tagBgColor = theme.palette.mode === 'dark'
+        ? theme.palette.primary.dark
+        : theme.palette.primary.light;
+    const tagTextColor = theme.palette.getContrastText(tagBgColor);
 
     const handleAddClick = () => setDialogOpen(true);
     const handleDialogClose = () => setDialogOpen(false);
@@ -130,16 +136,16 @@ function ActivityManagementDialog({ open, onClose }) {
                 return (
                     <div>
                         {tags.map(tag => (
-                            <Chip
-                                key={tag.id}
-                                label={tag.name}
-                                size='small'
-                                sx={{
-                                    backgroundColor: tag.color || '#ccc',
-                                    color: '#fff',
-                                    mr: 1
-                                }}
-                            />
+                                <Chip
+                                    key={tag.id}
+                                    label={tag.name}
+                                    size='small'
+                                    sx={{
+                                        backgroundColor: tagBgColor,
+                                        color: tagTextColor,
+                                        mr: 1
+                                    }}
+                                />
                         ))}
                     </div>
                 );
