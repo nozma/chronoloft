@@ -19,12 +19,15 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
 import { useActivities } from '../contexts/ActivityContext';
+import { useFilter } from '../contexts/FilterContext';
 import { setActivityTags } from '../services/api';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function ActivityManagementDialog({ open, onClose }) {
     const { groups } = useGroups();
     const { activities, createActivity, modifyActivity, removeActivity, refreshActivities } = useActivities();
+    const { filterState } = useFilter();
+    const { groupFilter, tagFilter } = filterState;
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
@@ -75,6 +78,17 @@ function ActivityManagementDialog({ open, onClose }) {
         setSelectedActivity(activity);
         dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
+
+    const filteredActivities = activities.filter(act => {
+        if (groupFilter && act.group_name !== groupFilter) {
+            return false;
+        }
+        if (tagFilter) {
+            const tags = act.tags?.map(t => t.name) || [];
+            return tags.includes(tagFilter);
+        }
+        return true;
+    });
 
     const columns = [
         {
@@ -155,7 +169,7 @@ function ActivityManagementDialog({ open, onClose }) {
             <DialogContent>
                 <Box sx={{ width: '100%' }}>
                     <DataGrid
-                        rows={activities}
+                        rows={filteredActivities}
                         columns={columns}
                         pageSize={5}
                         rowsPerPageOptions={[5]}
