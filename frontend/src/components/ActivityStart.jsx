@@ -24,7 +24,15 @@ import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 
-function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch }) {
+function ActivityStart({
+    activities,
+    onStart,
+    stopwatchVisible,
+    onStartSubStopwatch,
+    selectedActivity,
+    subSelectedActivity,
+    subStopwatchVisible,
+}) {
     const { groups } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
@@ -177,7 +185,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                 </ToggleButton>
                             ))}
                         </ToggleButtonGroup>
-                        {!state.activityDialogOpen && !stopwatchVisible && (
+                        {!state.activityDialogOpen && (
                             <IconButton
                                 onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
                                 sx={{
@@ -233,7 +241,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                     {tagName}
                                 </ToggleButton>
                             ))}
-                            {!state.activityDialogOpen && !stopwatchVisible && (
+                            {!state.activityDialogOpen && (
                                 <IconButton
                                     onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                                     sx={{
@@ -289,7 +297,7 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                                         </Button>
                                     ))}
                                     {/* 設定アイコンの表示 */}
-                                    {!state.activityDialogOpen && !stopwatchVisible && (
+                                    {!state.activityDialogOpen && (
                                         <IconButton
                                             variant="contained" onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
                                             sx={{
@@ -368,6 +376,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                 <ActivityManagementDialog
                     open={state.activityDialogOpen}
                     onClose={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: false })}
+                    runningActivityIds={[
+                        ...(stopwatchVisible && selectedActivity ? [selectedActivity.id] : []),
+                        ...(subStopwatchVisible && subSelectedActivity ? [subSelectedActivity.id] : []),
+                    ]}
                 />
             </Box>
         </>
