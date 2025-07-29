@@ -24,7 +24,15 @@ import { styled } from '@mui/material/styles';
 import { useMemo, useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 
-function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwatch, selectedActivity, subSelectedActivity }) {
+function ActivityStart({
+    activities,
+    onStart,
+    stopwatchVisible,
+    onStartSubStopwatch,
+    selectedActivity,
+    subSelectedActivity,
+    subStopwatchVisible,
+}) {
     const { groups } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
@@ -368,7 +376,10 @@ function ActivityStart({ activities, onStart, stopwatchVisible, onStartSubStopwa
                 <ActivityManagementDialog
                     open={state.activityDialogOpen}
                     onClose={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: false })}
-                    runningActivityIds={[selectedActivity?.id, subSelectedActivity?.id].filter(Boolean)}
+                    runningActivityIds={[
+                        ...(stopwatchVisible && selectedActivity ? [selectedActivity.id] : []),
+                        ...(subStopwatchVisible && subSelectedActivity ? [subSelectedActivity.id] : []),
+                    ]}
                 />
             </Box>
         </>

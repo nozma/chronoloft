@@ -313,6 +313,7 @@ function RecordingInterface() {
                 onStartSubStopwatch={handleStartSubStopwatch}
                 selectedActivity={selectedActivity}
                 subSelectedActivity={subSelectedActivity}
+                subStopwatchVisible={subStopwatchVisible}
             />
             {/* ダイアログ（回数＋確認モード共通） */}
             {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
