@@ -9,6 +9,7 @@ import {
     IconButton,
     Chip
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,6 +33,8 @@ function ActivityManagementDialog({ open, onClose }) {
     const [selectedActivityId, setSelectedActivityId] = useState(null);
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const { state, dispatch } = useUI();
+    const theme = useTheme();
+    const tagColor = theme.palette.text.primary;
 
     const handleAddClick = () => setDialogOpen(true);
     const handleDialogClose = () => setDialogOpen(false);
@@ -130,16 +133,17 @@ function ActivityManagementDialog({ open, onClose }) {
                 return (
                     <div>
                         {tags.map(tag => (
-                            <Chip
-                                key={tag.id}
-                                label={tag.name}
-                                size='small'
-                                sx={{
-                                    backgroundColor: tag.color || '#ccc',
-                                    color: '#fff',
-                                    mr: 1
-                                }}
-                            />
+                                <Chip
+                                    key={tag.id}
+                                    label={tag.name}
+                                    size='small'
+                                    sx={{
+                                        backgroundColor: 'transparent',
+                                        border: `1px solid ${tagColor}`,
+                                        color: tagColor,
+                                        mr: 1
+                                    }}
+                                />
                         ))}
                     </div>
                 );

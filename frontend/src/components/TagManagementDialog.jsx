@@ -23,25 +23,22 @@ function TagManagementDialog({ open, onClose }) {
 
     // 新規登録用フィールド
     const [newTagName, setNewTagName] = useState('');
-    const [newTagColor, setNewTagColor] = useState('#ffffff');
 
     // 編集用フィールド
     const [editTagId, setEditTagId] = useState(null);
     const [editTagName, setEditTagName] = useState('');
-    const [editTagColor, setEditTagColor] = useState('#ffffff');
 
     // ---------- 新規タグ追加 ----------
     const handleAdd = async () => {
         try {
             await createTag({
                 name: newTagName,
-                color: newTagColor
+                color: '#ffffff'
             });
             const updated = await fetchTags();
             setTags(updated);
             await refreshActivities();
             setNewTagName('');
-            setNewTagColor('#ffffff');
         } catch (err) {
             console.error('Failed to create tag:', err);
         }
@@ -51,22 +48,19 @@ function TagManagementDialog({ open, onClose }) {
     const handleEdit = (tag) => {
         setEditTagId(tag.id);
         setEditTagName(tag.name);
-        setEditTagColor(tag.color || '#ffffff');
     };
 
     // ---------- 編集保存 ----------
     const handleUpdate = async () => {
         try {
             await updateTag(editTagId, {
-                name: editTagName,
-                color: editTagColor
+                name: editTagName
             });
             const updated = await fetchTags();
             setTags(updated);
             await refreshActivities();
             setEditTagId(null);
             setEditTagName('');
-            setEditTagColor('#ffffff');
         } catch (err) {
             console.error('Failed to update tag:', err);
         }
@@ -85,7 +79,13 @@ function TagManagementDialog({ open, onClose }) {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{ sx: { width: '66%' } }}
+        >
             <DialogTitle>タグの管理</DialogTitle>
             <DialogContent>
                 {/* タグ追加フォーム */}
@@ -96,16 +96,6 @@ function TagManagementDialog({ open, onClose }) {
                         onChange={(e) => setNewTagName(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
-                    {/* 色の設定 */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-                        <input
-                            type="color"
-                            value={newTagColor}
-                            onChange={(e) => setNewTagColor(e.target.value)}
-                            style={{ width: 40, height: 40, border: 'none', padding: 0 }}
-                        />
-                        <span>{newTagColor}</span>
-                    </Box>
                     <Button variant="contained" color="primary" onClick={handleAdd}>
                         追加
                     </Button>
@@ -116,7 +106,6 @@ function TagManagementDialog({ open, onClose }) {
                     <TableHead>
                         <TableRow>
                             <TableCell>タグ名</TableCell>
-                            <TableCell>色</TableCell>
                             <TableCell align="left"></TableCell>
                         </TableRow>
                     </TableHead>
@@ -133,32 +122,6 @@ function TagManagementDialog({ open, onClose }) {
                                         tag.name
                                     )}
                                 </TableCell>
-                                <TableCell>
-                                    {editTagId === tag.id ? (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <input
-                                                type="color"
-                                                value={editTagColor}
-                                                onChange={(e) => setEditTagColor(e.target.value)}
-                                                style={{ width: 40, height: 40, border: 'none', padding: 0 }}
-                                            />
-                                            <span>{editTagColor}</span>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Box
-                                                sx={{
-                                                    width: 24,
-                                                    height: 24,
-                                                    backgroundColor: tag.color || '#ffffff',
-                                                    border: '1px solid #ccc',
-                                                    borderRadius: 1
-                                                }}
-                                            />
-                                            <span>{tag.color || ''}</span>
-                                        </Box>
-                                    )}
-                                </TableCell>
                                 <TableCell align="left">
                                     {editTagId === tag.id ? (
                                         <>
@@ -166,7 +129,6 @@ function TagManagementDialog({ open, onClose }) {
                                             <Button onClick={() => {
                                                 setEditTagId(null);
                                                 setEditTagName('');
-                                                setEditTagColor('#ffffff');
                                             }}>
                                                 キャンセル
                                             </Button>

@@ -26,7 +26,8 @@ def create_tag():
     if not data or 'name' not in data:
         return jsonify({'error': 'Tag name is required'}), 400
     
-    new_tag = Tag(name=data['name'], color=data.get('color'))
+    color = data.get('color') or '#ffffff'
+    new_tag = Tag(name=data['name'], color=color)
     try:
         db.session.add(new_tag)
         db.session.commit()
