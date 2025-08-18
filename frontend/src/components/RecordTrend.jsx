@@ -101,6 +101,16 @@ function formatValue(val, unit) {
     return `${sign}${Math.round(abs)}`;
 }
 
+function formatDailyAverage(total, unit, days) {
+    const avg = Math.round(total / days);
+    if (unit === 'minutes') {
+        const hours = Math.floor(avg / 60);
+        const minutes = Math.floor(avg % 60);
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}/d`;
+    }
+    return `${avg}/d`;
+}
+
 function formatRate(total, prev) {
     if (total === 0 && prev === 0) return ' - ';
     if (total !== 0 && prev === 0) return 'new!!';
@@ -215,7 +225,12 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>{formatValue(total, row.unit)}</TableCell>
+                                            <TableCell align='right'>
+                                                {formatValue(total, row.unit)}
+                                                <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
+                                                </span>
+                                            </TableCell>
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
@@ -269,7 +284,12 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>{formatValue(total, row.unit)}</TableCell>
+                                            <TableCell align='right'>
+                                                {formatValue(total, row.unit)}
+                                                <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
+                                                </span>
+                                            </TableCell>
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
