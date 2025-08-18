@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Box,
     Typography,
@@ -123,6 +123,25 @@ function formatRate(total, prev) {
 }
 
 function sortIncrease(data, by) {
+    if (by === '7v30') {
+        return [...data].sort((a, b) => {
+            const baseA = (a.total30 * 7) / 30;
+            const baseB = (b.total30 * 7) / 30;
+            const aNew = a.total7 !== 0 && baseA === 0;
+            const bNew = b.total7 !== 0 && baseB === 0;
+            if (aNew && !bNew) return -1;
+            if (!aNew && bNew) return 1;
+            const aZero = a.total7 === 0 && baseA === 0;
+            const bZero = b.total7 === 0 && baseB === 0;
+            if (aZero && !bZero) return 1;
+            if (!aZero && bZero) return -1;
+            const rateA = baseA === 0 ? -Infinity : (a.total7 / baseA - 1);
+            const rateB = baseB === 0 ? -Infinity : (b.total7 / baseB - 1);
+            if (rateB !== rateA) return rateB - rateA;
+            if (b.total7 !== a.total7) return b.total7 - a.total7;
+            return b.last - a.last;
+        });
+    }
     const totalField = by === '7day' ? 'total7' : 'total30';
     const prevField = by === '7day' ? 'prev7' : 'prev30';
     return [...data].sort((a, b) => {
@@ -143,6 +162,17 @@ function sortIncrease(data, by) {
 }
 
 function sortDecrease(data, by) {
+    if (by === '7v30') {
+        return [...data].sort((a, b) => {
+            const baseA = (a.total30 * 7) / 30;
+            const baseB = (b.total30 * 7) / 30;
+            const rateA = baseA === 0 ? Infinity : (a.total7 / baseA - 1);
+            const rateB = baseB === 0 ? Infinity : (b.total7 / baseB - 1);
+            if (rateA !== rateB) return rateA - rateB;
+            if (a.total7 !== b.total7) return a.total7 - b.total7;
+            return a.last - b.last;
+        });
+    }
     const totalField = by === '7day' ? 'total7' : 'total30';
     const prevField = by === '7day' ? 'prev7' : 'prev30';
     return [...data].sort((a, b) => {
@@ -209,6 +239,7 @@ function RecordTrend() {
                     <TextField select size='small' label='Date Range' value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
                         <MenuItem value='30day'>30 Days</MenuItem>
                         <MenuItem value='7day'>7 Days</MenuItem>
+                        <MenuItem value='7v30'>7d vs 30d</MenuItem>
                     </TextField>
                 </Box>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
@@ -223,16 +254,29 @@ function RecordTrend() {
                             </TableHead>
                             <TableBody>
                                 {incRows.map(row => {
-                                    const diff = selectedPeriod === '7day' ? row.diff7 : row.diff30;
-                                    const total = selectedPeriod === '7day' ? row.total7 : row.total30;
-                                    const prev = selectedPeriod === '7day' ? row.prev7 : row.prev30;
+                                    const diff =
+                                        selectedPeriod === '7day'
+                                            ? row.diff7
+                                            : selectedPeriod === '30day'
+                                                ? row.diff30
+                                                : row.total7 - (row.total30 * 7 / 30);
+                                    const total =
+                                        selectedPeriod === '7day' || selectedPeriod === '7v30'
+                                            ? row.total7
+                                            : row.total30;
+                                    const prev =
+                                        selectedPeriod === '7day'
+                                            ? row.prev7
+                                            : selectedPeriod === '30day'
+                                                ? row.prev30
+                                                : row.total30 * 7 / 30;
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
                                             <TableCell align='center' sx={{ width: 100 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
                                                 </span>
                                             </TableCell>
                                             <TableCell
@@ -283,16 +327,29 @@ function RecordTrend() {
                             </TableHead>
                             <TableBody>
                                 {decRows.map(row => {
-                                    const diff = selectedPeriod === '7day' ? row.diff7 : row.diff30;
-                                    const total = selectedPeriod === '7day' ? row.total7 : row.total30;
-                                    const prev = selectedPeriod === '7day' ? row.prev7 : row.prev30;
+                                    const diff =
+                                        selectedPeriod === '7day'
+                                            ? row.diff7
+                                            : selectedPeriod === '30day'
+                                                ? row.diff30
+                                                : row.total7 - (row.total30 * 7 / 30);
+                                    const total =
+                                        selectedPeriod === '7day' || selectedPeriod === '7v30'
+                                            ? row.total7
+                                            : row.total30;
+                                    const prev =
+                                        selectedPeriod === '7day'
+                                            ? row.prev7
+                                            : selectedPeriod === '30day'
+                                                ? row.prev30
+                                                : row.total30 * 7 / 30;
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
                                             <TableCell align='center' sx={{ width: 100 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
                                                 </span>
                                             </TableCell>
                                             <TableCell
