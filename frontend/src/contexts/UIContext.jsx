@@ -1,4 +1,5 @@
-import React, { createContext, useContext } from 'react';
+import { createContext, useContext } from 'react';
+import PropTypes from 'prop-types';
 import { initialUIState, uiReducer } from '../reducers/uiReducer';
 import usePersistentReducer from '../hooks/usePersistentReducer';
 
@@ -18,4 +19,9 @@ export const UIProvider = ({ children }) => {
   );
 };
 
+UIProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
 export const useUI = () => useContext(UIContext);
+

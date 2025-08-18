@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global process */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { version } from '../package.json'
@@ -25,3 +27,4 @@ export default defineConfig({
         __COMMIT_HASH__: JSON.stringify(process.env.VITE_COMMIT_HASH || 'dev'),
     },
 })
+
