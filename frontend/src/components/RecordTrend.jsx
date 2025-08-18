@@ -213,8 +213,8 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Increase Ranking</TableCell>
-                                    <TableCell align='right'>Total</TableCell>
-                                    <TableCell align='center'>Change</TableCell>
+                                    <TableCell align='center' sx={{ width: 100 }}>Total</TableCell>
+                                    <TableCell align='center' sx={{ width: 100 }}>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -225,7 +225,7 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>
+                                            <TableCell align='center' sx={{ width: 100 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
@@ -234,6 +234,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
+                                                    width: 100,
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'
@@ -272,8 +273,8 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Decrease Ranking</TableCell>
-                                    <TableCell align='right'>Total</TableCell>
-                                    <TableCell align='center'>Change</TableCell>
+                                    <TableCell align='center' sx={{ width: 100 }}>Total</TableCell>
+                                    <TableCell align='center' sx={{ width: 100 }}>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -284,7 +285,7 @@ function RecordTrend() {
                                     return (
                                         <TableRow key={row.name}>
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell align='right'>
+                                            <TableCell align='center' sx={{ width: 100 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '7day' ? 7 : 30)}
@@ -293,6 +294,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
+                                                    width: 100,
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'
