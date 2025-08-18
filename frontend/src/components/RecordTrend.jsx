@@ -107,7 +107,7 @@ function formatDailyAverage(total, unit, days) {
         const rounded = Math.round(avg);
         const hours = Math.floor(rounded / 60);
         const minutes = Math.floor(rounded % 60);
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}/d`;
+        return `${String(hours)}:${String(minutes).padStart(2, '0')}/d`;
     }
     if (unit === 'count') {
         return `${avg.toFixed(1)}/d`;
