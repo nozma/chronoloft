@@ -14,13 +14,13 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
-import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton, Button } from '@mui/material';
+import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import AddRecordDialog from './AddRecordDialog';
-import { updateRecord, deleteRecord } from '../services/api';
+import { updateRecord, deleteRecord, createRecord } from '../services/api';
 import { useRecords } from '../contexts/RecordContext';
 import { useActivities } from '../contexts/ActivityContext';
 
@@ -128,6 +128,11 @@ function RecordCalendar() {
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
     const [calendarMode, setCalendarMode] = useLocalStorageState('calendar.mode', 'short');
+    const [newRecordSlot, setNewRecordSlot] = useState(null);
+    const defaultActivity = useMemo(
+        () => activities.find((a) => a.unit === 'minutes') || activities[0],
+        [activities]
+    );
 
     useEffect(() => {
         const minuteRecords = records.filter((rec) => rec.unit === 'minutes');
@@ -241,6 +246,22 @@ function RecordCalendar() {
             onRecordUpdate();
         } catch (err) {
             console.error('Failed to update record by resize:', err);
+        }
+    };
+
+    const handleSelectSlot = ({ start, end, action }) => {
+        if (action === 'select') {
+            setNewRecordSlot({ start, end });
+        }
+    };
+
+    const handleCreateRecord = async (recordData) => {
+        try {
+            await createRecord(recordData);
+            onRecordUpdate();
+            setNewRecordSlot(null);
+        } catch (err) {
+            console.error('Failed to create record:', err);
         }
     };
 
@@ -361,6 +382,7 @@ function RecordCalendar() {
                         // Make all events draggable (or define a function returning bool)
                         draggableAccessor={() => true}
                         selectable // optional, you can remove if you don't need slot selection
+                        onSelectSlot={handleSelectSlot}
 
                         // Double-click -> open edit
                         onDoubleClickEvent={handleDoubleClickEvent}
@@ -377,6 +399,20 @@ function RecordCalendar() {
                     />
                 </Box>
             </Collapse>
+            {newRecordSlot && defaultActivity && (
+                <AddRecordDialog
+                    open={true}
+                    onClose={() => setNewRecordSlot(null)}
+                    onSubmit={handleCreateRecord}
+                    activity={defaultActivity}
+                    initialValue={
+                        DateTime.fromJSDate(newRecordSlot.end)
+                            .diff(DateTime.fromJSDate(newRecordSlot.start), 'minutes')
+                            .toObject().minutes
+                    }
+                    initialDate={DateTime.fromJSDate(newRecordSlot.end).toUTC().toISO()}
+                />
+            )}
 
             {recordToEdit && (
                 <AddRecordDialog
