@@ -10,7 +10,6 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
 import { splitEvent } from '../utils/splitEvent';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
@@ -23,6 +22,7 @@ import AddRecordDialog from './AddRecordDialog';
 import { updateRecord, deleteRecord, createRecord } from '../services/api';
 import { useRecords } from '../contexts/RecordContext';
 import { useActivities } from '../contexts/ActivityContext';
+import DescendingAgendaView from './DescendingAgendaView';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
@@ -30,8 +30,10 @@ const localizer = luxonLocalizer(DateTime);
 
 /**
  * month / agenda ビュー用に1日のイベントを合計する
+ * @param {Array} events 集計対象のイベント
+ * @param {{ sortBy: 'value' | 'dateDesc' }} options ソート方法の指定
  */
-function aggregateEventsForMonth(events) {
+function aggregateEventsForMonth(events, { sortBy } = { sortBy: 'value' }) {
     const aggregated = {};
 
     events.forEach((event) => {
@@ -55,8 +57,20 @@ function aggregateEventsForMonth(events) {
         totalValue: agg.totalValue,
     }));
 
-    // Sort descending by total time
-    aggregatedArray.sort((a, b) => b.totalValue - a.totalValue);
+    if (sortBy === 'dateDesc') {
+        aggregatedArray.sort((a, b) => {
+            const byDate = b.start.getTime() - a.start.getTime();
+            if (byDate !== 0) return byDate;
+            return b.totalValue - a.totalValue;
+        });
+    } else {
+        // Sort descending by total time (default)
+        aggregatedArray.sort((a, b) => {
+            const byValue = b.totalValue - a.totalValue;
+            if (byValue !== 0) return byValue;
+            return b.start.getTime() - a.start.getTime();
+        });
+    }
     return aggregatedArray;
 }
 
@@ -96,7 +110,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     <ToggleButton value="day">Day</ToggleButton>
                     <ToggleButton value="week">Week</ToggleButton>
                     <ToggleButton value="month">Month</ToggleButton>
-                    <ToggleButton value="agenda">Agenda</ToggleButton>
+                    <ToggleButton value="agenda">Summary</ToggleButton>
                 </ToggleButtonGroup>
                 {/* 表示モード切り替え */}
                 <ToggleButtonGroup
@@ -181,8 +195,10 @@ function RecordCalendar() {
             }
         });
 
-        if (currentView === 'month' || currentView === 'agenda') {
+        if (currentView === 'month') {
             setEvents(aggregateEventsForMonth(eventsData));
+        } else if (currentView === 'agenda') {
+            setEvents(aggregateEventsForMonth(eventsData, { sortBy: 'dateDesc' }));
         } else {
             setEvents(eventsData);
         }
@@ -310,6 +326,16 @@ function RecordCalendar() {
         );
     }
 
+    const calendarViews = useMemo(() => ({
+        day: true,
+        week: true,
+        month: true,
+        agenda: DescendingAgendaView,
+    }), []);
+    const calendarMessages = useMemo(() => ({
+        agenda: 'Summary',
+    }), []);
+
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
@@ -347,11 +373,12 @@ function RecordCalendar() {
                             setCurrentView(view);
                         }}
                         length={7}
-                        views={[Views.DAY, Views.WEEK, Views.MONTH, Views.AGENDA]}
+                        views={calendarViews}
                         date={currentDate}
                         onNavigate={(newDate) => setCurrentDate(newDate)}
                         tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
                         min={new Date(1972, 0, 1, 4, 0, 0, 0)}
+                        messages={calendarMessages}
 
                         // Layout
                         startAccessor="start"

@@ -13,6 +13,24 @@
     color: #1a1a1a !important;
 }
 
+/* Agenda ビューの文字サイズを調整 */
+.rbc-agenda-view table th,
+.rbc-agenda-view table td,
+.rbc-agenda-view .rbc-agenda-empty {
+    font-size: 12px !important;
+}
+
+/* Agenda 以外のビューの文字サイズを統一 */
+.rbc-month-view,
+.rbc-month-view * {
+    font-size: 10px !important;
+}
+
+.rbc-time-view,
+.rbc-time-view * {
+    font-size: 10px !important;
+}
+
 /* スクロールバーの分だけヘッダと表示がずれる問題の対応 */
 .rbc-time-content {
     overflow-y: scroll !important; /* 常にスクロールバーを表示 */
