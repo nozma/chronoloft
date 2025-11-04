@@ -1,8 +1,13 @@
 import atexit
 import logging
-from pypresence import Presence
 import os
 import time
+
+from pypresence import Presence
+from pypresence.payloads import Payload
+from pypresence.utils import remove_none
+from pypresence.types import StatusDisplayType
+
 from .models import ActivityGroup
 from . import db
 
@@ -26,16 +31,33 @@ class DiscordRPCManager:
             except Exception as e:
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
-    def update_presence(self, state, large_text, details, large_image):
+    def update_presence(self, state, large_text, details, large_image, application_name=None):
         if self.rpc:
             try:
-                self.rpc.update(
-                    state=state,
-                    large_text=large_text,
-                    details=details,
-                    large_image=large_image,
-                    start=self.start_time,  # 接続開始時刻を利用
-                )
+                if application_name:
+                    payload = Payload.set_activity(
+                        state=state,
+                        details=details,
+                        start=self.start_time,
+                        large_image=large_image,
+                        large_text=large_text,
+                        instance=True,
+                        activity=True
+                    ).data
+                    activity_payload = payload.get("args", {}).get("activity")
+                    if activity_payload is not None:
+                        activity_payload["name"] = application_name
+                        activity_payload["status_display_type"] = StatusDisplayType.NAME.value
+                        payload["args"]["activity"] = remove_none(activity_payload)
+                    self.rpc.update(payload_override=payload)
+                else:
+                    self.rpc.update(
+                        state=state,
+                        large_text=large_text,
+                        details=details,
+                        large_image=large_image,
+                        start=self.start_time,  # 接続開始時刻を利用
+                    )
             except Exception as e:
                 logger.error("Failed to update Discord RPC: %s", e)
 

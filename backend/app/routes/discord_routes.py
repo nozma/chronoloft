@@ -24,10 +24,11 @@ def discord_presence_start():
     try:
         manager.connect()
         manager.update_presence(
-            state=activity_name,
+            state=group,
             large_text=activity_name,
             details=details,
-            large_image=asset_key
+            large_image=asset_key,
+            application_name=activity_name
         )
         DISCORD_MANAGERS[group] = manager
         return jsonify({'message': 'Discord presence started'}), 200
@@ -67,10 +68,10 @@ def discord_presence_status():
 @discord_bp.route('/api/discord_presence/update', methods=['POST'])
 def discord_presence_update():
     data = request.get_json()
-    group       = data.get('group')
-    activity    = data.get('activity_name')
-    details     = data.get('details')
-    asset_key   = data.get('asset_key') or "default_image"
+    group = data.get('group')
+    activity_name = data.get('activity_name')
+    details = data.get('details')
+    asset_key = data.get('asset_key') or "default_image"
 
     mgr = DISCORD_MANAGERS.get(group)
     if not mgr or not mgr.is_connected():
@@ -78,10 +79,11 @@ def discord_presence_update():
 
     try:
         mgr.update_presence(
-            state=activity,
-            large_text=activity,
+            state=group,
+            large_text=activity_name,
             details=details,
-            large_image=asset_key
+            large_image=asset_key,
+            application_name=activity_name
         )
         return jsonify({'message': 'Discord presence updated'}), 200
     except Exception as e:
