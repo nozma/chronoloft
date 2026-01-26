@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
     fetchActivities,
     addActivity,
@@ -6,6 +6,7 @@ import {
     deleteActivity,
     setActivityTags
 } from '../services/api';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 
 const ActivityContext = createContext();
 
@@ -24,6 +25,35 @@ const ActivityContext = createContext();
  */
 export function ActivityProvider({ children }) {
     const [activities, setActivities] = useState([]);
+    const [activityExclusions, setActivityExclusions] = useLocalStorageState('activityExclusions', {});
+
+    const excludedActivityIds = useMemo(() => {
+        const entries = Object.entries(activityExclusions || {});
+        const ids = entries
+            .filter(([, isExcluded]) => isExcluded)
+            .map(([activityId]) => Number(activityId))
+            .filter((activityId) => !Number.isNaN(activityId));
+        return new Set(ids);
+    }, [activityExclusions]);
+
+    const isActivityExcluded = (activityId) => {
+        if (activityId === null || activityId === undefined) return false;
+        return Boolean(activityExclusions?.[String(activityId)]);
+    };
+
+    const setActivityExcluded = (activityId, excluded) => {
+        if (activityId === null || activityId === undefined) return;
+        const key = String(activityId);
+        setActivityExclusions(prev => {
+            const next = { ...(prev || {}) };
+            if (excluded) {
+                next[key] = true;
+            } else {
+                delete next[key];
+            }
+            return next;
+        });
+    };
 
     // 初回読み込みでアクティビティ一覧を取得
     useEffect(() => {
@@ -99,7 +129,12 @@ export function ActivityProvider({ children }) {
                 createActivity,
                 modifyActivity,
                 removeActivity,
-                refreshActivities
+                refreshActivities,
+                activityExclusions,
+                setActivityExclusions,
+                excludedActivityIds,
+                isActivityExcluded,
+                setActivityExcluded,
             }}
         >
             {children}

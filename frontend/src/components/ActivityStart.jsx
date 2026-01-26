@@ -16,6 +16,7 @@ import TagManagementDialog from './TagManagementDialog';
 import ActivityManagementDialog from './ActivityManagementDialog';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -34,6 +35,7 @@ function ActivityStart({
     subStopwatchVisible,
 }) {
     const { groups, excludedGroupIds } = useGroups();
+    const { excludedActivityIds } = useActivities();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
@@ -57,6 +59,9 @@ function ActivityStart({
             const activityTag = act.tags.map(t => t.name);
             return activityTag.includes(tagFilter);
         }
+        if (excludedActivityIds.has(Number(act.id)) && groupFilter !== '') {
+            return false;
+        }
         return true;
     });
     // タグに対するフィルターの適用
@@ -66,6 +71,7 @@ function ActivityStart({
         activities.forEach(act => {
             if (groupFilter && act.group_name !== groupFilter) return;  // グループフィルタ適用
             if (!groupFilter && excludedGroupIds.has(Number(act.group_id))) return;
+            if (groupFilter && excludedActivityIds.has(Number(act.id))) return;
             act.tags?.forEach(t => {
                 if (!encountered.has(t.name)) {
                     encountered.add(t.name);
@@ -74,7 +80,7 @@ function ActivityStart({
             });
         });
         return result;
-    }, [activities, groupFilter, excludedGroupIds]);
+    }, [activities, groupFilter, excludedGroupIds, excludedActivityIds]);
 
     // 表示するActivityを設定を反映して絞り込む
     // 期間フィルタ

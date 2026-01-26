@@ -131,7 +131,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
 
 function RecordCalendar() {
     const { groups, excludedGroupIds } = useGroups();
-    const { activities } = useActivities();
+    const { activities, excludedActivityIds } = useActivities();
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useLocalStorageState('calendar.view', Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -155,8 +155,15 @@ function RecordCalendar() {
         });
     }, [records, excludedGroupIds]);
 
+    const visibleRecordsByActivity = useMemo(() => {
+        return visibleRecords.filter(rec => {
+            if (rec.activity_id === null || rec.activity_id === undefined) return true;
+            return !excludedActivityIds.has(Number(rec.activity_id));
+        });
+    }, [visibleRecords, excludedActivityIds]);
+
     useEffect(() => {
-        const minuteRecords = visibleRecords.filter((rec) => rec.unit === 'minutes');
+        const minuteRecords = visibleRecordsByActivity.filter((rec) => rec.unit === 'minutes');
         let eventsData = [];
 
         minuteRecords.forEach((rec) => {
@@ -209,7 +216,7 @@ function RecordCalendar() {
         } else {
             setEvents(eventsData);
         }
-    }, [visibleRecords, groups, currentView]);
+    }, [visibleRecordsByActivity, groups, currentView]);
 
     const handleDoubleClickEvent = (event) => {
         setRecordToEdit(event);

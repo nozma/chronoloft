@@ -18,6 +18,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 import { useUI } from '../contexts/UIContext';
 import { useFilter } from '../contexts/FilterContext';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -188,6 +189,7 @@ function sortDecrease(data, by) {
 function RecordTrend() {
     const { records } = useRecords();
     const { excludedGroupIds } = useGroups();
+    const { excludedActivityIds } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { filterState } = useFilter();
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
@@ -202,8 +204,15 @@ function RecordTrend() {
         });
     }, [records, excludedGroupIds]);
 
-    const filteredRecords = useMemo(() => {
+    const visibleRecordsByActivity = useMemo(() => {
         return visibleRecords.filter(r => {
+            if (r.activity_id === null || r.activity_id === undefined) return true;
+            return !excludedActivityIds.has(Number(r.activity_id));
+        });
+    }, [visibleRecords, excludedActivityIds]);
+
+    const filteredRecords = useMemo(() => {
+        return visibleRecordsByActivity.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -211,7 +220,7 @@ function RecordTrend() {
             }
             return true;
         });
-    }, [visibleRecords, filterState]);
+    }, [visibleRecordsByActivity, filterState]);
 
     const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
     const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);

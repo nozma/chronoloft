@@ -33,6 +33,7 @@ import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
 import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
@@ -177,6 +178,7 @@ function RecordChart() {
     // コンテキストから必要なデータを取得
     const { records } = useRecords();
     const { groups, excludedGroupIds } = useGroups();
+    const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { dispatch: recordListDispatch } = useRecordListState();
@@ -206,9 +208,16 @@ function RecordChart() {
         });
     }, [records, excludedGroupIds]);
 
+    const visibleRecordsByActivity = useMemo(() => {
+        return visibleRecords.filter(r => {
+            if (r.activity_id === null || r.activity_id === undefined) return true;
+            return !excludedActivityIds.has(Number(r.activity_id));
+        });
+    }, [visibleRecords, excludedActivityIds]);
+
     const filteredRecords = useMemo(() => {
         const [start, end] = getPeriodRange(selectedPeriod, offset);
-        const filteredByState = visibleRecords.filter(r => {
+        const filteredByState = visibleRecordsByActivity.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -221,7 +230,7 @@ function RecordChart() {
             const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
-    }, [visibleRecords, filterState, selectedPeriod, offset]);
+    }, [visibleRecordsByActivity, filterState, selectedPeriod, offset]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -487,7 +496,7 @@ function RecordChart() {
                     <RecordFilter
                         groups={groups}
                         onFilterChange={handleFilterChange}
-                        records={visibleRecords}
+                        records={visibleRecordsByActivity}
                     />
                     {/* チャート表示設定 */}
                     {settingsOpen ? (
