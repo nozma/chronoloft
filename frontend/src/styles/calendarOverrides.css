@@ -36,6 +36,12 @@
     overflow-y: scroll !important; /* 常にスクロールバーを表示 */
 }
 
+/* Summary view: allow agenda to size to content when height is auto */
+.calendar-summary-auto .rbc-agenda-view {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
 @media (prefers-color-scheme: dark) {
     /* Agenda ビューの日付部分の背景色と文字色をリセット */
     .rbc-agenda-date-cell {

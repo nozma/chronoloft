@@ -336,6 +336,13 @@ function RecordCalendar() {
         agenda: 'Summary',
     }), []);
 
+    const isAgendaView = currentView === 'agenda';
+    const calendarMaxHeight = calendarMode === 'short' ? 500 : 800;
+    const calendarStyle = isAgendaView
+        ? { height: 'auto', maxHeight: calendarMaxHeight, overflowY: 'auto' }
+        : { height: calendarMaxHeight };
+    const calendarClassName = isAgendaView ? 'calendar-summary-auto' : undefined;
+
     return (
         <Box sx={{ mb: 1 }}>
             <Typography
@@ -385,7 +392,8 @@ function RecordCalendar() {
                         endAccessor="end"
                         step={60}
                         timeslots={calendarMode === "short" ? 2 : 1}
-                        style={{ height: calendarMode === "short" ? 500 : 800 }}
+                        style={calendarStyle}
+                        className={calendarClassName}
                         titleAccessor="title"
                         formats={formats}
                         components={{
