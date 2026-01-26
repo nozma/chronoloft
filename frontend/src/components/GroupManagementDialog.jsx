@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField, Table, TableHead, TableRow, TableCell, TableBody,
-    IconButton, MenuItem, Box
+    IconButton, MenuItem, Box, Switch
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -18,7 +18,7 @@ import iconMapping from '../utils/iconMapping';
 import { useGroups } from '../contexts/GroupContext';
 
 function GroupManagementDialog({ open, onClose }) {
-    const { groups, setGroups } = useGroups();
+    const { groups, setGroups, isGroupExcluded, setGroupExcluded } = useGroups();
     const [newGroupName, setNewGroupName] = useState('');
     const [newClientId, setNewClientId] = useState('');
     const [newIconName, setNewIconName] = useState('');
@@ -180,6 +180,7 @@ function GroupManagementDialog({ open, onClose }) {
                             <TableCell>Discord Client ID</TableCell>
                             <TableCell>アイコン</TableCell>
                             <TableCell>アイコン色</TableCell>
+                            <TableCell>集計除外</TableCell>
                             <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
@@ -266,6 +267,14 @@ function GroupManagementDialog({ open, onClose }) {
                                             ''
                                         )
                                     )}
+                                </TableCell>
+                                <TableCell>
+                                    <Switch
+                                        size="small"
+                                        checked={isGroupExcluded(group.id)}
+                                        onChange={(e) => setGroupExcluded(group.id, e.target.checked)}
+                                        inputProps={{ 'aria-label': '集計除外' }}
+                                    />
                                 </TableCell>
                                 <TableCell align="left">
                                     {editGroupId === group.id ? (

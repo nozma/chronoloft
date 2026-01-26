@@ -7,7 +7,8 @@ import {
     Button,
     Box,
     IconButton,
-    Chip
+    Chip,
+    Switch
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
@@ -26,7 +27,15 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     const { groups } = useGroups();
-    const { activities, createActivity, modifyActivity, removeActivity, refreshActivities } = useActivities();
+    const {
+        activities,
+        createActivity,
+        modifyActivity,
+        removeActivity,
+        refreshActivities,
+        isActivityExcluded,
+        setActivityExcluded,
+    } = useActivities();
     const { filterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -115,6 +124,21 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
             }
         },
         { field: 'name', headerName: 'Name', width: 200 },
+        {
+            field: 'excluded',
+            headerName: '集計除外',
+            width: 110,
+            sortable: false,
+            filterable: false,
+            renderCell: (params) => (
+                <Switch
+                    size="small"
+                    checked={isActivityExcluded(params.row.id)}
+                    onChange={(e) => setActivityExcluded(params.row.id, e.target.checked)}
+                    inputProps={{ 'aria-label': '集計除外' }}
+                />
+            )
+        },
         {
             field: 'unit',
             headerName: 'Unit',

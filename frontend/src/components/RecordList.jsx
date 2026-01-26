@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
 import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
@@ -21,7 +21,7 @@ function RecordList() {
     const [recordToEdit, setRecordToEdit] = useState(null);
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
-    const { groups } = useGroups();
+    const { groups, excludedGroupIds } = useGroups();
     const { activities } = useActivities();
     const selectedActivity = recordToEdit
         ? activities.find(a => a.id === recordToEdit.activity_id)
@@ -30,6 +30,14 @@ function RecordList() {
 
     const dataGridRef = useRef(null);
     const containerRef = useRef(null);
+
+    const visibleRecords = useMemo(() => {
+        return records.filter(record => {
+            if (record.activity_group_id === null || record.activity_group_id === undefined) return true;
+            return !excludedGroupIds.has(Number(record.activity_group_id));
+        });
+    }, [records, excludedGroupIds]);
+
 
     // ----------------------------
     // イベントハンドラ
@@ -214,7 +222,7 @@ function RecordList() {
                 >
                     <Box ref={dataGridRef} sx={{ height: 600, mb: 2 }}>
                         <DataGrid
-                            rows={records}
+                            rows={visibleRecords}
                             columns={columns}
                             pageSize={5}
                             rowsPerPageOptions={[5]}

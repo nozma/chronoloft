@@ -17,6 +17,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
+import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 import { useUI } from '../contexts/UIContext';
 import { useFilter } from '../contexts/FilterContext';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -186,6 +188,8 @@ function sortDecrease(data, by) {
 
 function RecordTrend() {
     const { records } = useRecords();
+    const { excludedGroupIds } = useGroups();
+    const { excludedActivityIds } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { filterState } = useFilter();
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
@@ -193,8 +197,22 @@ function RecordTrend() {
     const [incPage, setIncPage] = useState(0);
     const [decPage, setDecPage] = useState(0);
 
-    const filteredRecords = useMemo(() => {
+    const visibleRecords = useMemo(() => {
         return records.filter(r => {
+            if (r.activity_group_id === null || r.activity_group_id === undefined) return true;
+            return !excludedGroupIds.has(Number(r.activity_group_id));
+        });
+    }, [records, excludedGroupIds]);
+
+    const visibleRecordsByActivity = useMemo(() => {
+        return visibleRecords.filter(r => {
+            if (r.activity_id === null || r.activity_id === undefined) return true;
+            return !excludedActivityIds.has(Number(r.activity_id));
+        });
+    }, [visibleRecords, excludedActivityIds]);
+
+    const filteredRecords = useMemo(() => {
+        return visibleRecordsByActivity.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -202,7 +220,7 @@ function RecordTrend() {
             }
             return true;
         });
-    }, [records, filterState]);
+    }, [visibleRecordsByActivity, filterState]);
 
     const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
     const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);

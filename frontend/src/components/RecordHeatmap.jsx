@@ -14,6 +14,7 @@ import { DateTime } from 'luxon';
 import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
+import { useActivities } from '../contexts/ActivityContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
@@ -25,7 +26,8 @@ function RecordHeatmap() {
     const [heatmapData, setHeatmapData] = useState([]);
     const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
     const { filterCriteria } = recordListState;
-    const { groups } = useGroups();
+    const { groups, excludedGroupIds } = useGroups();
+    const { excludedActivityIds } = useActivities();
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
@@ -37,9 +39,23 @@ function RecordHeatmap() {
     }, [recordListDispatch]);
 
     // filterCriteria に応じて records をフィルタリングする
+    const visibleRecords = useMemo(() => {
+        return records.filter(record => {
+            if (record.activity_group_id === null || record.activity_group_id === undefined) return true;
+            return !excludedGroupIds.has(Number(record.activity_group_id));
+        });
+    }, [records, excludedGroupIds]);
+
+    const visibleRecordsByActivity = useMemo(() => {
+        return visibleRecords.filter(record => {
+            if (record.activity_id === null || record.activity_id === undefined) return true;
+            return !excludedActivityIds.has(Number(record.activity_id));
+        });
+    }, [visibleRecords, excludedActivityIds]);
+
     useEffect(() => {
         const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
-        let filtered = records.filter((record) => {
+        let filtered = visibleRecordsByActivity.filter((record) => {
             const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
             const tagMatch = tagFilter
                 ? record.tags && record.tags.some(tag => tag.name === tagFilter)
@@ -50,7 +66,7 @@ function RecordHeatmap() {
             return groupMatch && tagMatch && nameMatch;
         });
         setFilteredRecords(filtered);
-    }, [filterCriteria, records, activeActivity]);
+    }, [filterCriteria, visibleRecordsByActivity, activeActivity]);
 
     // フィルター条件が変化するたびに件数の多い単位を選ぶ
     useEffect(() => {
@@ -199,7 +215,7 @@ function RecordHeatmap() {
                             <RecordFilter
                                 groups={groups}
                                 onFilterChange={handleFilterChange}
-                                records={records}
+                                records={visibleRecordsByActivity}
                             />
                             <TextField
                                 value={displayMode}
