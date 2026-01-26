@@ -176,7 +176,7 @@ function getPeriodRange(period, offset = 0) {
 function RecordChart() {
     // コンテキストから必要なデータを取得
     const { records } = useRecords();
-    const { groups } = useGroups();
+    const { groups, excludedGroupIds } = useGroups();
     const { filterState } = useFilter();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { dispatch: recordListDispatch } = useRecordListState();
@@ -199,9 +199,16 @@ function RecordChart() {
     );
 
     // フィルタ条件を反映して表示に使うレコードをフィルタ
+    const visibleRecords = useMemo(() => {
+        return records.filter(r => {
+            if (r.activity_group_id === null || r.activity_group_id === undefined) return true;
+            return !excludedGroupIds.has(Number(r.activity_group_id));
+        });
+    }, [records, excludedGroupIds]);
+
     const filteredRecords = useMemo(() => {
         const [start, end] = getPeriodRange(selectedPeriod, offset);
-        const filteredByState = records.filter(r => {
+        const filteredByState = visibleRecords.filter(r => {
             if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
             if (filterState.tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -214,7 +221,7 @@ function RecordChart() {
             const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
-    }, [records, filterState, selectedPeriod, offset]);
+    }, [visibleRecords, filterState, selectedPeriod, offset]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -480,7 +487,7 @@ function RecordChart() {
                     <RecordFilter
                         groups={groups}
                         onFilterChange={handleFilterChange}
-                        records={records}
+                        records={visibleRecords}
                     />
                     {/* チャート表示設定 */}
                     {settingsOpen ? (

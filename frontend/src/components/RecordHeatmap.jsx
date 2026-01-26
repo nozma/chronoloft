@@ -25,7 +25,7 @@ function RecordHeatmap() {
     const [heatmapData, setHeatmapData] = useState([]);
     const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
     const { filterCriteria } = recordListState;
-    const { groups } = useGroups();
+    const { groups, excludedGroupIds } = useGroups();
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
@@ -37,9 +37,16 @@ function RecordHeatmap() {
     }, [recordListDispatch]);
 
     // filterCriteria に応じて records をフィルタリングする
+    const visibleRecords = useMemo(() => {
+        return records.filter(record => {
+            if (record.activity_group_id === null || record.activity_group_id === undefined) return true;
+            return !excludedGroupIds.has(Number(record.activity_group_id));
+        });
+    }, [records, excludedGroupIds]);
+
     useEffect(() => {
         const { groupFilter, tagFilter, activityNameFilter } = filterCriteria;
-        let filtered = records.filter((record) => {
+        let filtered = visibleRecords.filter((record) => {
             const groupMatch = groupFilter ? record.activity_group === groupFilter : true;
             const tagMatch = tagFilter
                 ? record.tags && record.tags.some(tag => tag.name === tagFilter)
@@ -50,7 +57,7 @@ function RecordHeatmap() {
             return groupMatch && tagMatch && nameMatch;
         });
         setFilteredRecords(filtered);
-    }, [filterCriteria, records, activeActivity]);
+    }, [filterCriteria, visibleRecords, activeActivity]);
 
     // フィルター条件が変化するたびに件数の多い単位を選ぶ
     useEffect(() => {
@@ -199,7 +206,7 @@ function RecordHeatmap() {
                             <RecordFilter
                                 groups={groups}
                                 onFilterChange={handleFilterChange}
-                                records={records}
+                                records={visibleRecords}
                             />
                             <TextField
                                 value={displayMode}

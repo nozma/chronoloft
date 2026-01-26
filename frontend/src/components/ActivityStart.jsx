@@ -33,7 +33,7 @@ function ActivityStart({
     subSelectedActivity,
     subStopwatchVisible,
 }) {
-    const { groups } = useGroups();
+    const { groups, excludedGroupIds } = useGroups();
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
@@ -49,6 +49,9 @@ function ActivityStart({
         if (groupFilter && act.group_name !== groupFilter) {
             return false;
         }
+        if (excludedGroupIds.has(act.group_id) && act.group_name !== groupFilter) {
+            return false;
+        }
         // タグフィルタ
         if (tagFilter) {
             const activityTag = act.tags.map(t => t.name);
@@ -62,6 +65,7 @@ function ActivityStart({
         const result = [];
         activities.forEach(act => {
             if (groupFilter && act.group_name !== groupFilter) return;  // グループフィルタ適用
+            if (!groupFilter && excludedGroupIds.has(Number(act.group_id))) return;
             act.tags?.forEach(t => {
                 if (!encountered.has(t.name)) {
                     encountered.add(t.name);
@@ -70,7 +74,7 @@ function ActivityStart({
             });
         });
         return result;
-    }, [activities, groupFilter]);
+    }, [activities, groupFilter, excludedGroupIds]);
 
     // 表示するActivityを設定を反映して絞り込む
     // 期間フィルタ
