@@ -13,7 +13,7 @@ import { splitEvent } from '../utils/splitEvent';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
-import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton } from '@mui/material';
+import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton, TextField, MenuItem } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -28,25 +28,59 @@ const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 const localizer = luxonLocalizer(DateTime);
 
+function getEventGroupingTargets(event, groupBy) {
+    if (groupBy === 'group') {
+        const groupName = event.activityGroup || 'Unknown Group';
+        return [{ key: groupName, label: groupName, color: event.groupColor }];
+    }
+    if (groupBy === 'tag') {
+        if (event.tags && event.tags.length > 0) {
+            return event.tags.map((tag) => ({
+                key: tag.name,
+                label: tag.name,
+                color: null,
+            }));
+        }
+        return [{ key: 'No Tag', label: 'No Tag', color: null }];
+    }
+    if (groupBy === 'activityMemo') {
+        const activityName = event.activityName || 'Unknown Activity';
+        const memoPart = event.memo ? ` / ${event.memo}` : '';
+        const label = `${activityName}${memoPart}`;
+        return [{ key: label, label, color: event.groupColor }];
+    }
+    const activityName = event.activityName || 'Unknown Activity';
+    return [{ key: activityName, label: activityName, color: event.groupColor }];
+}
+
 /**
  * month / agenda ビュー用に1日のイベントを合計する
  * @param {Array} events 集計対象のイベント
- * @param {{ sortBy: 'value' | 'dateDesc' }} options ソート方法の指定
+ * @param {{ sortBy: 'value' | 'dateDesc', groupBy: 'group' | 'tag' | 'activity' | 'activityMemo' }} options
  */
-function aggregateEventsForMonth(events, { sortBy } = { sortBy: 'value' }) {
+function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity' } = {}) {
     const aggregated = {};
 
     events.forEach((event) => {
         const dayStr = event.start.toDateString();
-        const key = `${dayStr}_${event.activityName}`;
-        if (!aggregated[key]) {
-            aggregated[key] = { ...event, totalValue: 0 };
-        }
-        aggregated[key].totalValue += Number(event.value) || 0;
+        const groupTargets = getEventGroupingTargets(event, groupBy);
+        groupTargets.forEach((target) => {
+            const key = `${dayStr}_${target.key}`;
+            if (!aggregated[key]) {
+                aggregated[key] = {
+                    start: event.start,
+                    groupKey: target.key,
+                    activityName: target.label,
+                    groupColor: target.color || event.groupColor,
+                    totalValue: 0,
+                };
+            }
+            aggregated[key].totalValue += Number(event.value) || 0;
+        });
     });
 
     const aggregatedArray = Object.values(aggregated).map((agg) => ({
-        id: `${agg.id}-${agg.activityName}-${agg.start.toDateString()}`,
+        id: `${agg.groupKey}-${agg.start.toDateString()}`,
         activityName: agg.activityName,
         title: `(${Math.floor(agg.totalValue / 60)}:${String(Math.round(agg.totalValue % 60)).padStart(2, '0')}) ${agg.activityName}`,
         // All-day event for the aggregated day
@@ -75,7 +109,7 @@ function aggregateEventsForMonth(events, { sortBy } = { sortBy: 'value' }) {
 }
 
 /* ヘッダ部分のツールバーのカスタム定義 */
-function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode }) {
+function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode, summaryGroupBy, setSummaryGroupBy }) {
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -112,6 +146,27 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     <ToggleButton value="month">Month</ToggleButton>
                     <ToggleButton value="agenda">Summary</ToggleButton>
                 </ToggleButtonGroup>
+                {view === 'agenda' && (
+                    <TextField
+                        select
+                        label="Grouping"
+                        size="small"
+                        value={summaryGroupBy}
+                        onChange={(e) => setSummaryGroupBy(e.target.value)}
+                        sx={{
+                            minWidth: 140,
+                            '& .MuiInputLabel-shrink': {
+                                transform: 'translate(14px, -4px) scale(0.75)',
+                            },
+                        }}
+                        InputLabelProps={{ shrink: true }}
+                    >
+                        <MenuItem value="group">Group</MenuItem>
+                        <MenuItem value="tag">Tag</MenuItem>
+                        <MenuItem value="activity">Activity</MenuItem>
+                        <MenuItem value="activityMemo">Activity + Memo</MenuItem>
+                    </TextField>
+                )}
                 {/* 表示モード切り替え */}
                 <ToggleButtonGroup
                     value={calendarMode}
@@ -142,6 +197,7 @@ function RecordCalendar() {
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
     const [calendarMode, setCalendarMode] = useLocalStorageState('calendar.mode', 'short');
+    const [summaryGroupBy, setSummaryGroupBy] = useLocalStorageState('calendar.summaryGroupBy', 'activity');
     const [newRecordSlot, setNewRecordSlot] = useState(null);
     const defaultActivity = useMemo(
         () => activities.find((a) => a.unit === 'minutes') || activities[0],
@@ -190,6 +246,7 @@ function RecordCalendar() {
                 id: rec.id,
                 activity_id: rec.activity_id,
                 activityName: rec.activity_name,
+                activityGroup: rec.activity_group,
                 value: rec.value,
                 title: `${rec.activity_name} (${formattedTime})`,
                 start: startDT.toJSDate(),
@@ -199,6 +256,7 @@ function RecordCalendar() {
                 unit: rec.unit,
                 created_at: rec.created_at,
                 memo: rec.memo,
+                tags: rec.tags,
             };
 
             // If it spans multiple days, split it
@@ -212,11 +270,11 @@ function RecordCalendar() {
         if (currentView === 'month') {
             setEvents(aggregateEventsForMonth(eventsData));
         } else if (currentView === 'agenda') {
-            setEvents(aggregateEventsForMonth(eventsData, { sortBy: 'dateDesc' }));
+            setEvents(aggregateEventsForMonth(eventsData, { sortBy: 'dateDesc', groupBy: summaryGroupBy }));
         } else {
             setEvents(eventsData);
         }
-    }, [visibleRecordsByActivity, groups, currentView]);
+    }, [visibleRecordsByActivity, groups, currentView, summaryGroupBy]);
 
     const handleDoubleClickEvent = (event) => {
         setRecordToEdit(event);
@@ -417,6 +475,8 @@ function RecordCalendar() {
                                     {...toolbarProps}
                                     calendarMode={calendarMode}
                                     setCalendarMode={setCalendarMode}
+                                    summaryGroupBy={summaryGroupBy}
+                                    setSummaryGroupBy={setSummaryGroupBy}
                                 />
                             )
                         }}
