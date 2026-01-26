@@ -15,6 +15,7 @@ import '../styles/calendarOverrides.css';
 import { useGroups } from '../contexts/GroupContext';
 import { Box, Typography, Collapse, Tooltip, ToggleButton, ToggleButtonGroup, IconButton, TextField, MenuItem } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
+import { useFilter } from '../contexts/FilterContext';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
@@ -187,6 +188,8 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
 function RecordCalendar() {
     const { groups, excludedGroupIds } = useGroups();
     const { activities, excludedActivityIds } = useActivities();
+    const { filterState } = useFilter();
+    const { groupFilter } = filterState;
     const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useLocalStorageState('calendar.view', Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -207,9 +210,10 @@ function RecordCalendar() {
     const visibleRecords = useMemo(() => {
         return records.filter(rec => {
             if (rec.activity_group_id === null || rec.activity_group_id === undefined) return true;
+            if (groupFilter && rec.activity_group === groupFilter) return true;
             return !excludedGroupIds.has(Number(rec.activity_group_id));
         });
-    }, [records, excludedGroupIds]);
+    }, [records, excludedGroupIds, groupFilter]);
 
     const visibleRecordsByActivity = useMemo(() => {
         return visibleRecords.filter(rec => {

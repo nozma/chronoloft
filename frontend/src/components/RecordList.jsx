@@ -13,6 +13,7 @@ import { useRecords } from '../contexts/RecordContext';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { useActivities } from '../contexts/ActivityContext';
+import { useFilter } from '../contexts/FilterContext';
 
 function RecordList() {
     const [error] = useState(null);
@@ -23,6 +24,8 @@ function RecordList() {
     const { records, deleteRecord, updateRecord, refreshRecords } = useRecords();
     const { groups, excludedGroupIds } = useGroups();
     const { activities } = useActivities();
+    const { filterState } = useFilter();
+    const { groupFilter } = filterState;
     const selectedActivity = recordToEdit
         ? activities.find(a => a.id === recordToEdit.activity_id)
         : null;
@@ -34,9 +37,10 @@ function RecordList() {
     const visibleRecords = useMemo(() => {
         return records.filter(record => {
             if (record.activity_group_id === null || record.activity_group_id === undefined) return true;
+            if (groupFilter && record.activity_group === groupFilter) return true;
             return !excludedGroupIds.has(Number(record.activity_group_id));
         });
-    }, [records, excludedGroupIds]);
+    }, [records, excludedGroupIds, groupFilter]);
 
 
     // ----------------------------
