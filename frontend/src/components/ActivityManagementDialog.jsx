@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -22,11 +22,13 @@ import { useGroups } from '../contexts/GroupContext';
 import { useUI } from '../contexts/UIContext';
 import { useActivities } from '../contexts/ActivityContext';
 import { useFilter } from '../contexts/FilterContext';
+import { useTags } from '../contexts/TagContext';
 import { setActivityTags } from '../services/api';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     const { groups } = useGroups();
+    const { tags } = useTags();
     const {
         activities,
         createActivity,
@@ -47,6 +49,18 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
 
     const handleAddClick = () => setDialogOpen(true);
     const handleDialogClose = () => setDialogOpen(false);
+
+    const defaultGroupId = useMemo(() => {
+        if (!groupFilter) return '';
+        const matchedGroup = groups.find((group) => group.name === groupFilter);
+        return matchedGroup?.id || '';
+    }, [groupFilter, groups]);
+
+    const defaultTags = useMemo(() => {
+        if (!tagFilter) return [];
+        const matchedTag = tags.find((tag) => tag.name === tagFilter);
+        return matchedTag ? [matchedTag] : [];
+    }, [tagFilter, tags]);
 
     const handleActivityAdded = async (activityData) => {
         try {
@@ -220,7 +234,13 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
             <DialogActions>
                 <Button onClick={onClose}>閉じる</Button>
             </DialogActions>
-            <AddActivityDialog open={dialogOpen} onClose={handleDialogClose} onSubmit={handleActivityAdded} />
+            <AddActivityDialog
+                open={dialogOpen}
+                onClose={handleDialogClose}
+                onSubmit={handleActivityAdded}
+                defaultGroupId={defaultGroupId}
+                defaultTags={defaultTags}
+            />
             <ConfirmDialog
                 open={state.confirmDialogOpen}
                 title='Confirm Deletion'
