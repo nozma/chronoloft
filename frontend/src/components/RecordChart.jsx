@@ -180,6 +180,7 @@ function RecordChart() {
     const { groups, excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
+    const { groupFilter, tagFilter, activityNameFilter } = filterState;
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { dispatch: recordListDispatch } = useRecordListState();
 
@@ -222,9 +223,10 @@ function RecordChart() {
     const visibleRecords = useMemo(() => {
         return records.filter(r => {
             if (r.activity_group_id === null || r.activity_group_id === undefined) return true;
+            if (groupFilter && r.activity_group === groupFilter) return true;
             return !excludedGroupIds.has(Number(r.activity_group_id));
         });
-    }, [records, excludedGroupIds]);
+    }, [records, excludedGroupIds, groupFilter]);
 
     const visibleRecordsByActivity = useMemo(() => {
         return visibleRecords.filter(r => {
@@ -236,19 +238,19 @@ function RecordChart() {
     const filteredRecords = useMemo(() => {
         const [start, end] = getPeriodRange(selectedPeriod, offset);
         const filteredByState = visibleRecordsByActivity.filter(r => {
-            if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
-            if (filterState.tagFilter) {
+            if (groupFilter && r.activity_group !== groupFilter) return false;
+            if (tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
-                if (!tagNames.includes(filterState.tagFilter)) return false;
+                if (!tagNames.includes(tagFilter)) return false;
             }
-            if (filterState.activityNameFilter && r.activity_name !== filterState.activityNameFilter) return false;
+            if (activityNameFilter && r.activity_name !== activityNameFilter) return false;
             return true;
         });
         return filteredByState.filter(r => {
             const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
-    }, [visibleRecordsByActivity, filterState, selectedPeriod, offset]);
+    }, [visibleRecordsByActivity, groupFilter, tagFilter, activityNameFilter, selectedPeriod, offset]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });

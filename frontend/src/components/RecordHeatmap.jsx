@@ -33,6 +33,7 @@ function RecordHeatmap() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { records } = useRecords();
     const { palette: { mode } } = useTheme();
+    const groupFilter = filterCriteria?.groupFilter || '';
 
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -42,9 +43,10 @@ function RecordHeatmap() {
     const visibleRecords = useMemo(() => {
         return records.filter(record => {
             if (record.activity_group_id === null || record.activity_group_id === undefined) return true;
+            if (groupFilter && record.activity_group === groupFilter) return true;
             return !excludedGroupIds.has(Number(record.activity_group_id));
         });
-    }, [records, excludedGroupIds]);
+    }, [records, excludedGroupIds, groupFilter]);
 
     const visibleRecordsByActivity = useMemo(() => {
         return visibleRecords.filter(record => {

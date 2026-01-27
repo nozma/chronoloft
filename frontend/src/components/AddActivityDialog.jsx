@@ -14,7 +14,7 @@ import { useTheme } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useTags } from '../contexts/TagContext';
 
-function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
+function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupId, defaultTags }) {
     const { groups } = useGroups();
     const { tags } = useTags();
     const theme = useTheme();
@@ -38,14 +38,14 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData }) {
             setSelectedTags(initialData.tags || []);
         } else {
             // 新規登録の場合は初期値にリセット
-            setGroupId('');
+            setGroupId(defaultGroupId || '');
             setName('');
             setUnit('minutes');
             setAssetKey('');
             setIsActive(true);
-            setSelectedTags([]);
+            setSelectedTags(defaultTags || []);
         }
-    }, [initialData, open]);
+    }, [initialData, open, defaultGroupId, defaultTags]);
 
     const handleSubmit = () => {
         if (!name || !groupId) {

@@ -192,6 +192,7 @@ function RecordTrend() {
     const { excludedActivityIds } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { filterState } = useFilter();
+    const { groupFilter, tagFilter } = filterState;
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('trend.selectedPeriod', '30day');
     const [incPage, setIncPage] = useState(0);
@@ -200,9 +201,10 @@ function RecordTrend() {
     const visibleRecords = useMemo(() => {
         return records.filter(r => {
             if (r.activity_group_id === null || r.activity_group_id === undefined) return true;
+            if (groupFilter && r.activity_group === groupFilter) return true;
             return !excludedGroupIds.has(Number(r.activity_group_id));
         });
-    }, [records, excludedGroupIds]);
+    }, [records, excludedGroupIds, groupFilter]);
 
     const visibleRecordsByActivity = useMemo(() => {
         return visibleRecords.filter(r => {
@@ -213,14 +215,14 @@ function RecordTrend() {
 
     const filteredRecords = useMemo(() => {
         return visibleRecordsByActivity.filter(r => {
-            if (filterState.groupFilter && r.activity_group !== filterState.groupFilter) return false;
-            if (filterState.tagFilter) {
+            if (groupFilter && r.activity_group !== groupFilter) return false;
+            if (tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
-                if (!tagNames.includes(filterState.tagFilter)) return false;
+                if (!tagNames.includes(tagFilter)) return false;
             }
             return true;
         });
-    }, [visibleRecordsByActivity, filterState]);
+    }, [visibleRecordsByActivity, groupFilter, tagFilter]);
 
     const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
     const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
