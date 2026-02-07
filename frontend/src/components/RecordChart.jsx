@@ -20,6 +20,7 @@ import {
     CartesianGrid,
     Tooltip,
     Legend,
+    Text,
     Customized
 } from 'recharts';
 import { forceSimulation, forceY, forceCollide } from 'd3-force';
@@ -176,7 +177,7 @@ function getPeriodRange(period, offset = 0) {
 
 function RecordChart() {
     // コンテキストから必要なデータを取得
-    const { records } = useRecords();
+    const { recordsWithLive: records } = useRecords();
     const { groups, excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
@@ -367,6 +368,32 @@ function RecordChart() {
         }
         return value;
     };
+
+    const OneDayXAxisTick = (props) => {
+        const {
+            x,
+            y,
+            payload,
+            index,
+            visibleTicksCount,
+            tickFormatter,
+            ...rest
+        } = props;
+        if (index === visibleTicksCount - 1) return null;
+        const value = typeof tickFormatter === 'function'
+            ? tickFormatter(payload.value, index)
+            : payload.value;
+        return (
+            <Text
+                {...rest}
+                x={x}
+                y={y}
+                className="recharts-cartesian-axis-tick-value"
+            >
+                {value}
+            </Text>
+        );
+    };
     // 月日の表示のフォーマッタ
     const xAxisTickFormatter = (val) => {
         if (!val) return '';
@@ -427,18 +454,19 @@ function RecordChart() {
         return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
     }, [visibleKeys]);
 
+    const baseChartHeight = selectedPeriod === '1d' ? 125 : 250;
+
     // 凡例が多いときの高さ補正を算出する
     const legendExtraHeight = useMemo(() => {
-        if (chartType !== 'bar' || visibleKeys.length === 0 || chartWidth === 0) return 0;
-        const extraLabelWidth = selectedPeriod === '1d' ? 72 : 36;
+        if (chartType !== 'bar' || visibleKeys.length === 0 || selectedPeriod === '1d') return 0;
+        if (chartWidth === 0) return 0;
+        const extraLabelWidth = 36;
         const itemWidth = Math.max(100, longestLabelWidth + extraLabelWidth);
         const itemsPerRow = Math.max(1, Math.floor(chartWidth / itemWidth));
         const rows = Math.ceil(visibleKeys.length / itemsPerRow);
         const rowHeight = 20;
         return rows > 1 ? (rows - 1) * rowHeight : 0;
     }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod]);
-
-    const baseChartHeight = selectedPeriod === '1d' ? 125 : 250;
     const chartHeight = baseChartHeight + legendExtraHeight;
 
     // ツールチップ用カスタムコンポーネント
@@ -839,6 +867,7 @@ function RecordChart() {
                                         <XAxis
                                             type="number"
                                             tickFormatter={yAxisTimeValueFormatter}
+                                            tick={OneDayXAxisTick}
                                             domain={[0, dataMax =>
                                                 dataMax < 120
                                                     ? Math.ceil(dataMax / 5) * 5
@@ -879,12 +908,18 @@ function RecordChart() {
                                         />
                                     )}
                                     {selectedPeriod === '1d' ? (
-                                        <Legend formatter={(value) => {
-                                            const total = Math.round(cumulativeMap[value] ?? 0);
-                                            const h = Math.floor(total / 60);
-                                            const m = String(total % 60).padStart(2, '0');
-                                            return `(${h}:${m}) ${value}`;
-                                        }} />
+                                        <Legend
+                                            layout="vertical"
+                                            align="right"
+                                            verticalAlign="middle"
+                                            wrapperStyle={{ paddingLeft: 8 }}
+                                            formatter={(value) => {
+                                                const total = Math.round(cumulativeMap[value] ?? 0);
+                                                const h = Math.floor(total / 60);
+                                                const m = String(total % 60).padStart(2, '0');
+                                                return `(${h}:${m}) ${value}`;
+                                            }}
+                                        />
                                     ) : (
                                         <Legend />
                                     )}

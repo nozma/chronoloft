@@ -195,7 +195,7 @@ function RecordCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
-    const { records, refreshRecords: onRecordUpdate } = useRecords();
+    const { recordsWithLive: records, refreshRecords: onRecordUpdate } = useRecords();
     const selectedActivity = recordToEdit
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;
@@ -261,6 +261,7 @@ function RecordCalendar() {
                 created_at: rec.created_at,
                 memo: rec.memo,
                 tags: rec.tags,
+                is_live: rec.is_live === true,
             };
 
             // If it spans multiple days, split it
@@ -281,6 +282,7 @@ function RecordCalendar() {
     }, [visibleRecordsByActivity, groups, currentView, summaryGroupBy]);
 
     const handleDoubleClickEvent = (event) => {
+        if (event.is_live) return;
         setRecordToEdit(event);
     };
 
@@ -306,6 +308,7 @@ function RecordCalendar() {
     };
 
     const handleEventDrop = async ({ event, start, end, isAllDay }) => {
+        if (event.is_live) return;
         try {
             const startDT = DateTime.fromJSDate(start);
             const endDT = DateTime.fromJSDate(end);
@@ -324,6 +327,7 @@ function RecordCalendar() {
     };
 
     const handleEventResize = async ({ event, start, end }) => {
+        if (event.is_live) return;
         try {
             const startDT = DateTime.fromJSDate(start);
             const endDT = DateTime.fromJSDate(end);
@@ -492,8 +496,9 @@ function RecordCalendar() {
                         onEventDrop={handleEventDrop}
                         onEventResize={handleEventResize}
                         resizable
+                        resizableAccessor={(event) => !event.is_live}
                         // Make all events draggable (or define a function returning bool)
-                        draggableAccessor={() => true}
+                        draggableAccessor={(event) => !event.is_live}
                         selectable // optional, you can remove if you don't need slot selection
                         onSelectSlot={handleSelectSlot}
 

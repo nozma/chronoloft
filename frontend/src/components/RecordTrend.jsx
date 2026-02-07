@@ -187,7 +187,7 @@ function sortDecrease(data, by) {
 }
 
 function RecordTrend() {
-    const { records } = useRecords();
+    const { recordsWithLive: records } = useRecords();
     const { excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { state: uiState, dispatch: uiDispatch } = useUI();
