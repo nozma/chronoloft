@@ -31,7 +31,7 @@ function RecordHeatmap() {
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
     const { state: uiState, dispatch: uiDispatch } = useUI();
-    const { records } = useRecords();
+    const { recordsWithLive: records } = useRecords();
     const { palette: { mode } } = useTheme();
 
     const handleFilterChange = useCallback((newCriteria) => {

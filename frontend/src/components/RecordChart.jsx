@@ -176,7 +176,7 @@ function getPeriodRange(period, offset = 0) {
 
 function RecordChart() {
     // コンテキストから必要なデータを取得
-    const { records } = useRecords();
+    const { recordsWithLive: records } = useRecords();
     const { groups, excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
