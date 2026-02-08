@@ -18,10 +18,14 @@ const Stopwatch = forwardRef((props, ref) => {
     const {
         displayTime,
         complete,
+        pause,
+        resume,
         finishAndReset,
+        reset,
         cancel,
         updateStartTime,
         currentStartTime,
+        displayStartTime,
         memo,
         setMemo,
         isDiscordBusy
@@ -30,6 +34,9 @@ const Stopwatch = forwardRef((props, ref) => {
     useImperativeHandle(ref, () => ({
         complete,
         finishAndReset,
+        reset,
+        pause,
+        resume,
         isDiscordBusy
     }));
 
@@ -39,8 +46,8 @@ const Stopwatch = forwardRef((props, ref) => {
 
     // カレンダーアイコン押下時に DatePicker を表示
     const handleOpenPicker = (event) => {
-        if (currentStartTime) {
-            setEditedStartTime(DateTime.fromMillis(currentStartTime).toFormat("yyyy-MM-dd'T'HH:mm"));
+        if (displayStartTime) {
+            setEditedStartTime(DateTime.fromMillis(displayStartTime).toFormat("yyyy-MM-dd'T'HH:mm"));
         } else {
             setEditedStartTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
         }
@@ -67,8 +74,8 @@ const Stopwatch = forwardRef((props, ref) => {
         let dt = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm");
         if (!dt.isValid) {
             // 初期値がセットされていない場合は currentStartTime を基準にする
-            if (currentStartTime) {
-                dt = DateTime.fromMillis(currentStartTime);
+            if (displayStartTime) {
+                dt = DateTime.fromMillis(displayStartTime);
                 setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
             } else {
                 return; // 基準が無ければ何もしない
@@ -84,8 +91,8 @@ const Stopwatch = forwardRef((props, ref) => {
     };
 
     // 現在の開始時刻の表示（currentStartTime を利用）
-    const formattedStartTime = currentStartTime
-        ? DateTime.fromMillis(currentStartTime).toFormat("HH:mm")
+    const formattedStartTime = displayStartTime
+        ? DateTime.fromMillis(displayStartTime).toFormat("HH:mm")
         : "Undefined";
 
     // 時間をフォーマットする関数
@@ -95,6 +102,17 @@ const Stopwatch = forwardRef((props, ref) => {
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    };
+
+    const handleCompleteClick = async () => {
+        if (props.recordSaveMode === 'confirm' && props.onConfirmComplete) {
+            const snapshot = await pause();
+            if (snapshot) {
+                props.onConfirmComplete(snapshot.minutes, snapshot.memo);
+            }
+            return;
+        }
+        complete(memo);
     };
 
     // 7日/30日累積時間と1つ前の期間の累積時間を計算
@@ -206,7 +224,7 @@ const Stopwatch = forwardRef((props, ref) => {
                     {/* 経過時間と完了・キャンセルアイコン */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         <Typography variant="h5" sx={{ mr: 1 }}>{formatTime(displayTime)}</Typography>
-                        <IconButton color="primary" size="small" onClick={() => complete(memo)} disabled={isDiscordBusy}>
+                        <IconButton color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
                             <CheckCircleIcon fontSize='medium' />
                         </IconButton>
                         <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>

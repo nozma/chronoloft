@@ -18,6 +18,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const [displayTime, setDisplayTime] = useState(0); // ストップウォッチの経過時間(ms)
     const [restored, setRestored] = useState(false); // localStorageからの復元完了フラグ
     const [currentStartTime, setCurrentStartTime] = useState(null); // 開始時刻
+    const [pausedStartTime, setPausedStartTime] = useState(null); // 一時停止時の開始時刻
     const [memo, setMemo] = useState(''); // メモ
     const [discordData, setDiscordData] = useState(initialDiscordData); // Discordデータ
     const [isDiscordBusy, setIsDiscordBusy] = useState(false); // DiscordAPI呼び出し中フラグ
@@ -102,22 +103,41 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
 
         const now = Date.now();
         setCurrentStartTime(now);
+        setPausedStartTime(null);
 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData || discordData;
         setDiscordData(discordDataToUse);
-        if (discordDataToUse && !discordLockRef.current) {
-            setIsDiscordBusy(true);
-            discordLockRef.current = true;
-            try {
-                await startDiscordPresence(discordDataToUse);
-                console.log('Discord presence started');
-            } catch (error) {
-                console.error('Failed to start Discord presence:', error);
-            } finally {
-                discordLockRef.current = false;
-                setIsDiscordBusy(false);
-            }
+        await startDiscordIfNeeded(discordDataToUse);
+    };
+
+    const stopDiscordIfNeeded = async () => {
+        if (!discordData || discordLockRef.current) return;
+        setIsDiscordBusy(true);
+        discordLockRef.current = true;
+        try {
+            await stopDiscordPresence({ group: discordData.group });
+            console.log('Discord presence stopped');
+        } catch (error) {
+            console.error('Failed to stop Discord presence:', error);
+        } finally {
+            discordLockRef.current = false;
+            setIsDiscordBusy(false);
+        }
+    };
+
+    const startDiscordIfNeeded = async (data) => {
+        if (!data || discordLockRef.current) return;
+        setIsDiscordBusy(true);
+        discordLockRef.current = true;
+        try {
+            await startDiscordPresence(data);
+            console.log('Discord presence started');
+        } catch (error) {
+            console.error('Failed to start Discord presence:', error);
+        } finally {
+            discordLockRef.current = false;
+            setIsDiscordBusy(false);
         }
     };
 
@@ -130,27 +150,16 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     async function stopNow() {
         // Discord停止
-        if (discordData && !discordLockRef.current) {
-            setIsDiscordBusy(true);
-            discordLockRef.current = true;
-            try {
-                await stopDiscordPresence({ group: discordData.group });
-                console.log('Discord presence stopped');
-            } catch (error) {
-                console.error('Failed to stop Discord presence:', error);
-            } finally {
-                discordLockRef.current = false;
-                setIsDiscordBusy(false);
-            }
-        }
+        await stopDiscordIfNeeded();
         // 経過時間(ms)計算
         let totalElapsed = 0;
         if (currentStartTime !== null) {
-            totalElapsed = Date.now() - currentStartTime;
+            totalElapsed = Date.now() - Number(currentStartTime);
         }
         // リセット
         localStorage.removeItem(storageKey);
         setCurrentStartTime(null);
+        setPausedStartTime(null);
         setDisplayTime(0);
         setMemo('');
 
@@ -176,6 +185,46 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     };
 
     // -----------------------------------------------
+    // 一時停止（Confirm用）
+    // -----------------------------------------------
+    const pause = async () => {
+        if (currentStartTime === null) return null;
+        const startTime = Number(currentStartTime);
+        if (!Number.isFinite(startTime)) return null;
+        const elapsed = Date.now() - startTime;
+        setDisplayTime(elapsed);
+        setPausedStartTime(startTime);
+        setCurrentStartTime(null);
+        await stopDiscordIfNeeded();
+        return { minutes: elapsed / 60000, memo };
+    };
+
+    // -----------------------------------------------
+    // 再開
+    // -----------------------------------------------
+    const resume = async () => {
+        if (currentStartTime !== null) return;
+        if (pausedStartTime !== null) {
+            const startTime = pausedStartTime;
+            setCurrentStartTime(startTime);
+            setPausedStartTime(null);
+            setDisplayTime(Date.now() - startTime);
+            await startDiscordIfNeeded(discordData);
+            return;
+        }
+        const startTime = Date.now() - displayTime;
+        setCurrentStartTime(startTime);
+        await startDiscordIfNeeded(discordData);
+    };
+
+    // -----------------------------------------------
+    // 完全リセット（Confirm保存後など）
+    // -----------------------------------------------
+    const reset = async () => {
+        await stopNow();
+    };
+
+    // -----------------------------------------------
     // キャンセル
     // -----------------------------------------------
     const cancel = async () => {
@@ -191,20 +240,26 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
             throw new Error("Start time cannot be in the future");
         }
         setCurrentStartTime(newStartTime);
+        setPausedStartTime(null);
         // 表示用の経過時間を計算
         const elapsed = Date.now() - newStartTime;
         setDisplayTime(elapsed);
     };
 
     const isRunning = (currentStartTime !== null);
+    const displayStartTime = currentStartTime ?? pausedStartTime;
     return {
         displayTime,       // 現在の経過時間（ms）
         isRunning,         // 動作中かどうか
         start: handleStart,// 手動で開始するため
         complete,          // 完了処理
         cancel,            // キャンセル処理
+        pause,             // 一時停止
+        resume,            // 再開
+        reset,             // リセット
         updateStartTime,   // 開始時刻を編集
         currentStartTime,  // 現在の開始時刻
+        displayStartTime,  // 表示用の開始時刻
         finishAndReset,    // 現在の計測を完了し、すぐ次を開始
         memo,              // メモ文字列
         setMemo,           // メモのsetter

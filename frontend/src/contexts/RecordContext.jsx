@@ -30,7 +30,7 @@ const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
     if (!activity || !stopwatchState) return null;
     if (activity.unit && activity.unit !== 'minutes') return null;
     const startTime = Number(stopwatchState.startTime);
-    if (!Number.isFinite(startTime)) return null;
+    if (!Number.isFinite(startTime) || startTime <= 0) return null;
     const elapsedMs = Math.max(0, now - startTime);
     const minutes = elapsedMs / 60000;
     const activityId = activity.id;
