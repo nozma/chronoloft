@@ -54,6 +54,8 @@ function RecordingInterface() {
     const [pendingRecord, setPendingRecord] = useState(null);
     // 確認モードでダイアログを閉じたあとに開始したいアクティビティ
     const [nextActivity, setNextActivity] = useState(null);
+    // Submit経由の閉じ方か判定するためのRef
+    const dialogSubmitRef = useRef(false);
 
     // タイトル更新
     useEffect(() => {
@@ -118,6 +120,19 @@ function RecordingInterface() {
         if (activity.unit === 'minutes') {
             // minutes -> ストップウォッチ
             if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
+                if (recordSaveMode === 'confirm') {
+                    const snapshot = await stopwatchRef.current.pause?.();
+                    if (snapshot) {
+                        // 確認モードならダイアログ表示＆次のアクティビティを予約
+                        setPendingRecord({ minutes: snapshot.minutes, memo: snapshot.memo, activity: selectedActivity });
+                        setRecordDialogActivity(selectedActivity);
+                        setRecordDialogInitialDate(DateTime.local().toISO());
+                        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
+                        setNextActivity(activity);
+                        return;
+                    }
+                }
+
                 // 既に別ストップウォッチが動いている -> 一旦finishAndReset
                 const details = calculateTimeDetails(activity.id, records);
                 const prevGroup = groups.find(g => g.name === selectedActivity.group_name);
@@ -130,15 +145,6 @@ function RecordingInterface() {
                     }
                     : null;
                 const { minutes, memo } = await stopwatchRef.current.finishAndReset(newDiscordData);
-                if (recordSaveMode === 'confirm') {
-                    // 確認モードならダイアログ表示＆次のアクティビティを予約
-                    setPendingRecord({ minutes, memo, activity: selectedActivity });
-                    setRecordDialogActivity(selectedActivity);
-                    setRecordDialogInitialDate(DateTime.local().toISO());
-                    dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-                    setNextActivity(activity);
-                    return;
-                }
 
                 // auto モード: 既存レコードを作成
                 await createRecord({ activity_id: selectedActivity.id, value: minutes, memo });
@@ -229,6 +235,13 @@ function RecordingInterface() {
         }
     };
 
+    const handleStopwatchConfirmComplete = (minutes, memo) => {
+        setPendingRecord({ minutes, memo, activity: selectedActivity });
+        setRecordDialogActivity(selectedActivity);
+        setRecordDialogInitialDate(DateTime.local().toISO());
+        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
+    };
+
     return (
         <Box sx={{ mb: 2 }}>
             {/* Stopwatch */}
@@ -236,6 +249,8 @@ function RecordingInterface() {
                 <Stopwatch
                     ref={stopwatchRef}
                     onComplete={handleStopwatchComplete}
+                    onConfirmComplete={handleStopwatchConfirmComplete}
+                    recordSaveMode={recordSaveMode}
                     onCancel={() => {
                         localStorage.removeItem('stopwatchState');
                         setStopwatchVisible(false);
@@ -323,40 +338,22 @@ function RecordingInterface() {
                     onClose={() => {
                         dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
                         setRecordDialogInitialDate(null);
-                        // 確認モードでキャンセルした場合はストップウォッチも閉じる
+                        if (dialogSubmitRef.current) {
+                            dialogSubmitRef.current = false;
+                            return;
+                        }
+                        // 確認モードでキャンセルした場合はストップウォッチを復帰
                         if (pendingRecord) {
                             setPendingRecord(null);
-                            localStorage.removeItem('stopwatchState');
-                            setStopwatchVisible(false);
-                            setActiveActivity(null);
-                        }
-                        // ダイアログ閉後に予約した nextActivity があれば再開
-                        if (nextActivity) {
-                            setSelectedActivity(nextActivity);
-                            setActiveActivity(nextActivity);
-                            if (autoFilterOnSelect) {
-                                setFilterState(prev => ({
-                                    ...prev,
-                                    activityNameFilter: nextActivity.name,
-                                }));
-                            }
-                            const details = calculateTimeDetails(nextActivity.id, records);
-                            const groupInfo = groups.find(g => g.name === nextActivity.group_name);
-                            setDiscordData(
-                                discordEnabled && groupInfo?.client_id
-                                    ? {
-                                        group: nextActivity.group_name,
-                                        activity_name: nextActivity.name,
-                                        details,
-                                        asset_key: nextActivity.asset_key || 'default_image'
-                                    }
-                                    : null
-                            );
-                            setStopwatchVisible(true);
+                            stopwatchRef.current?.resume?.();
                             setNextActivity(null);
+                            return;
                         }
                     }}
                     onSubmit={async (recordData) => {
+                        dialogSubmitRef.current = true;
+                        const hadPendingRecord = Boolean(pendingRecord);
+                        const pendingNextActivity = nextActivity;
                         // 確認モードの場合は pendingRecord をマージ
                         if (pendingRecord) {
                             recordData = {
@@ -373,29 +370,37 @@ function RecordingInterface() {
                         setRecordDialogInitialDate(null);
                         setPendingRecord(null);
                         // ダイアログ送信後に予約した nextActivity があれば再開
-                        if (nextActivity) {
-                            setSelectedActivity(nextActivity);
-                            setActiveActivity(nextActivity);
+                        if (pendingNextActivity) {
+                            setSelectedActivity(pendingNextActivity);
+                            setActiveActivity(pendingNextActivity);
                             if (autoFilterOnSelect) {
                                 setFilterState(prev => ({
                                     ...prev,
-                                    activityNameFilter: nextActivity.name,
+                                    activityNameFilter: pendingNextActivity.name,
                                 }));
                             }
-                            const details2 = calculateTimeDetails(nextActivity.id, records);
-                            const groupInfo2 = groups.find(g => g.name === nextActivity.group_name);
-                            setDiscordData(
-                                discordEnabled && groupInfo2?.client_id
-                                    ? {
-                                        group: nextActivity.group_name,
-                                        activity_name: nextActivity.name,
-                                        details: details2,
-                                        asset_key: nextActivity.asset_key || 'default_image'
-                                    }
-                                    : null
-                            );
+                            const details2 = calculateTimeDetails(pendingNextActivity.id, records);
+                            const groupInfo2 = groups.find(g => g.name === pendingNextActivity.group_name);
+                            const newDiscordData = discordEnabled && groupInfo2?.client_id
+                                ? {
+                                    group: pendingNextActivity.group_name,
+                                    activity_name: pendingNextActivity.name,
+                                    details: details2,
+                                    asset_key: pendingNextActivity.asset_key || 'default_image'
+                                }
+                                : null;
+                            setDiscordData(newDiscordData);
                             setStopwatchVisible(true);
                             setNextActivity(null);
+                            if (stopwatchRef.current?.finishAndReset) {
+                                await stopwatchRef.current.finishAndReset(newDiscordData);
+                            }
+                            return;
+                        }
+                        if (hadPendingRecord && stopwatchRef.current?.reset) {
+                            await stopwatchRef.current.reset();
+                            setStopwatchVisible(false);
+                            setActiveActivity(null);
                         }
                     }}
                     activity={recordDialogActivity}

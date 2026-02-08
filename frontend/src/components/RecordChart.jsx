@@ -458,15 +458,19 @@ function RecordChart() {
 
     // 凡例が多いときの高さ補正を算出する
     const legendExtraHeight = useMemo(() => {
-        if (chartType !== 'bar' || visibleKeys.length === 0 || selectedPeriod === '1d') return 0;
+        const rowHeight = 20;
+        if (chartType !== 'bar' || visibleKeys.length === 0) return 0;
+        if (selectedPeriod === '1d') {
+            const legendHeight = visibleKeys.length * rowHeight;
+            return Math.max(0, legendHeight - baseChartHeight);
+        }
         if (chartWidth === 0) return 0;
         const extraLabelWidth = 36;
         const itemWidth = Math.max(100, longestLabelWidth + extraLabelWidth);
         const itemsPerRow = Math.max(1, Math.floor(chartWidth / itemWidth));
         const rows = Math.ceil(visibleKeys.length / itemsPerRow);
-        const rowHeight = 20;
         return rows > 1 ? (rows - 1) * rowHeight : 0;
-    }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod]);
+    }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod, baseChartHeight]);
     const chartHeight = baseChartHeight + legendExtraHeight;
 
     // ツールチップ用カスタムコンポーネント
@@ -925,7 +929,13 @@ function RecordChart() {
                                     )}
                                     <Tooltip content={<CustomTooltip />} />
                                     {visibleKeys.map(key => (
-                                        <Bar key={key} dataKey={key} stackId="a" fill={colorScale(key)} />
+                                        <Bar
+                                            key={key}
+                                            dataKey={key}
+                                            stackId="a"
+                                            fill={colorScale(key)}
+                                            barSize={selectedPeriod === '1d' ? 36 : undefined}
+                                        />
                                     ))}
                                 </BarChart>
                             )}
