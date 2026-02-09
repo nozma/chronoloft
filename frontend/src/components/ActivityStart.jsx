@@ -44,6 +44,7 @@ function ActivityStart({
     const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
     const [contextTargetActivity, setContextTargetActivity] = useState(null);
     const [showRemaining, setShowRemaining] = useState(false);
+    const [showArchive, setShowArchive] = useState(false);
 
     // アクティビティに対するフィルターの適用
     const filteredActivities = activities.filter(act => {
@@ -64,6 +65,7 @@ function ActivityStart({
         }
         return true;
     });
+
     // タグに対するフィルターの適用
     const groupTags = useMemo(() => {
         const encountered = new Set();
@@ -84,14 +86,17 @@ function ActivityStart({
 
     // 表示するActivityを設定を反映して絞り込む
     // 期間フィルタ
+    const activeActivities = filteredActivities.filter(act => Boolean(act.is_active));
+    const inactiveActivities = filteredActivities.filter(act => !Boolean(act.is_active));
+
     let recentWithinRange;
     if (recentDays === 'all') {
-        recentWithinRange = filteredActivities;
+        recentWithinRange = activeActivities;
     } else {
         const now = new Date();
         const cutoff = new Date(now);
         cutoff.setDate(cutoff.getDate() - Number(recentDays));
-        recentWithinRange = filteredActivities.filter(
+        recentWithinRange = activeActivities.filter(
             act => act.last_record && new Date(act.last_record) >= cutoff
         );
     }
@@ -104,7 +109,7 @@ function ActivityStart({
 
     // 上限件数ぶんだけ recentActivities とし、残りを remainingActivities に回す
     const recentActivities = recentWithinRange.slice(0, limitCount);
-    const remainingActivities = filteredActivities.filter(
+    const remainingActivities = activeActivities.filter(
         act => !recentActivities.includes(act)
     );
 
@@ -300,6 +305,16 @@ function ActivityStart({
                                                 textTransform: 'none',
                                                 borderRadius: 5,
                                                 boxShadow: 2,
+                                                ...(activity.is_active
+                                                    ? {}
+                                                    : {
+                                                        color: 'text.disabled',
+                                                        borderColor: 'text.disabled',
+                                                        '&:hover': {
+                                                            borderColor: 'text.disabled',
+                                                            backgroundColor: 'action.hover'
+                                                        },
+                                                    }),
                                             }}
                                             startIcon={getIconForGroup(activity.group_name, groups)}
                                         >
@@ -321,7 +336,7 @@ function ActivityStart({
                                     )}
                                 </Box>
                                 {/* 残りの項目を表示するUI */}
-                                {remainingActivities.length > 0 && (
+                                {(remainingActivities.length > 0 || inactiveActivities.length > 0) && (
                                     <Typography
                                         variant='caption'
                                         color='#777'
@@ -332,7 +347,11 @@ function ActivityStart({
                                             my: 0.5,
                                             ml: 2
                                         }}
-                                        onClick={() => setShowRemaining((prev) => !prev)}
+                                        onClick={() => setShowRemaining((prev) => {
+                                            const next = !prev;
+                                            if (next) setShowArchive(false);
+                                            return next;
+                                        })}
                                     >
                                         More Items
                                         <KeyboardArrowRightIcon
@@ -346,26 +365,82 @@ function ActivityStart({
                                     </Typography>
                                 )}
                                 <Collapse in={showRemaining}>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
-                                        {remainingActivities.map(activity => (
-                                            <Button
-                                                key={activity.id}
-                                                variant="outlined"
-                                                color="primary"
-                                                onClick={() => onStart(activity)}
-                                                onContextMenu={(e) => handleContextMenu(e, activity)}
+                                    {remainingActivities.length > 0 && (
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
+                                            {remainingActivities.map(activity => (
+                                                <Button
+                                                    key={activity.id}
+                                                    variant="outlined"
+                                                    color="primary"
+                                                    onClick={() => onStart(activity)}
+                                                    onContextMenu={(e) => handleContextMenu(e, activity)}
+                                                    sx={{
+                                                        display: 'flex',
+                                                        textTransform: 'none',
+                                                        borderRadius: 5,
+                                                        boxShadow: 2,
+                                                    }}
+                                                    startIcon={getIconForGroup(activity.group_name, groups)}
+                                                >
+                                                    {activity.name}
+                                                </Button>
+                                            ))}
+                                        </Box>
+                                    )}
+                                    {inactiveActivities.length > 0 && (
+                                        <>
+                                            <Typography
+                                                variant='caption'
+                                                color='#777'
                                                 sx={{
+                                                    alignItems: 'center',
                                                     display: 'flex',
-                                                    textTransform: 'none',
-                                                    borderRadius: 5,
-                                                    boxShadow: 2,
+                                                    cursor: 'pointer',
+                                                    my: 0.5,
+                                                    ml: 2
                                                 }}
-                                                startIcon={getIconForGroup(activity.group_name, groups)}
+                                                onClick={() => setShowArchive((prev) => !prev)}
                                             >
-                                                {activity.name}
-                                            </Button>
-                                        ))}
-                                    </Box>
+                                                Archive
+                                                <KeyboardArrowRightIcon
+                                                    fontSize='small'
+                                                    sx={{
+                                                        transition: 'transform 0.15s linear',
+                                                        transform: showArchive ? 'rotate(90deg)' : 'rotate(0deg)',
+                                                        marginLeft: '4px'
+                                                    }}
+                                                />
+                                            </Typography>
+                                            <Collapse in={showArchive}>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0 }}>
+                                                    {inactiveActivities.map(activity => (
+                                                        <Button
+                                                            key={activity.id}
+                                                            variant="outlined"
+                                                            color="primary"
+                                                            onClick={() => onStart(activity)}
+                                                            onContextMenu={(e) => handleContextMenu(e, activity)}
+                                                            sx={{
+                                                                display: 'flex',
+                                                                textTransform: 'none',
+                                                                borderRadius: 5,
+                                                                boxShadow: 2,
+                                                                color: 'text.disabled',
+                                                                borderColor: 'text.disabled',
+                                                                '&:hover': {
+                                                                    borderColor: 'text.disabled',
+                                                                    backgroundColor: 'action.hover'
+                                                                },
+                                                            }}
+                                                            startIcon={getIconForGroup(activity.group_name, groups)}
+                                                        >
+                                                            {activity.name}
+                                                        </Button>
+                                                    ))}
+                                                </Box>
+                                            </Collapse>
+                                        </>
+                                    )}
                                 </Collapse>
                                 <Menu
                                     open={Boolean(contextMenuAnchor)}

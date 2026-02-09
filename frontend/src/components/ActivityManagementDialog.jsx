@@ -8,7 +8,9 @@ import {
     Box,
     IconButton,
     Chip,
-    Switch
+    Switch,
+    Select,
+    MenuItem
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
@@ -107,6 +109,16 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
 
+    const handleStateChange = async (activityId, nextValue) => {
+        if (runningActivityIds.includes(activityId)) return;
+        const isActive = nextValue === true || nextValue === 'true';
+        try {
+            await modifyActivity(activityId, { is_active: isActive });
+        } catch (error) {
+            console.error('Failed to update activity state:', error);
+        }
+    };
+
     const filteredActivities = activities.filter(act => {
         if (groupFilter && act.group_name !== groupFilter) {
             return false;
@@ -122,7 +134,22 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         {
             field: 'is_active',
             headerName: 'State',
-            valueFormatter: (params) => { return params ? 'Active' : 'Inactive'; }
+            width: 125,
+            renderCell: (params) => {
+                const disabled = runningActivityIds.includes(params.row.id);
+                const value = params.row.is_active ? true : false;
+                return (
+                    <Select
+                        size="small"
+                        value={value}
+                        disabled={disabled}
+                        onChange={(event) => handleStateChange(params.row.id, event.target.value)}
+                    >
+                        <MenuItem value={true}>Active</MenuItem>
+                        <MenuItem value={false}>Inactive</MenuItem>
+                    </Select>
+                );
+            }
         },
         {
             field: 'group_name',
@@ -225,6 +252,17 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                         rowsPerPageOptions={[5]}
                         disableSelectionOnClick
                         autoHeight
+                        getRowClassName={(params) => (params.row.is_active ? '' : 'inactive-row')}
+                        sx={{
+                            '& .inactive-row': {
+                                opacity: 0.3,
+                            },
+                        }}
+                        initialState={{
+                            sorting: {
+                                sortModel: [{ field: 'is_active', sort: 'desc' }],
+                            },
+                        }}
                         processRowUpdate={processRowUpdate}
                         slots={{ toolbar: CustomToolbar }}
                         slotProps={{ toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick } }}
