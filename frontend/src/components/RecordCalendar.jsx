@@ -20,7 +20,7 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 
 import AddRecordDialog from './AddRecordDialog';
-import { updateRecord, deleteRecord, createRecord } from '../services/api';
+import { updateRecord, deleteRecord } from '../services/api';
 import { useRecords } from '../contexts/RecordContext';
 import { useActivities } from '../contexts/ActivityContext';
 import DescendingAgendaView from './DescendingAgendaView';
@@ -195,7 +195,7 @@ function RecordCalendar() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);
-    const { recordsWithLive: records, refreshRecords: onRecordUpdate } = useRecords();
+    const { recordsWithLive: records, refreshRecords: onRecordUpdate, createRecord } = useRecords();
     const selectedActivity = recordToEdit
         ? activities.find((a) => a.id === recordToEdit.activity_id)
         : null;

@@ -10,7 +10,6 @@ import ActivityStart from './ActivityStart';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
 import SubStopwatch from './SubStopwatch';
-import { createRecord } from '../services/api';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
@@ -23,7 +22,7 @@ function RecordingInterface() {
     const { setFilterState } = useFilter();
     const { activities } = useActivities();
     const { refreshActivities } = useActivities();
-    const { records, refreshRecords: onRecordUpdate } = useRecords();
+    const { records, refreshRecords: onRecordUpdate, createRecord } = useRecords();
     const { groups } = useGroups();
 
     // メインStopwatch
