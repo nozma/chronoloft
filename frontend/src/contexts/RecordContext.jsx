@@ -1,13 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { DateTime } from 'luxon';
 import {
     fetchRecords as apiFetchRecords,
     createRecord as apiCreateRecord,
     updateRecord as apiUpdateRecord,
     deleteRecord as apiDeleteRecord
 } from '../services/api';
+import { useActivities } from './ActivityContext';
 
 const RecordContext = createContext();
 const LIVE_REFRESH_MS = 5000;
+const MERGE_WINDOW_MINUTES = 5;
+const MERGE_WINDOW_MS = MERGE_WINDOW_MINUTES * 60 * 1000;
+const MILLIS_PER_MINUTE = 60000;
 
 const safeParseLocalStorage = (key) => {
     if (typeof window === 'undefined') return null;
@@ -79,7 +84,23 @@ const areLiveRecordsEqual = (prev, next) => {
     return true;
 };
 
+const normalizeMemo = (memo) => (memo ?? '');
+
+const resolveActivityUnit = (activityId, activities, records) => {
+    const activity = activities.find((item) => item.id === activityId);
+    if (activity?.unit) return activity.unit;
+    const record = records.find((item) => item.activity_id === activityId && item.unit);
+    return record?.unit ?? null;
+};
+
+const parseIsoToMs = (value) => {
+    if (!value) return null;
+    const dt = DateTime.fromISO(value, { zone: 'utc' });
+    return dt.isValid ? dt.toMillis() : null;
+};
+
 export function RecordProvider({ children }) {
+    const { activities } = useActivities();
     const [records, setRecords] = useState([]);
     const [liveRecords, setLiveRecords] = useState([]);
 
@@ -97,7 +118,60 @@ export function RecordProvider({ children }) {
     };
 
     const createRecord = async (recordData) => {
-        await apiCreateRecord(recordData);
+        const payload = { ...recordData };
+        if (!payload.created_at) {
+            payload.created_at = new Date().toISOString();
+        }
+
+        const activityId = payload.activity_id;
+        const unit = resolveActivityUnit(activityId, activities, records);
+        const valueMinutes = Number(payload.value);
+
+        if (unit === 'minutes' && Number.isFinite(valueMinutes) && valueMinutes >= 0) {
+            const newEndMs = parseIsoToMs(payload.created_at);
+            if (Number.isFinite(newEndMs)) {
+                const newStartMs = newEndMs - valueMinutes * MILLIS_PER_MINUTE;
+                const memoKey = normalizeMemo(payload.memo);
+                let candidate = null;
+                let candidateEndMs = -Infinity;
+
+                records.forEach((record) => {
+                    if (record.activity_id !== activityId) return;
+                    if (record.unit !== 'minutes') return;
+                    if (normalizeMemo(record.memo) !== memoKey) return;
+                    const recordEndMs = parseIsoToMs(record.created_at);
+                    const recordValue = Number(record.value);
+                    if (!Number.isFinite(recordEndMs)) return;
+                    if (!Number.isFinite(recordValue) || recordValue < 0) return;
+                    const gapMs = newStartMs - recordEndMs;
+                    if (gapMs < 0 || gapMs > MERGE_WINDOW_MS) return;
+                    if (recordEndMs > candidateEndMs) {
+                        candidate = record;
+                        candidateEndMs = recordEndMs;
+                    }
+                });
+
+                if (candidate) {
+                    const candidateValue = Number(candidate.value);
+                    const candidateStartMs = candidateEndMs - candidateValue * MILLIS_PER_MINUTE;
+                    const mergedStartMs = Math.min(candidateStartMs, newStartMs);
+                    const mergedEndMs = Math.max(candidateEndMs, newEndMs);
+                    const mergedValue = (mergedEndMs - mergedStartMs) / MILLIS_PER_MINUTE;
+                    const updatePayload = {
+                        value: mergedValue,
+                        created_at: new Date(mergedEndMs).toISOString(),
+                    };
+                    if (Object.prototype.hasOwnProperty.call(payload, 'memo')) {
+                        updatePayload.memo = payload.memo;
+                    }
+                    await apiUpdateRecord(candidate.id, updatePayload);
+                    await refreshRecords();
+                    return;
+                }
+            }
+        }
+
+        await apiCreateRecord(payload);
         await refreshRecords();
     };
 
