@@ -20,6 +20,7 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
 import { useMediaQuery, useTheme } from '@mui/material';
+import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
@@ -84,28 +85,39 @@ function RecordHeatmap() {
 
     useEffect(() => {
         // 過去365日分に絞り込む
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 365);
-        const recentRecords = filteredRecords.filter(rec => new Date(rec.created_at) >= cutoff);
+        const endBound = DateTime.now().endOf('day');
+        const startBound = endBound.minus({ days: 365 }).startOf('day');
+        const recentRecords = filteredRecords.filter(rec => {
+            const recLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
+            return recLocal.isValid && recLocal >= startBound && recLocal <= endBound;
+        });
 
         // 日別にレコードを集計する
         const grouped = {};
         recentRecords.forEach(rec => {
-            const dateStr = DateTime
-                .fromISO(rec.created_at, { zone: 'utc' })
-                .toLocal()
-                .toFormat('yyyy-MM-dd');
-            if (!grouped[dateStr]) {
-                grouped[dateStr] = 0;
-            }
             // displayMode に応じた集計処理
             if (displayMode === 'time') {
-                // 時間モード: アクティビティの記録単位が「分」のものだけを採用
+                // 時間モード: 「分」レコードを日跨ぎ分配して日別に加算
                 if (rec.unit === 'minutes') {
-                    // 分の合計を加算
-                    grouped[dateStr] += rec.value;
+                    forEachLocalDayMinuteSegment(rec, (segmentStart, segmentMinutes) => {
+                        const dateStr = segmentStart.toFormat('yyyy-MM-dd');
+                        if (!grouped[dateStr]) {
+                            grouped[dateStr] = 0;
+                        }
+                        grouped[dateStr] += segmentMinutes;
+                    }, {
+                        clipStart: startBound,
+                        clipEnd: endBound,
+                    });
                 }
             } else if (displayMode === 'count') {
+                const dateStr = DateTime
+                    .fromISO(rec.created_at, { zone: 'utc' })
+                    .toLocal()
+                    .toFormat('yyyy-MM-dd');
+                if (!grouped[dateStr]) {
+                    grouped[dateStr] = 0;
+                }
                 // 回数モード:
                 if (rec.unit === 'count') {
                     // 「回」の場合はそのまま加算
@@ -118,9 +130,8 @@ function RecordHeatmap() {
         });
 
         // 過去365日分の全日付を生成する
-        const endDate = new Date(); // 今日
-        const startDate = new Date();
-        startDate.setDate(endDate.getDate() - 365);
+        const endDate = endBound.toJSDate(); // 今日
+        const startDate = startBound.toJSDate();
         const allDates = [];
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             allDates.push(format(new Date(d), 'yyyy-MM-dd'));

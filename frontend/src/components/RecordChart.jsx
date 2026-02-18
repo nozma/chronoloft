@@ -37,6 +37,15 @@ import { useGroups } from '../contexts/GroupContext';
 import { useActivities } from '../contexts/ActivityContext';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
+
+function formatPeriodKey(dt, xAxisUnit) {
+    if (!dt?.isValid) return '';
+    if (xAxisUnit === 'day') return dt.toFormat('yyyy-MM-dd');
+    if (xAxisUnit === 'week') return dt.toFormat("yyyy-'W'WW");
+    if (xAxisUnit === 'month') return dt.toFormat('yyyy-MM');
+    return '';
+}
 
 /**
  * 指定された records を xAxisUnit, groupBy, aggregationUnit に従って集計する
@@ -46,7 +55,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
  * @param {string} aggregationUnit - 'time'（＝minutes）または 'count'
  * @returns {Array} - 集計済みデータの配列。各オブジェクトは { date: 'YYYY-MM-DD', group1: value, group2: value, ... } の形式
  */
-function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumulative) {
+function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumulative, options = {}) {
     // aggregationUnit に合わせて対象レコードを絞る
     const filtered = records.filter(r => {
         if (aggregationUnit === 'time') {
@@ -60,20 +69,6 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
 
     const dataMap = new Map();
     filtered.forEach(record => {
-        // Luxon を使って record.created_at から期間キーを算出
-        const dt = DateTime.fromISO(record.created_at, { zone: 'utc' }).toLocal();
-        let periodKey = '';
-        if (xAxisUnit === 'day') {
-            periodKey = dt.toFormat('yyyy-MM-dd');
-        } else if (xAxisUnit === 'week') {
-            periodKey = dt.toFormat("yyyy-'W'WW");
-        } else if (xAxisUnit === 'month') {
-            periodKey = dt.toFormat('yyyy-MM');
-        }
-        if (!dataMap.has(periodKey)) {
-            dataMap.set(periodKey, { date: periodKey });
-        }
-        const bucket = dataMap.get(periodKey);
         // グループ化キーを決定
         let groupKeys = [];
         if (groupBy === 'group') {
@@ -91,14 +86,46 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
             const memoPart = record.memo ? ` / ${record.memo}` : '';
             groupKeys.push((record.activity_name || 'Unknown Activity') + memoPart);
         }
+
+        const addValueToGroupKeys = (periodKey, value) => {
+            if (!periodKey) return;
+            if (!dataMap.has(periodKey)) {
+                dataMap.set(periodKey, { date: periodKey });
+            }
+            const bucket = dataMap.get(periodKey);
+            groupKeys.forEach(key => {
+                if (!bucket[key]) {
+                    bucket[key] = 0;
+                }
+                bucket[key] += value;
+            });
+        };
+
+        // 分モードでは日跨ぎをローカル日付ごとに分配してから period に丸める
+        if (aggregationUnit === 'time' && record.unit === 'minutes') {
+            forEachLocalDayMinuteSegment(record, (segmentStart, segmentMinutes) => {
+                const periodKey = formatPeriodKey(segmentStart, xAxisUnit);
+                addValueToGroupKeys(periodKey, segmentMinutes);
+            }, {
+                clipStart: options.rangeStart,
+                clipEnd: options.rangeEnd,
+            });
+            return;
+        }
+
+        // 回数モードは従来どおり created_at の期間キーで計上する
+        const dt = DateTime.fromISO(record.created_at, { zone: 'utc' }).toLocal();
+        const periodKey = formatPeriodKey(dt, xAxisUnit);
+        if (!periodKey) return;
+        if (!dataMap.has(periodKey)) {
+            dataMap.set(periodKey, { date: periodKey });
+        }
+        const bucket = dataMap.get(periodKey);
         groupKeys.forEach(key => {
             if (!bucket[key]) {
                 bucket[key] = 0;
             }
-            if (aggregationUnit === 'time') {
-                // 分モードでは record.value をそのまま加算
-                bucket[key] += record.value;
-            } else if (aggregationUnit === 'count') {
+            if (aggregationUnit === 'count') {
                 // 回数モード:
                 if (record.unit === 'count') {
                     // 「回」の場合はそのまま加算
@@ -276,7 +303,17 @@ function RecordChart() {
 
     // 集計済みデータの作成
     const chartData = useMemo(() => {
-        const aggregated = aggregateRecords(filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType === 'line');
+        const aggregated = aggregateRecords(
+            filteredRecords,
+            xAxisUnit,
+            groupBy,
+            aggregationUnit,
+            chartType === 'line',
+            {
+                rangeStart: periodStart,
+                rangeEnd: periodEnd.endOf('day'),
+            }
+        );
         // 各データに数値（timestamp）を示す dateValue を付与
         aggregated.forEach(item => {
             let dt;
@@ -290,7 +327,7 @@ function RecordChart() {
             item.dateValue = dt.isValid ? dt.toMillis() : null;
         });
         return aggregated;
-    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType]);
+    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType, periodStart, periodEnd]);
 
     // 表示範囲の累積合計値で降順ソートしたエントリ
     const sortedEntries = useMemo(() => {
