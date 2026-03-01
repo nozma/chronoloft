@@ -15,20 +15,42 @@
 
 /* Agenda ビューの文字サイズを調整 */
 .rbc-agenda-view table th,
-.rbc-agenda-view table td,
+.rbc-agenda-view .rbc-agenda-date-cell,
+.rbc-agenda-view .rbc-agenda-time-cell,
 .rbc-agenda-view .rbc-agenda-empty {
-    font-size: 12px !important;
+    font-size: 14px !important;
 }
 
-/* Agenda 以外のビューの文字サイズを統一 */
-.rbc-month-view,
-.rbc-month-view * {
-    font-size: 10px !important;
+/* 全ビューの日付・時刻ラベルを統一 */
+.rbc-toolbar-label,
+.rbc-month-view .rbc-header,
+.rbc-month-view .rbc-date-cell,
+.rbc-time-view .rbc-header,
+.rbc-time-view .rbc-time-gutter .rbc-label,
+.rbc-time-view .rbc-time-header-content .rbc-label,
+.rbc-time-view .rbc-day-slot .rbc-label {
+    font-size: 14px !important;
 }
 
 .rbc-time-view,
 .rbc-time-view * {
-    font-size: 10px !important;
+    font-size: 12px !important;
+}
+
+.rbc-month-view .rbc-row-bg {
+    right: 0;
+}
+
+.rbc-time-view .rbc-header {
+    border-bottom: none;
+}
+
+.rbc-time-view .rbc-time-header > .rbc-row:first-child {
+    border-bottom-color: #ddd;
+}
+
+.rbc-time-view .rbc-time-content {
+    border-top: none;
 }
 
 /* スクロールバーの分だけヘッダと表示がずれる問題の対応 */
@@ -36,10 +58,51 @@
     overflow-y: scroll !important; /* 常にスクロールバーを表示 */
 }
 
+/* Day / Week のイベント表示領域の左右余白を揃える */
+.rbc-day-slot .rbc-events-container {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.rbc-day-slot .rbc-events-container.rbc-rtl {
+    left: 4px;
+    right: 4px;
+}
+
 /* Summary view: allow agenda to size to content when height is auto */
 .calendar-summary-auto .rbc-agenda-view {
     flex: 0 0 auto;
     overflow: visible;
+}
+
+.calendar-summary-auto .rbc-agenda-view > table.rbc-agenda-table {
+    border-bottom: none;
+}
+
+.calendar-summary-auto .rbc-agenda-view > table.rbc-agenda-table thead > tr > th {
+    border-bottom: none;
+}
+
+/* Day ビューでは今日セルの背景色を付けない */
+.calendar-day-view .rbc-today {
+    background-color: transparent !important;
+}
+
+/* Day ビュー先頭の time slot 上線を消して、上端の線を 1 本にする */
+.calendar-day-view .rbc-day-slot .rbc-time-slot:first-child {
+    border-top: none;
+}
+
+/* Week ビューの境界線はコンテンツ全体に 1 本だけ描画する */
+.calendar-week-view .rbc-time-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-top: 1px solid #ddd;
+    pointer-events: none;
+    z-index: 1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -84,8 +147,21 @@
         background-color: #333333 !important;
     }
 
+    .calendar-day-view .rbc-today {
+        background-color: transparent !important;
+    }
+
+    .calendar-week-view .rbc-time-content::before {
+        border-top-color: #555555 !important;
+    }
+
     /* 罫線 */
     .rbc-calendar * {
         border-color: #555555 !important;
     }
+
+    .rbc-time-view .rbc-time-header > .rbc-row:first-child {
+        border-bottom-color: #555555 !important;
+    }
+
 }

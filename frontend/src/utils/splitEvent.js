@@ -4,6 +4,8 @@
  * @param {Object} event - { id, title, start: Date, end: Date, ... }
  * @returns {Array} 分割されたイベントの配列
  */
+const CALENDAR_VISIBLE_START_HOUR = 4;
+
 export function splitEvent(event) {
     const { id, title, start, end, ...rest } = event;
     const events = [];
@@ -23,15 +25,21 @@ export function splitEvent(event) {
       if (currentEnd > endDate) {
         currentEnd.setTime(endDate.getTime());
       }
-  
-      events.push({
-        id: `${id}-${currentStart.toDateString()}`, // 各イベントを一意にするため日付を付与
-        title,
-        start: new Date(currentStart),
-        end: new Date(currentEnd),
-        allDay: false,
-        ...rest,
-      });
+
+      const isFinalDay = currentEnd.getTime() === endDate.getTime();
+      const shouldRenderFinalDay =
+        endDate.getHours() >= CALENDAR_VISIBLE_START_HOUR;
+
+      if (!isFinalDay || shouldRenderFinalDay) {
+        events.push({
+          id: `${id}-${currentStart.toDateString()}`, // 各イベントを一意にするため日付を付与
+          title,
+          start: new Date(currentStart),
+          end: new Date(currentEnd),
+          allDay: false,
+          ...rest,
+        });
+      }
   
       // 次の日の0:00に設定
       currentStart.setDate(currentStart.getDate() + 1);

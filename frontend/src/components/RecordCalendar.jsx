@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 import { Calendar, Views } from 'react-big-calendar';
@@ -28,6 +28,88 @@ import DescendingAgendaView from './DescendingAgendaView';
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
 const localizer = luxonLocalizer(DateTime);
+const DEFAULT_MIN_HOUR = 4;
+const DEFAULT_MAX_TIME = {
+    hour: 23,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+};
+const DEFAULT_EVENT_COLOR = '#3174ad';
+
+function normalizeCalendarRange(range) {
+    if (!range) {
+        return null;
+    }
+
+    if (Array.isArray(range)) {
+        if (range.length === 0) {
+            return null;
+        }
+
+        const sortedDates = [...range]
+            .map((date) => DateTime.fromJSDate(new Date(date)))
+            .sort((a, b) => a.toMillis() - b.toMillis());
+
+        return {
+            start: sortedDates[0].startOf('day').toJSDate(),
+            end: sortedDates[sortedDates.length - 1].endOf('day').toJSDate(),
+        };
+    }
+
+    if (range.start && range.end) {
+        return {
+            start: new Date(range.start),
+            end: new Date(range.end),
+        };
+    }
+
+    return null;
+}
+
+function ceilToNextHour(dateTime) {
+    const roundedDown = dateTime.startOf('hour');
+    if (roundedDown.toMillis() === dateTime.toMillis()) {
+        return roundedDown;
+    }
+    return roundedDown.plus({ hours: 1 });
+}
+
+function blendColorWithWhite(hexColor, mixRatio) {
+    const normalized = hexColor?.replace('#', '');
+    if (!normalized || !/^[0-9a-fA-F]{6}$/.test(normalized)) {
+        return '#dbe7f3';
+    }
+
+    const red = parseInt(normalized.slice(0, 2), 16);
+    const green = parseInt(normalized.slice(2, 4), 16);
+    const blue = parseInt(normalized.slice(4, 6), 16);
+    const mixedRed = Math.round(red + (255 - red) * mixRatio);
+    const mixedGreen = Math.round(green + (255 - green) * mixRatio);
+    const mixedBlue = Math.round(blue + (255 - blue) * mixRatio);
+
+    return `rgb(${mixedRed}, ${mixedGreen}, ${mixedBlue})`;
+}
+
+function inferVisibleRange(view, date) {
+    const targetDate = DateTime.fromJSDate(date);
+
+    if (view === Views.DAY) {
+        return {
+            start: targetDate.startOf('day').toJSDate(),
+            end: targetDate.endOf('day').toJSDate(),
+        };
+    }
+
+    if (view === Views.WEEK) {
+        return {
+            start: DateTime.fromJSDate(localizer.startOf(date, 'week')).startOf('day').toJSDate(),
+            end: DateTime.fromJSDate(localizer.endOf(date, 'week')).endOf('day').toJSDate(),
+        };
+    }
+
+    return null;
+}
 
 function getEventGroupingTargets(event, groupBy) {
     if (groupBy === 'group') {
@@ -190,7 +272,6 @@ function RecordCalendar() {
     const { activities, excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
     const { groupFilter } = filterState;
-    const [events, setEvents] = useState([]);
     const [currentView, setCurrentView] = useLocalStorageState('calendar.view', Views.WEEK);
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
@@ -202,6 +283,8 @@ function RecordCalendar() {
     const [calendarMode, setCalendarMode] = useLocalStorageState('calendar.mode', 'short');
     const [summaryGroupBy, setSummaryGroupBy] = useLocalStorageState('calendar.summaryGroupBy', 'activity');
     const [newRecordSlot, setNewRecordSlot] = useState(null);
+    const [visibleRange, setVisibleRange] = useState(null);
+    const calendarRootRef = useRef(null);
     const defaultActivity = useMemo(
         () => activities.find((a) => a.unit === 'minutes') || activities[0],
         [activities]
@@ -222,7 +305,7 @@ function RecordCalendar() {
         });
     }, [visibleRecords, excludedActivityIds]);
 
-    useEffect(() => {
+    const minuteEvents = useMemo(() => {
         const minuteRecords = visibleRecordsByActivity.filter((rec) => rec.unit === 'minutes');
         let eventsData = [];
 
@@ -272,14 +355,71 @@ function RecordCalendar() {
             }
         });
 
+        return eventsData;
+    }, [visibleRecordsByActivity, groups]);
+
+    const events = useMemo(() => {
         if (currentView === 'month') {
-            setEvents(aggregateEventsForMonth(eventsData));
-        } else if (currentView === 'agenda') {
-            setEvents(aggregateEventsForMonth(eventsData, { sortBy: 'dateDesc', groupBy: summaryGroupBy }));
-        } else {
-            setEvents(eventsData);
+            return aggregateEventsForMonth(minuteEvents);
         }
-    }, [visibleRecordsByActivity, groups, currentView, summaryGroupBy]);
+        if (currentView === 'agenda') {
+            return aggregateEventsForMonth(minuteEvents, { sortBy: 'dateDesc', groupBy: summaryGroupBy });
+        }
+        return minuteEvents;
+    }, [currentView, minuteEvents, summaryGroupBy]);
+
+    const effectiveVisibleRange = useMemo(
+        () => visibleRange ?? inferVisibleRange(currentView, currentDate),
+        [visibleRange, currentView, currentDate]
+    );
+
+    const calendarTimeBounds = useMemo(() => {
+        const baseDate = effectiveVisibleRange?.start ? DateTime.fromJSDate(effectiveVisibleRange.start) : DateTime.fromJSDate(currentDate);
+        const defaultMin = baseDate.set({
+            hour: DEFAULT_MIN_HOUR,
+            minute: 0,
+            second: 0,
+            millisecond: 0,
+        });
+        const defaultMax = baseDate.set(DEFAULT_MAX_TIME);
+
+        if (![Views.DAY, Views.WEEK].includes(currentView) || !effectiveVisibleRange) {
+            return {
+                min: defaultMin.toJSDate(),
+                max: defaultMax.toJSDate(),
+            };
+        }
+
+        const rangeStart = DateTime.fromJSDate(effectiveVisibleRange.start);
+        const rangeEnd = DateTime.fromJSDate(effectiveVisibleRange.end);
+        const rangeEvents = minuteEvents.filter((event) =>
+            event.end > rangeStart.toJSDate() && event.start < rangeEnd.toJSDate()
+        );
+
+        if (rangeEvents.length === 0) {
+            return {
+                min: defaultMin.toJSDate(),
+                max: defaultMax.toJSDate(),
+            };
+        }
+
+        const earliestStart = rangeEvents.reduce((earliest, event) => {
+            const eventStart = DateTime.fromJSDate(event.start);
+            return eventStart < earliest ? eventStart : earliest;
+        }, DateTime.fromJSDate(rangeEvents[0].start));
+        const latestEnd = rangeEvents.reduce((latest, event) => {
+            const eventEnd = DateTime.fromJSDate(event.end);
+            return eventEnd > latest ? eventEnd : latest;
+        }, DateTime.fromJSDate(rangeEvents[0].end));
+
+        const computedMin = earliestStart.startOf('hour');
+        const computedMax = ceilToNextHour(latestEnd);
+
+        return {
+            min: (computedMin < defaultMin ? defaultMin : computedMin).toJSDate(),
+            max: (computedMax > defaultMax ? defaultMax : computedMax).toJSDate(),
+        };
+    }, [currentDate, currentView, effectiveVisibleRange, minuteEvents]);
 
     const handleDoubleClickEvent = (event) => {
         if (event.is_live) return;
@@ -307,7 +447,7 @@ function RecordCalendar() {
         }
     };
 
-    const handleEventDrop = async ({ event, start, end, isAllDay }) => {
+    const handleEventDrop = async ({ event, start, end }) => {
         if (event.is_live) return;
         try {
             const startDT = DateTime.fromJSDate(start);
@@ -421,7 +561,44 @@ function RecordCalendar() {
     const calendarStyle = isAgendaView
         ? { height: 'auto', maxHeight: calendarMaxHeight, overflowY: 'auto' }
         : { height: calendarMaxHeight };
-    const calendarClassName = isAgendaView ? 'calendar-summary-auto' : undefined;
+    const calendarClassName = [
+        isAgendaView ? 'calendar-summary-auto' : null,
+        currentView === Views.DAY ? 'calendar-day-view' : null,
+        currentView === Views.WEEK ? 'calendar-week-view' : null,
+    ].filter(Boolean).join(' ') || undefined;
+
+    useEffect(() => {
+        if (![Views.DAY, Views.WEEK].includes(currentView) || !calendarRootRef.current) {
+            return undefined;
+        }
+
+        const calendarRoot = calendarRootRef.current;
+        const timeHeader = calendarRoot.querySelector('.rbc-time-header');
+        const timeContent = calendarRoot.querySelector('.rbc-time-content');
+
+        if (!timeHeader || !timeContent) {
+            return undefined;
+        }
+
+        const applyHeaderOffset = () => {
+            const scrollbarWidth = Math.max(0, timeContent.offsetWidth - timeContent.clientWidth);
+            timeHeader.style.marginRight = `${scrollbarWidth}px`;
+            timeHeader.style.marginLeft = '';
+        };
+
+        const frameId = window.requestAnimationFrame(applyHeaderOffset);
+        const resizeObserver = new ResizeObserver(applyHeaderOffset);
+        resizeObserver.observe(timeContent);
+        window.addEventListener('resize', applyHeaderOffset);
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', applyHeaderOffset);
+            timeHeader.style.marginRight = '';
+            timeHeader.style.marginLeft = '';
+        };
+    }, [calendarMode, currentDate, currentView, events.length]);
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -445,7 +622,7 @@ function RecordCalendar() {
             </Typography>
 
             <Collapse in={uiState.calendarOpen}>
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 2 }} ref={calendarRootRef}>
                     <DragAndDropCalendar
                         // Basic RBC setup
                         localizer={localizer}
@@ -457,14 +634,20 @@ function RecordCalendar() {
                                 const weekStart = DateTime.fromJSDate(currentDate).startOf('week').plus({ days: -1 });
                                 setCurrentDate(weekStart.toJSDate());
                             }
+                            setVisibleRange(null);
                             setCurrentView(view);
                         }}
                         length={7}
                         views={calendarViews}
                         date={currentDate}
-                        onNavigate={(newDate) => setCurrentDate(newDate)}
+                        onNavigate={(newDate) => {
+                            setVisibleRange(null);
+                            setCurrentDate(newDate);
+                        }}
+                        onRangeChange={(range) => setVisibleRange(normalizeCalendarRange(range))}
                         tooltipAccessor={() => ''}  // ブラウザ標準のtooltipを表示しない
-                        min={new Date(1972, 0, 1, 4, 0, 0, 0)}
+                        min={calendarTimeBounds.min}
+                        max={calendarTimeBounds.max}
                         messages={calendarMessages}
 
                         // Layout
@@ -507,11 +690,13 @@ function RecordCalendar() {
 
                         eventPropGetter={(event) => ({
                             style: {
-                                backgroundColor: event.groupColor || '#3174ad',
+                                backgroundColor: blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.9),
                                 borderRadius: '5px',
-                                opacity: 0.8,
-                                color: 'white',
-                                fontSize: '0.5em',
+                                border: currentView === Views.AGENDA
+                                    ? '1px solid #d0d7de'
+                                    : `1px solid ${blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)}`,
+                                color: '#111111',
+                                fontSize: currentView === Views.MONTH ? '10px' : '12px',
                             },
                         })}
                     />
