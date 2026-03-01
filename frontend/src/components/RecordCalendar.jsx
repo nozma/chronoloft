@@ -24,6 +24,7 @@ import { updateRecord, deleteRecord } from '../services/api';
 import { useRecords } from '../contexts/RecordContext';
 import { useActivities } from '../contexts/ActivityContext';
 import DescendingAgendaView from './DescendingAgendaView';
+import { useTheme } from '@mui/material/styles';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
@@ -75,20 +76,36 @@ function ceilToNextHour(dateTime) {
     return roundedDown.plus({ hours: 1 });
 }
 
-function blendColorWithWhite(hexColor, mixRatio) {
+function blendColor(hexColor, targetHex, mixRatio, fallbackColor) {
     const normalized = hexColor?.replace('#', '');
-    if (!normalized || !/^[0-9a-fA-F]{6}$/.test(normalized)) {
-        return '#dbe7f3';
+    const target = targetHex?.replace('#', '');
+    if (
+        !normalized || !target ||
+        !/^[0-9a-fA-F]{6}$/.test(normalized) ||
+        !/^[0-9a-fA-F]{6}$/.test(target)
+    ) {
+        return fallbackColor;
     }
 
     const red = parseInt(normalized.slice(0, 2), 16);
     const green = parseInt(normalized.slice(2, 4), 16);
     const blue = parseInt(normalized.slice(4, 6), 16);
-    const mixedRed = Math.round(red + (255 - red) * mixRatio);
-    const mixedGreen = Math.round(green + (255 - green) * mixRatio);
-    const mixedBlue = Math.round(blue + (255 - blue) * mixRatio);
+    const targetRed = parseInt(target.slice(0, 2), 16);
+    const targetGreen = parseInt(target.slice(2, 4), 16);
+    const targetBlue = parseInt(target.slice(4, 6), 16);
+    const mixedRed = Math.round(red + (targetRed - red) * mixRatio);
+    const mixedGreen = Math.round(green + (targetGreen - green) * mixRatio);
+    const mixedBlue = Math.round(blue + (targetBlue - blue) * mixRatio);
 
     return `rgb(${mixedRed}, ${mixedGreen}, ${mixedBlue})`;
+}
+
+function blendColorWithWhite(hexColor, mixRatio) {
+    return blendColor(hexColor, '#ffffff', mixRatio, '#dbe7f3');
+}
+
+function blendColorWithBlack(hexColor, mixRatio) {
+    return blendColor(hexColor, '#000000', mixRatio, '#26445f');
 }
 
 function inferVisibleRange(view, date) {
@@ -268,6 +285,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
 }
 
 function RecordCalendar() {
+    const theme = useTheme();
     const { groups, excludedGroupIds } = useGroups();
     const { activities, excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
@@ -555,6 +573,7 @@ function RecordCalendar() {
     const calendarMessages = useMemo(() => ({
         agenda: 'Summary',
     }), []);
+    const isDarkMode = theme.palette.mode === 'dark';
 
     const isAgendaView = currentView === 'agenda';
     const calendarMaxHeight = calendarMode === 'short' ? 500 : 800;
@@ -690,12 +709,18 @@ function RecordCalendar() {
 
                         eventPropGetter={(event) => ({
                             style: {
-                                backgroundColor: blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.9),
+                                backgroundColor: isDarkMode
+                                    ? blendColorWithBlack(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)
+                                    : blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.9),
                                 borderRadius: '5px',
                                 border: currentView === Views.AGENDA
-                                    ? '1px solid #d0d7de'
-                                    : `1px solid ${blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)}`,
-                                color: '#111111',
+                                    ? `1px solid ${isDarkMode ? '#555555' : '#d0d7de'}`
+                                    : `1px solid ${
+                                        isDarkMode
+                                            ? blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.2)
+                                            : blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)
+                                    }`,
+                                color: isDarkMode ? '#f3f4f6' : '#111111',
                                 fontSize: currentView === Views.MONTH ? '10px' : '12px',
                             },
                         })}
