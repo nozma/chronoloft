@@ -105,63 +105,53 @@
     z-index: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-    /* Agenda ビューの日付部分の背景色と文字色をリセット */
-    .rbc-agenda-date-cell {
-        background-color: #1a1a1a !important;
-        color: inherit !important;
-    }
+:root[data-theme='dark'] .rbc-agenda-date-cell {
+    background-color: #1a1a1a !important;
+    color: inherit !important;
+}
 
-    /* 日付、時刻表示のテキスト色 */
-    .rbc-toolbar-label,
-    .rbc-header,
-    .rbc-time-label,
-    .rbc-label {
-        color: #999;
-    }
+:root[data-theme='dark'] .rbc-toolbar-label,
+:root[data-theme='dark'] .rbc-header,
+:root[data-theme='dark'] .rbc-time-label,
+:root[data-theme='dark'] .rbc-label {
+    color: #999;
+}
 
-    /* ツールバーのボタンの文字色を明るく */
-    .rbc-toolbar button {
-        color: #999 !important;
-    }
+:root[data-theme='dark'] .rbc-toolbar button {
+    color: #999 !important;
+}
 
-    /* ツールバーのボタンの背景色 */
-    .rbc-toolbar .rbc-btn-group button {
-        background-color: #1a1a1a;
-        border-color: #555555;
-    }
+:root[data-theme='dark'] .rbc-toolbar .rbc-btn-group button {
+    background-color: #1a1a1a;
+    border-color: #555555;
+}
 
-    .rbc-toolbar .rbc-btn-group .rbc-active {
-        background-color: rgba(255, 255, 255, 0.16);
-        color: #ccc !important;
-    }
+:root[data-theme='dark'] .rbc-toolbar .rbc-btn-group .rbc-active {
+    background-color: rgba(255, 255, 255, 0.16);
+    color: #ccc !important;
+}
 
-    .rbc-toolbar .rbc-btn-group button:hover {
-        background-color: #999;
-        color: #ccc !important;
-    }
+:root[data-theme='dark'] .rbc-toolbar .rbc-btn-group button:hover {
+    background-color: #999;
+    color: #ccc !important;
+}
 
+:root[data-theme='dark'] .rbc-today {
+    background-color: #333333 !important;
+}
 
-    /* 今日を示すセルの背景色 */
-    .rbc-today {
-        background-color: #333333 !important;
-    }
+:root[data-theme='dark'] .calendar-day-view .rbc-today {
+    background-color: transparent !important;
+}
 
-    .calendar-day-view .rbc-today {
-        background-color: transparent !important;
-    }
+:root[data-theme='dark'] .calendar-week-view .rbc-time-content::before {
+    border-top-color: #555555 !important;
+}
 
-    .calendar-week-view .rbc-time-content::before {
-        border-top-color: #555555 !important;
-    }
+:root[data-theme='dark'] .rbc-calendar * {
+    border-color: #555555 !important;
+}
 
-    /* 罫線 */
-    .rbc-calendar * {
-        border-color: #555555 !important;
-    }
-
-    .rbc-time-view .rbc-time-header > .rbc-row:first-child {
-        border-bottom-color: #555555 !important;
-    }
-
+:root[data-theme='dark'] .rbc-time-view .rbc-time-header > .rbc-row:first-child {
+    border-bottom-color: #555555 !important;
 }

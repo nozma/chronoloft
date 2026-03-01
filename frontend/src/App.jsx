@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
 import Box from '@mui/material/Box';
 import RecordingInterface from './components/RecordingInterface';
@@ -6,7 +6,6 @@ import History from './components/History';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { fetchRecords } from './services/api';
 import { ActiveActivityProvider } from './contexts/ActiveActivityContext';
 import { GroupProvider } from './contexts/GroupContext';
 import { FilterProvider } from './contexts/FilterContext';
@@ -24,6 +23,13 @@ function App() {
     const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
     const resolvedMode =
         themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
+
+    useEffect(() => {
+        document.documentElement.dataset.theme = resolvedMode;
+        document.documentElement.style.colorScheme = resolvedMode;
+        document.body.dataset.theme = resolvedMode;
+        document.body.style.colorScheme = resolvedMode;
+    }, [resolvedMode]);
 
     const theme = React.useMemo(
         () =>
@@ -51,7 +57,7 @@ function App() {
                     px: 1,       // サイドパディング
                 }}
             >
-                <CssBaseline />
+                <CssBaseline enableColorScheme />
                 <GroupProvider>
                     <TagProvider>
                         <ActivityProvider>
