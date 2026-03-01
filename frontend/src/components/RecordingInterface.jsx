@@ -134,8 +134,8 @@ function RecordingInterface() {
 
                 // 既に別ストップウォッチが動いている -> 一旦finishAndReset
                 const details = calculateTimeDetails(activity.id, records);
-                const prevGroup = groups.find(g => g.name === selectedActivity.group_name);
-                const newDiscordData = (discordEnabled && prevGroup?.client_id) // 連係有効かつClient IDのあるグループは連係データを組み立てる
+                const nextGroup = groups.find(g => g.name === activity.group_name);
+                const newDiscordData = (discordEnabled && nextGroup?.client_id) // 連係有効かつClient IDのあるグループは連係データを組み立てる
                     ? {
                         group: activity.group_name,
                         activity_name: activity.name,

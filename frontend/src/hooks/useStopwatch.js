@@ -26,6 +26,11 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const timerRef = useRef(null); // setIntervalのID保持
     const discordLockRef = useRef(false); // Discord連係処理のリクエストが走っているかのRef
 
+    // 親コンポーネント側でDiscord連係対象が変わったら内部状態にも反映する
+    useEffect(() => {
+        setDiscordData(initialDiscordData);
+    }, [initialDiscordData]);
+
     // -----------------------------------------------
     // マウント時の処理： 
     //   localStorageから以前のストップウォッチ状態を復元（復元終了後、restored=true とする）
@@ -106,7 +111,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         setPausedStartTime(null);
 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
-        const discordDataToUse = newDiscordData || discordData;
+        const discordDataToUse = newDiscordData === undefined ? discordData : newDiscordData;
         setDiscordData(discordDataToUse);
         await startDiscordIfNeeded(discordDataToUse);
     };
