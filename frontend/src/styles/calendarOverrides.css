@@ -115,7 +115,11 @@
 
 :root[data-theme='dark'] .rbc-agenda-date-cell {
     background-color: #1a1a1a !important;
-    color: inherit !important;
+    color: #cccccc !important;
+}
+
+:root[data-theme='dark'] .rbc-agenda-date-cell * {
+    color: #cccccc !important;
 }
 
 :root[data-theme='dark'] .rbc-toolbar-label,
