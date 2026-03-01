@@ -15,6 +15,7 @@ import {
     Line,
     BarChart,
     Bar,
+    Cell,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -371,20 +372,6 @@ function RecordChart() {
         return maxVal;
     }, [chartData, visibleKeys]);
 
-    // 1 Day表示でlegendに時間を表示するための累計値
-    const cumulativeMap = useMemo(() => {
-        if (selectedPeriod === '1d' && chartData.length > 0) {
-            const entry = chartData[0];
-            const map = {};
-            visibleKeys.forEach(key => {
-                map[key] = entry[key] ?? 0;
-            });
-            return map;
-        }
-        return {};
-    }, [selectedPeriod, chartData, visibleKeys]);
-
-
     // ツールチップ用の数値フォーマット
     const tooltipValueFormatter = (value) => {
         const roundedValue = Math.round(value);
@@ -405,6 +392,28 @@ function RecordChart() {
         }
         return value;
     };
+
+    const oneDayLabelValueFormatter = useCallback((value) => {
+        const roundedValue = Math.round(value);
+        if (aggregationUnit === 'time') {
+            const hours = Math.floor(roundedValue / 60);
+            const minutes = String(roundedValue % 60).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+        return `${roundedValue}`;
+    }, [aggregationUnit]);
+
+    const oneDayChartData = useMemo(() => {
+        if (selectedPeriod !== '1d') return [];
+        return sortedEntries
+            .filter(({ key }) => visibleKeys.includes(key))
+            .map(({ key, total }) => ({
+                key,
+                itemLabel: key,
+                displayLabel: `${key} (${oneDayLabelValueFormatter(total)})`,
+                value: total,
+            }));
+    }, [selectedPeriod, sortedEntries, visibleKeys, oneDayLabelValueFormatter]);
 
     const OneDayXAxisTick = (props) => {
         const {
@@ -431,6 +440,19 @@ function RecordChart() {
             </Text>
         );
     };
+
+    const OneDayYAxisTick = ({ x, y, payload }) => (
+        <text
+            x={x - 8}
+            y={y}
+            dy={4}
+            textAnchor="end"
+            fill={theme.palette.text.secondary}
+            fontSize={16}
+        >
+            {payload.value}
+        </text>
+    );
     // 月日の表示のフォーマッタ
     const xAxisTickFormatter = (val) => {
         if (!val) return '';
@@ -491,16 +513,26 @@ function RecordChart() {
         return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
     }, [visibleKeys]);
 
-    const baseChartHeight = selectedPeriod === '1d' ? 125 : 250;
+    const oneDayLabelWidth = useMemo(() => {
+        if (oneDayChartData.length === 0) return 160;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '16px sans-serif';
+        return Math.max(...oneDayChartData.map(item => ctx.measureText(item.displayLabel).width)) + 24;
+    }, [oneDayChartData]);
+
+    const oneDayBarSize = 30;
+    const oneDayChartVerticalPadding = 16;
+
+    const baseChartHeight = selectedPeriod === '1d'
+        ? Math.max(80, oneDayChartData.length * oneDayBarSize + oneDayChartVerticalPadding)
+        : 250;
 
     // 凡例が多いときの高さ補正を算出する
     const legendExtraHeight = useMemo(() => {
         const rowHeight = 20;
         if (chartType !== 'bar' || visibleKeys.length === 0) return 0;
-        if (selectedPeriod === '1d') {
-            const legendHeight = visibleKeys.length * rowHeight;
-            return Math.max(0, legendHeight - baseChartHeight);
-        }
+        if (selectedPeriod === '1d') return 0;
         if (chartWidth === 0) return 0;
         const extraLabelWidth = 36;
         const itemWidth = Math.max(100, longestLabelWidth + extraLabelWidth);
@@ -514,6 +546,39 @@ function RecordChart() {
     const CustomTooltip = ({ active, payload, label }) => {
         const theme = useTheme(); // MUIのテーマを取得
         if (!active || !payload || payload.length === 0) return null;
+        if (selectedPeriod === '1d') {
+            const row = payload[0]?.payload;
+            if (!row) return null;
+            return (
+                <Box
+                    sx={{
+                        backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#fff',
+                        color: theme.palette.mode === 'dark' ? '#fff' : '#000',
+                        padding: 1,
+                        borderRadius: 1,
+                        boxShadow: 3,
+                        border: theme.palette.mode === 'dark' ? '1px solid #444' : '1px solid #ddd',
+                        minWidth: 120,
+                    }}
+                >
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            fontWeight: 'bold',
+                            color: theme.palette.mode === 'dark' ? '#bbb' : '#333',
+                            borderBottom: '1px solid',
+                            paddingBottom: 0.5,
+                            display: 'block'
+                        }}
+                    >
+                        {row.itemLabel ?? label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 12, mt: 0.5 }}>
+                        {tooltipValueFormatter(row.value)}
+                    </Typography>
+                </Box>
+            );
+        }
         // 0を除外し数値の降順でソート
         const sortedPayload = [...payload]
             .filter(entry => entry.value > 0)
@@ -895,9 +960,14 @@ function RecordChart() {
                                 </LineChart>
                             ) : (
                                 <BarChart
-                                    data={chartData}
-                                    margin={selectedPeriod === '1d' ? {} : { left: 20 }}
+                                    data={selectedPeriod === '1d' ? oneDayChartData : chartData}
+                                    margin={selectedPeriod === '1d'
+                                        ? { top: 8, right: 88, bottom: 8, left: 64 }
+                                        : { left: 20 }
+                                    }
                                     layout={selectedPeriod === '1d' ? 'vertical' : 'horizontal'}
+                                    barCategoryGap={selectedPeriod === '1d' ? '0%' : '10%'}
+                                    barGap={selectedPeriod === '1d' ? 0 : 4}
                                 >
                                     <CartesianGrid
                                         stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
@@ -919,8 +989,10 @@ function RecordChart() {
                                     {selectedPeriod === '1d' && (
                                         <YAxis
                                             type="category"
-                                            dataKey="date"
-                                            tick={false}
+                                            dataKey="displayLabel"
+                                            width={oneDayLabelWidth}
+                                            interval={0}
+                                            tick={<OneDayYAxisTick />}
                                         />
                                     )}
 
@@ -948,32 +1020,30 @@ function RecordChart() {
                                             ]}
                                         />
                                     )}
-                                    {selectedPeriod === '1d' ? (
-                                        <Legend
-                                            layout="vertical"
-                                            align="right"
-                                            verticalAlign="middle"
-                                            wrapperStyle={{ paddingLeft: 8 }}
-                                            formatter={(value) => {
-                                                const total = Math.round(cumulativeMap[value] ?? 0);
-                                                const h = Math.floor(total / 60);
-                                                const m = String(total % 60).padStart(2, '0');
-                                                return `(${h}:${m}) ${value}`;
-                                            }}
-                                        />
-                                    ) : (
+                                    {selectedPeriod !== '1d' && (
                                         <Legend />
                                     )}
                                     <Tooltip content={<CustomTooltip />} />
-                                    {visibleKeys.map(key => (
+                                    {selectedPeriod === '1d' ? (
                                         <Bar
-                                            key={key}
-                                            dataKey={key}
-                                            stackId="a"
-                                            fill={colorScale(key)}
-                                            barSize={selectedPeriod === '1d' ? 36 : undefined}
-                                        />
-                                    ))}
+                                            dataKey="value"
+                                            barSize={oneDayBarSize}
+                                            isAnimationActive={false}
+                                        >
+                                            {oneDayChartData.map(entry => (
+                                                <Cell key={entry.key} fill={colorScale(entry.key)} />
+                                            ))}
+                                        </Bar>
+                                    ) : (
+                                        visibleKeys.map(key => (
+                                            <Bar
+                                                key={key}
+                                                dataKey={key}
+                                                stackId="a"
+                                                fill={colorScale(key)}
+                                            />
+                                        ))
+                                    )}
                                 </BarChart>
                             )}
                         </ResponsiveContainer>
