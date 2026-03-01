@@ -559,7 +559,7 @@ function RecordCalendar() {
     const isAgendaView = currentView === 'agenda';
     const calendarMaxHeight = calendarMode === 'short' ? 500 : 800;
     const calendarStyle = isAgendaView
-        ? { height: 'auto', maxHeight: calendarMaxHeight, overflowY: 'auto' }
+        ? { height: 'auto', maxHeight: calendarMaxHeight, overflow: 'hidden' }
         : { height: calendarMaxHeight };
     const calendarClassName = [
         isAgendaView ? 'calendar-summary-auto' : null,

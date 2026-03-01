@@ -71,16 +71,24 @@
 
 /* Summary view: allow agenda to size to content when height is auto */
 .calendar-summary-auto .rbc-agenda-view {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .calendar-summary-auto .rbc-agenda-view > table.rbc-agenda-table {
     border-bottom: none;
+    flex: 0 0 auto;
 }
 
 .calendar-summary-auto .rbc-agenda-view > table.rbc-agenda-table thead > tr > th {
     border-bottom: none;
+}
+
+.calendar-summary-auto .rbc-agenda-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* Day ビューでは今日セルの背景色を付けない */
