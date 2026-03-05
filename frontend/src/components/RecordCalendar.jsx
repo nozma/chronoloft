@@ -620,7 +620,18 @@ function RecordCalendar() {
     }, [calendarMode, currentDate, currentView, events.length]);
 
     return (
-        <Box sx={{ mb: 1 }}>
+        <Box
+            sx={(theme) => ({
+                mb: 1,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                backgroundColor:
+                    theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.03)',
+            })}
+        >
             <Typography
                 variant="caption"
                 color="#cccccc"

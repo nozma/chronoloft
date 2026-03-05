@@ -196,7 +196,19 @@ function RecordList() {
     // レンダリング部
     // ----------------------------
     return (
-        <Box ref={containerRef} sx={{ mb: 2 }}>
+        <Box
+            ref={containerRef}
+            sx={(theme) => ({
+                mb: 2,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                backgroundColor:
+                    theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.03)',
+            })}
+        >
             {error && <div>Error: {error}</div>}
             <div style={{ width: '100%' }}>
                 <Typography
