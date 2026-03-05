@@ -6,7 +6,8 @@ import {
     Typography,
     Collapse,
     Menu,
-    MenuItem
+    MenuItem,
+    Tooltip
 } from '@mui/material';
 import ToggleButtonGroup, {
     toggleButtonGroupClasses,
@@ -22,8 +23,68 @@ import { useUI } from '../contexts/UIContext';
 import SettingsIcon from '@mui/icons-material/Settings';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+
+function TruncatedActivityLabel({ text, sx }) {
+    const textRef = useRef(null);
+    const containerRef = useRef(null);
+    const [isTruncated, setIsTruncated] = useState(false);
+
+    const measureTruncation = useCallback(() => {
+        const textElement = textRef.current;
+        const containerElement = containerRef.current;
+        if (!textElement || !containerElement) return;
+
+        // テキスト本来の幅と、ボタン内で実際に使える幅を比較して省略を判定する
+        setIsTruncated(textElement.scrollWidth > containerElement.clientWidth + 1);
+    }, []);
+
+    useLayoutEffect(() => {
+        const textElement = textRef.current;
+        const containerElement = containerRef.current;
+        if (!textElement || !containerElement) return;
+
+        const rafId = window.requestAnimationFrame(measureTruncation);
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', measureTruncation);
+            return () => {
+                window.cancelAnimationFrame(rafId);
+                window.removeEventListener('resize', measureTruncation);
+            };
+        }
+
+        const observer = new ResizeObserver(measureTruncation);
+        observer.observe(textElement);
+        observer.observe(containerElement);
+        return () => {
+            window.cancelAnimationFrame(rafId);
+            observer.disconnect();
+        };
+    }, [text, measureTruncation]);
+
+    return (
+        <Tooltip
+            title={text}
+            enterDelay={0}
+            enterNextDelay={0}
+            arrow
+            disableHoverListener={!isTruncated}
+        >
+            <Box
+                component="span"
+                ref={containerRef}
+                sx={{ display: 'inline-flex', flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}
+                onMouseEnter={measureTruncation}
+            >
+                <Box component="span" ref={textRef} sx={{ ...sx, display: 'block', width: '100%' }}>
+                    {text}
+                </Box>
+            </Box>
+        </Tooltip>
+    );
+}
 
 function ActivityStart({
     activities,
@@ -158,6 +219,31 @@ function ActivityStart({
             tagFilter: '',
         }));
     };
+    const activityButtonCompactSx = isTwoColumnLayout
+        ? {
+            px: 1,
+            py: 0.25,
+            minHeight: 30,
+            fontSize: '0.78rem',
+            width: 'fit-content',
+            maxWidth: '100%',
+            minWidth: 0,
+            overflow: 'hidden',
+            '& .MuiButton-startIcon': { mr: 0.5, ml: -0.25, flexShrink: 0 },
+        }
+        : {};
+    const activityNameLabelSx = isTwoColumnLayout
+        ? {
+            display: 'inline-block',
+            minWidth: 0,
+            flex: '1 1 auto',
+            width: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+        }
+        : {};
 
 
     return (
@@ -195,7 +281,7 @@ function ActivityStart({
                     <Collapse in={state.groupOpen}>
                         <Box>
                             {isTwoColumnLayout ? (
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1, mr: 1 }}>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                                     <ToggleButton
                                         value=""
                                         aria-label="All"
@@ -304,13 +390,32 @@ function ActivityStart({
                                 }));
                             }}
                             multiple
-                            sx={{ mb: 1, mr: 1, flexWrap: 'wrap' }}
+                            sx={{
+                                mb: 1,
+                                mr: isTwoColumnLayout ? 0 : 1,
+                                flexWrap: 'wrap',
+                                ...(isTwoColumnLayout
+                                    ? {
+                                        rowGap: 0,
+                                        [`& .${toggleButtonGroupClasses.grouped}`]: { margin: 0.25 },
+                                        '& .MuiToggleButton-root': { lineHeight: 1.1 },
+                                    }
+                                    : {}),
+                            }}
                         >
-                            <ToggleButton value="" aria-label="All">
+                            <ToggleButton
+                                value=""
+                                aria-label="All"
+                                sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
+                            >
                                 All
                             </ToggleButton>
                             {groupTags.map(tagName => (
-                                <ToggleButton key={tagName} value={tagName}>
+                                <ToggleButton
+                                    key={tagName}
+                                    value={tagName}
+                                    sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
+                                >
                                     {tagName}
                                 </ToggleButton>
                             ))}
@@ -367,6 +472,7 @@ function ActivityStart({
                                             key={activity.id}
                                             variant="outlined"
                                             color="primary"
+                                            size={isTwoColumnLayout ? 'small' : 'medium'}
                                             onClick={() => onStart(activity)}
                                             onContextMenu={(e) => handleContextMenu(e, activity)}
                                             sx={{
@@ -374,6 +480,8 @@ function ActivityStart({
                                                 textTransform: 'none',
                                                 borderRadius: 5,
                                                 boxShadow: 2,
+                                                justifyContent: isTwoColumnLayout ? 'flex-start' : 'center',
+                                                ...activityButtonCompactSx,
                                                 ...(activity.is_active
                                                     ? {}
                                                     : {
@@ -387,7 +495,7 @@ function ActivityStart({
                                             }}
                                             startIcon={getIconForGroup(activity.group_name, groups)}
                                         >
-                                            {activity.name}
+                                            <TruncatedActivityLabel text={activity.name} sx={activityNameLabelSx} />
                                         </Button>
                                     ))}
                                     {/* 設定アイコンの表示 */}
@@ -441,6 +549,7 @@ function ActivityStart({
                                                     key={activity.id}
                                                     variant="outlined"
                                                     color="primary"
+                                                    size={isTwoColumnLayout ? 'small' : 'medium'}
                                                     onClick={() => onStart(activity)}
                                                     onContextMenu={(e) => handleContextMenu(e, activity)}
                                                     sx={{
@@ -448,10 +557,12 @@ function ActivityStart({
                                                         textTransform: 'none',
                                                         borderRadius: 5,
                                                         boxShadow: 2,
+                                                        justifyContent: isTwoColumnLayout ? 'flex-start' : 'center',
+                                                        ...activityButtonCompactSx,
                                                     }}
                                                     startIcon={getIconForGroup(activity.group_name, groups)}
                                                 >
-                                                    {activity.name}
+                                                    <TruncatedActivityLabel text={activity.name} sx={activityNameLabelSx} />
                                                 </Button>
                                             ))}
                                         </Box>
@@ -487,6 +598,7 @@ function ActivityStart({
                                                             key={activity.id}
                                                             variant="outlined"
                                                             color="primary"
+                                                            size={isTwoColumnLayout ? 'small' : 'medium'}
                                                             onClick={() => onStart(activity)}
                                                             onContextMenu={(e) => handleContextMenu(e, activity)}
                                                             sx={{
@@ -494,6 +606,8 @@ function ActivityStart({
                                                                 textTransform: 'none',
                                                                 borderRadius: 5,
                                                                 boxShadow: 2,
+                                                                justifyContent: isTwoColumnLayout ? 'flex-start' : 'center',
+                                                                ...activityButtonCompactSx,
                                                                 color: 'text.disabled',
                                                                 borderColor: 'text.disabled',
                                                                 '&:hover': {
@@ -503,7 +617,7 @@ function ActivityStart({
                                                             }}
                                                             startIcon={getIconForGroup(activity.group_name, groups)}
                                                         >
-                                                            {activity.name}
+                                                            <TruncatedActivityLabel text={activity.name} sx={activityNameLabelSx} />
                                                         </Button>
                                                     ))}
                                                 </Box>
