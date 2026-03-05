@@ -21,6 +21,7 @@ import { useUI } from '../contexts/UIContext';
 import { useRecords } from '../contexts/RecordContext';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
+import { useSettings } from '../contexts/SettingsContext';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
@@ -34,6 +35,8 @@ function RecordHeatmap() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { recordsWithLive: records } = useRecords();
     const { palette: { mode } } = useTheme();
+    const { layoutMode } = useSettings();
+    const isTwoColumnLayout = layoutMode === 'two-column';
     const groupFilter = filterCriteria?.groupFilter || '';
 
     const handleFilterChange = useCallback((newCriteria) => {
@@ -201,7 +204,10 @@ function RecordHeatmap() {
 
     // min-width:1100px であるかどうかを判定
     const isWide = useMediaQuery('(min-width:1100px)');
-    const blockSize = isWide ? 15 : 12;
+    const baseBlockSize = isWide ? 15 : 12;
+    const blockSize = isTwoColumnLayout ? baseBlockSize - 2 : baseBlockSize;
+    const blockMargin = isTwoColumnLayout ? 1 : 2;
+    const heatmapFontSize = isTwoColumnLayout ? 12 : 14;
 
     return (
         <Box sx={{ mb: 1 }}>
@@ -244,8 +250,8 @@ function RecordHeatmap() {
                         <ActivityCalendar
                             data={heatmapData}
                             blockSize={blockSize}
-                            blockMargin={2}
-                            fontSize={14}
+                            blockMargin={blockMargin}
+                            fontSize={heatmapFontSize}
                             colorScheme={mode}
                             theme={{
                                 light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
