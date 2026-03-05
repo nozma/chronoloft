@@ -10,6 +10,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
 
 const SubStopwatch = forwardRef((props, ref) => {
+    const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
     const { records } = useRecords();
     const {
@@ -102,22 +103,23 @@ const SubStopwatch = forwardRef((props, ref) => {
         <>
             <Box sx={(theme) => ({
                 display: 'flex',
+                flexDirection: isInlineMode ? 'column' : 'row',
                 width: '100%',
                 backgroundColor: theme.palette.mode === 'dark'
                     ? '#151515'  // ダークモード用
                     : '#eeeeee', // ライトモード用
-                py: 1,
-                px: 2,
-                borderRadius: 2,                
-                mb: 2
+                py: isInlineMode ? 0.5 : 1,
+                px: isInlineMode ? 1 : 2,
+                borderRadius: isInlineMode ? 1 : 2,
+                mb: isInlineMode ? 0.5 : 2
             })}
             >
                 <Typography variant='caption' color='#555'>Sub Stopwatch</Typography>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={isInlineMode ? { width: '100%' } : { flex: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         {getIconForGroup(props.activityGroup, groups)}
                         <Typography variant="body2" sx={{ mr: 1 }}>{props.activityName}</Typography>
-                        <Typography variant="body2">Start Time: {formattedStartTime}</Typography>
+                        <Typography variant="body2">Start: {formattedStartTime}</Typography>
                         <IconButton onClick={handleOpenPicker} size='small'>
                             <CalendarMonthIcon fontSize='small' />
                         </IconButton>
@@ -153,7 +155,7 @@ const SubStopwatch = forwardRef((props, ref) => {
                         </IconButton>
                     </Box>
                 </Box>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={isInlineMode ? { width: '100%', mt: 1 } : { flex: 1 }}>
                     <TextField
                         label="Memo"
                         multiline
