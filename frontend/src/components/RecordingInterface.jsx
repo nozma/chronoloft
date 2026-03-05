@@ -279,9 +279,9 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 top: 0,
                                 zIndex: (theme) => theme.zIndex.appBar + 1,
                                 width: '100%',
-                                mb: 0.5,
+                                mb: 2,
                                 backgroundColor: (theme) => theme.palette.background.default,
-                                pt: 0.25,
+                                pt: 0,
                             }
                             : {}
                     }
