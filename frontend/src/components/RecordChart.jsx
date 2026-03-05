@@ -6,7 +6,8 @@ import {
     Collapse,
     TextField,
     MenuItem,
-    IconButton
+    IconButton,
+    Button
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
@@ -38,6 +39,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useActivities } from '../contexts/ActivityContext';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
 
 function formatPeriodKey(dt, xAxisUnit) {
@@ -206,7 +208,7 @@ function getPeriodRange(period, offset = 0) {
 function RecordChart() {
     // コンテキストから必要なデータを取得
     const { recordsWithLive: records } = useRecords();
-    const { groups, excludedGroupIds } = useGroups();
+    const { excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
     const { groupFilter, tagFilter, activityNameFilter } = filterState;
@@ -541,6 +543,11 @@ function RecordChart() {
         return rows > 1 ? (rows - 1) * rowHeight : 0;
     }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod, baseChartHeight]);
     const chartHeight = baseChartHeight + legendExtraHeight;
+    const compactSettingFieldSx = {
+        mt: 0.5,
+        '& .MuiInputBase-root': { minHeight: 36, fontSize: 12 },
+        '& .MuiInputLabel-root': { fontSize: 12 },
+    };
 
     // ツールチップ用カスタムコンポーネント
     const CustomTooltip = ({ active, payload, label }) => {
@@ -640,38 +647,72 @@ function RecordChart() {
     };
 
     return (
-        <Box sx={{ mb: 1 }}>
-            <Typography
-                variant='caption'
-                color='#cccccc'
-                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                onClick={() => uiDispatch({ type: 'SET_CHART_OPEN', payload: !uiState.chartOpen })}
-            >
-                Chart
-                <KeyboardArrowRightIcon
-                    fontSize='small'
-                    sx={{
-                        transition: 'transform 0.15s linear',
-                        transform: uiState.chartOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                        marginLeft: '4px'
-                    }}
-                />
-            </Typography>
+        <Box
+            sx={(theme) => ({
+                mb: 1,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                backgroundColor:
+                    theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.03)',
+            })}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_CHART_OPEN', payload: !uiState.chartOpen })}
+                >
+                    Chart
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.chartOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
+                <Button
+                    size="small"
+                    startIcon={<SettingsIcon fontSize="small" />}
+                    sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
+                    onClick={() => setSettingsOpen(prev => !prev)}
+                >
+                    {settingsOpen ? 'Close' : 'Open'}
+                </Button>
+            </Box>
             <Collapse in={uiState.chartOpen}>
                 {/* 各種コントロール */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    {/* Activity フィルター */}
-                    <RecordFilter
-                        groups={groups}
-                        onFilterChange={handleFilterChange}
-                        records={visibleRecordsByActivity}
-                    />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mb: 1 }}>
                     {/* チャート表示設定 */}
-                    {settingsOpen ? (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-                            <IconButton size="small" onClick={() => setSettingsOpen(false)}>
-                                <ChevronRightIcon fontSize="small" />
-                            </IconButton>
+                    {settingsOpen && (
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexWrap: 'nowrap',
+                                gap: 0.5,
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                                pt: 0.5,
+                                pb: 0.25,
+                                overflowX: 'auto',
+                                overflowY: 'visible',
+                                scrollbarWidth: 'none',
+                                '&::-webkit-scrollbar': { display: 'none' },
+                            }}
+                        >
+                        {/* Activity フィルター */}
+                        <RecordFilter
+                            onFilterChange={handleFilterChange}
+                            records={visibleRecordsByActivity}
+                            compact
+                            sx={{ mt: 0, flex: '0 0 auto' }}
+                            textFieldSx={{ minWidth: 120, ...compactSettingFieldSx }}
+                        />
                         {/* 表示項目数上限 */}
                         <TextField
                             select
@@ -679,7 +720,7 @@ function RecordChart() {
                             size="small"
                             value={itemLimit}
                             onChange={(e) => setItemLimit(e.target.value)}
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: 88, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="5">5</MenuItem>
                             <MenuItem value="10">10</MenuItem>
@@ -700,7 +741,7 @@ function RecordChart() {
                                     setChartType('bar');
                                 }
                             }}
-                            sx={{ minWidth: 120 }}
+                            sx={{ minWidth: 108, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="all">All</MenuItem>
                             <MenuItem value="365d">365 Days</MenuItem>
@@ -718,7 +759,7 @@ function RecordChart() {
                             size="small"
                             value={chartType}
                             onChange={(e) => setChartType(e.target.value)}
-                            sx={{ minWidth: 100 }}
+                            sx={{ minWidth: 96, ...compactSettingFieldSx }}
                             disabled={selectedPeriod === '1d'} // 1 Day選択時は変更不可（棒グラフ固定）
                         >
                             <MenuItem value="line">Line</MenuItem>
@@ -731,7 +772,7 @@ function RecordChart() {
                             size="small"
                             value={xAxisUnit}
                             onChange={(e) => setXAxisUnit(e.target.value)}
-                            sx={{ minWidth: 100 }}
+                            sx={{ minWidth: 82, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="day">Day</MenuItem>
                             <MenuItem value="week">Week</MenuItem>
@@ -744,6 +785,7 @@ function RecordChart() {
                             size="small"
                             value={groupBy}
                             onChange={(e) => setGroupBy(e.target.value)}
+                            sx={{ minWidth: 104, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="group">Group</MenuItem>
                             <MenuItem value="tag">Tag</MenuItem>
@@ -760,15 +802,12 @@ function RecordChart() {
                                 setAggregationUnit(e.target.value);
                                 setIsAggregationManual(true); // ここは従来のロジックを踏襲
                             }}
+                            sx={{ minWidth: 78, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="time">Time</MenuItem>
                             <MenuItem value="count">Count</MenuItem>
                         </TextField>
                         </Box>
-                    ) : (
-                        <IconButton size="small" onClick={() => setSettingsOpen(true)}>
-                            <ChevronLeftIcon fontSize="small" />
-                        </IconButton>
                     )}
                 </Box>
                 {/* 表示期間切り替えUI */}

@@ -10,11 +10,13 @@ import {
     TableRow,
     TablePagination,
     TextField,
-    MenuItem
+    MenuItem,
+    Button
 } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { DateTime } from 'luxon';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
@@ -195,6 +197,7 @@ function RecordTrend() {
     const { groupFilter, tagFilter } = filterState;
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('trend.selectedPeriod', '30day');
+    const [settingsOpen, setSettingsOpen] = useLocalStorageState('trend.settingsOpen', false);
     const [incPage, setIncPage] = useState(0);
     const [decPage, setDecPage] = useState(0);
 
@@ -232,36 +235,59 @@ function RecordTrend() {
     const decRows = decrease.slice(decPage * 10, decPage * 10 + 10);
 
     return (
-        <Box sx={{ mb: 1 }}>
-            <Typography
-                variant='caption'
-                color='#cccccc'
-                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                onClick={() => uiDispatch({ type: 'SET_TREND_OPEN', payload: !uiState.trendOpen })}
-            >
-                Trend
-                <KeyboardArrowRightIcon
-                    fontSize='small'
-                    sx={{
-                        transition: 'transform 0.15s linear',
-                        transform: uiState.trendOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                        marginLeft: '4px'
-                    }}
-                />
-            </Typography>
+        <Box
+            sx={(theme) => ({
+                mb: 1,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                backgroundColor:
+                    theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.03)',
+            })}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_TREND_OPEN', payload: !uiState.trendOpen })}
+                >
+                    Trend
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.trendOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
+                <Button
+                    size="small"
+                    startIcon={<SettingsIcon fontSize="small" />}
+                    sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
+                    onClick={() => setSettingsOpen(prev => !prev)}
+                >
+                    {settingsOpen ? 'Close' : 'Open'}
+                </Button>
+            </Box>
             <Collapse in={uiState.trendOpen}>
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-                    <TextField select size='small' label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
-                        <MenuItem value='activity'>Activity</MenuItem>
-                        <MenuItem value='tag'>Tag</MenuItem>
-                        <MenuItem value='group'>Group</MenuItem>
-                    </TextField>
-                    <TextField select size='small' label='Date Range' value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
-                        <MenuItem value='30day'>30 Days</MenuItem>
-                        <MenuItem value='7day'>7 Days</MenuItem>
-                        <MenuItem value='7v30'>7d vs 30d</MenuItem>
-                    </TextField>
-                </Box>
+                {settingsOpen && (
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+                        <TextField select size='small' label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
+                            <MenuItem value='activity'>Activity</MenuItem>
+                            <MenuItem value='tag'>Tag</MenuItem>
+                            <MenuItem value='group'>Group</MenuItem>
+                        </TextField>
+                        <TextField select size='small' label='Date Range' value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
+                            <MenuItem value='30day'>30 Days</MenuItem>
+                            <MenuItem value='7day'>7 Days</MenuItem>
+                            <MenuItem value='7v30'>7d vs 30d</MenuItem>
+                        </TextField>
+                    </Box>
+                )}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                         <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>

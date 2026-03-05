@@ -4,7 +4,8 @@ import {
     MenuItem,
     Typography,
     Collapse,
-    TextField
+    TextField,
+    Button
 } from '@mui/material';
 import ActivityCalendar from 'react-activity-calendar'
 import { Tooltip as ReactTooltip } from 'react-tooltip';
@@ -22,10 +23,13 @@ import { useRecords } from '../contexts/RecordContext';
 import { useMediaQuery, useTheme } from '@mui/material';
 import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
 import { useSettings } from '../contexts/SettingsContext';
+import SettingsIcon from '@mui/icons-material/Settings';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function RecordHeatmap() {
     const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
+    const [settingsOpen, setSettingsOpen] = useLocalStorageState('heatmap.settingsOpen', false);
     const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
     const { filterCriteria } = recordListState;
     const { groups, excludedGroupIds } = useGroups();
@@ -210,43 +214,85 @@ function RecordHeatmap() {
     const heatmapFontSize = isTwoColumnLayout ? 12 : 14;
 
     return (
-        <Box sx={{ mb: 1 }}>
-            <Typography
-                variant='caption'
-                color='#cccccc'
-                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                onClick={() => uiDispatch({ type: 'SET_HEATMAP_OPEN', payload: !uiState.heatmapOpen })}
-            >
-                Heatmap
-                <KeyboardArrowRightIcon
-                    fontSize='small'
-                    sx={{
-                        transition: 'transform 0.15s linear',
-                        transform: uiState.heatmapOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                        marginLeft: '4px'
-                    }}
-                />
-            </Typography>
+        <Box
+            sx={(theme) => ({
+                mb: 1,
+                px: 1.25,
+                py: 0.75,
+                borderRadius: 1.5,
+                backgroundColor:
+                    theme.palette.mode === 'dark'
+                        ? 'rgba(255,255,255,0.06)'
+                        : 'rgba(0,0,0,0.03)',
+            })}
+        >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography
+                    variant='caption'
+                    color='#cccccc'
+                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                    onClick={() => uiDispatch({ type: 'SET_HEATMAP_OPEN', payload: !uiState.heatmapOpen })}
+                >
+                    Heatmap
+                    <KeyboardArrowRightIcon
+                        fontSize='small'
+                        sx={{
+                            transition: 'transform 0.15s linear',
+                            transform: uiState.heatmapOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                            marginLeft: '4px'
+                        }}
+                    />
+                </Typography>
+                <Button
+                    size="small"
+                    startIcon={<SettingsIcon fontSize="small" />}
+                    sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
+                    onClick={() => setSettingsOpen(prev => !prev)}
+                >
+                    {settingsOpen ? 'Close' : 'Open'}
+                </Button>
+            </Box>
             <Collapse in={uiState.heatmapOpen}>
                 {heatmapData.length > 0 ? (
                     <Box sx={{ mb: 2 }}>
-                        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <RecordFilter
-                                groups={groups}
-                                onFilterChange={handleFilterChange}
-                                records={visibleRecordsByActivity}
-                            />
-                            <TextField
-                                value={displayMode}
-                                select
-                                onChange={(e) => setDisplayMode(e.target.value)}
-                                label="Unit"
-                                size='small'
+                        {settingsOpen && (
+                            <Box
+                                sx={{
+                                    mb: 1,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'flex-end',
+                                    gap: 0.5,
+                                    flexWrap: 'nowrap',
+                                    overflowX: 'auto',
+                                    scrollbarWidth: 'none',
+                                    '&::-webkit-scrollbar': { display: 'none' },
+                                }}
                             >
-                                <MenuItem value="time">Time</MenuItem>
-                                <MenuItem value="count">Count</MenuItem>
-                            </TextField>
-                        </Box>
+                                <RecordFilter
+                                    onFilterChange={handleFilterChange}
+                                    records={visibleRecordsByActivity}
+                                    compact
+                                    sx={{ mt: 0, flex: '0 0 auto' }}
+                                />
+                                <TextField
+                                    value={displayMode}
+                                    select
+                                    onChange={(e) => setDisplayMode(e.target.value)}
+                                    label="Unit"
+                                    size='small'
+                                    sx={{
+                                        mt: 0.5,
+                                        minWidth: 82,
+                                        '& .MuiInputBase-root': { minHeight: 36, fontSize: 12 },
+                                        '& .MuiInputLabel-root': { fontSize: 12 },
+                                    }}
+                                >
+                                    <MenuItem value="time">Time</MenuItem>
+                                    <MenuItem value="count">Count</MenuItem>
+                                </TextField>
+                            </Box>
+                        )}
                         <ActivityCalendar
                             data={heatmapData}
                             blockSize={blockSize}

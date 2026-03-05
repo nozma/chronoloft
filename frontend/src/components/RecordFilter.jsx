@@ -7,7 +7,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useFilter } from '../contexts/FilterContext';
 import { useActivities } from '../contexts/ActivityContext';
 
-function RecordFilter({ onFilterChange, records }) {
+function RecordFilter({ onFilterChange, records, sx = {}, compact = false, textFieldSx = {} }) {
     const { activities } = useActivities();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter, activityNameFilter } = filterState;
@@ -54,7 +54,7 @@ function RecordFilter({ onFilterChange, records }) {
     };
 
     return (
-        <Box sx={{ mt: 1 }}>
+        <Box sx={{ mt: compact ? 0.5 : 1, ...sx }}>
             <TextField
                 label="Activity"
                 select
@@ -65,7 +65,7 @@ function RecordFilter({ onFilterChange, records }) {
                 onChange={(e) => {
                     setFilterState(prev => ({ ...prev, activityNameFilter: e.target.value }));
                 }}
-                sx={{ minWidth: 180 }}
+                sx={{ mt: compact ? 0.5 : 0, minWidth: compact ? 120 : 180, ...textFieldSx }}
             >
                 <MenuItem value="">All</MenuItem>
                 {filteredActivityNames.map((name, idx) => (
@@ -75,7 +75,7 @@ function RecordFilter({ onFilterChange, records }) {
                 ))}
             </TextField>
             {activityNameFilter != `` && (
-                <IconButton onClick={handleReset}>
+                <IconButton onClick={handleReset} size={compact ? 'small' : 'medium'} sx={compact ? { p: 0.5 } : {}}>
                     <ClearIcon />
                 </IconButton>
             )}
