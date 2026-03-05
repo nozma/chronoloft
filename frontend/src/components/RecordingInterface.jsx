@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useFilter } from '../contexts/FilterContext';
@@ -15,6 +15,9 @@ import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { DateTime } from 'luxon';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SettingsDialog from './SettingsDialog';
+import { clearUiSettings } from '../utils/storageReset';
 
 function RecordingInterface() {
     const { state, dispatch } = useUI();
@@ -55,6 +58,9 @@ function RecordingInterface() {
     const [nextActivity, setNextActivity] = useState(null);
     // Submit経由の閉じ方か判定するためのRef
     const dialogSubmitRef = useRef(false);
+    const [anchorEl, setAnchorEl] = useState(null);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const menuOpen = Boolean(anchorEl);
 
     // タイトル更新
     useEffect(() => {
@@ -281,7 +287,7 @@ function RecordingInterface() {
                 />
             )}
             {/* Heading / Title */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
                 <Typography variant="h5" sx={{ mr: 2 }}>
                     Record Your Activity
                 </Typography>
@@ -319,7 +325,49 @@ function RecordingInterface() {
                 >
                     Close All
                 </Typography>
+                <Box sx={{ ml: 'auto' }}>
+                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                        <MoreVertIcon />
+                    </IconButton>
+                </Box>
             </Box>
+            <Menu
+                anchorEl={anchorEl}
+                open={menuOpen}
+                onClose={() => setAnchorEl(null)}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                transformOrigin={{ horizontal: 'right' }}
+            >
+                <MenuItem
+                    onClick={() => {
+                        setSettingsOpen(true);
+                        setAnchorEl(null);
+                    }}
+                >
+                    Settings
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        if (confirm('All UI settings will be cleared. Continue?')) {
+                            clearUiSettings();
+                            location.reload();
+                        }
+                    }}
+                >
+                    Reset UI Settings
+                </MenuItem>
+                <MenuItem
+                    onClick={() => {
+                        location.reload();
+                    }}
+                >
+                    Reload
+                </MenuItem>
+            </Menu>
+            <SettingsDialog
+                open={settingsOpen}
+                onClose={() => setSettingsOpen(false)}
+            />
             <ActivityStart
                 activities={activities}
                 onStart={handleStartRecordFromSelect}

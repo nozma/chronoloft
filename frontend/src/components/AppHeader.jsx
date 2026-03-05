@@ -1,10 +1,6 @@
 // frontend/src/components/AppHeader.jsx
-import { useState } from 'react';
-import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
-import { clearUiSettings } from '../utils/storageReset';
+import { Box, Typography } from '@mui/material';
 import OpenBrowserButton from './OpenBrowserButton';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import SettingsDialog from './SettingsDialog';
 import AppIcon from '../../favicon.svg?react'
 
 /**
@@ -14,10 +10,6 @@ import AppIcon from '../../favicon.svg?react'
  * などを配置するレイアウト用コンポーネント
  */
 function AppHeader() {
-    const [anchorEl, setAnchorEl] = useState(null);
-    const open = Boolean(anchorEl);
-    const [settingsOpen, setSettingsOpen] = useState(false);
-
     return (
         <Box
             component="header"
@@ -40,47 +32,6 @@ function AppHeader() {
             <Typography variant="h5">Chronoloft</Typography>
             </Box>
             <OpenBrowserButton />
-            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                <MoreVertIcon />
-            </IconButton>
-            <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                transformOrigin={{ horizontal: 'right' }}
-            >
-                <MenuItem
-                    onClick={() => {
-                        setSettingsOpen(true);     // モーダルを開く
-                        setAnchorEl(null);         // メニューは閉じる
-                    }}
-                >
-                    Settings
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        if (confirm('All UI settings will be cleared. Continue?')) {
-                            clearUiSettings();
-                            location.reload();
-                        }
-                    }}
-                >
-                    Reset UI Settings
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        location.reload();
-                    }}
-                >
-                    Reload
-                </MenuItem>
-            </Menu>
-
-            <SettingsDialog
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-            />
         </Box>
     );
 }
