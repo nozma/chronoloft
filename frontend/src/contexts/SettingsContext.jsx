@@ -5,6 +5,7 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 export const DEFAULT_SETTINGS = {
     autoFilterOnSelect: true,
     themeMode: 'system',
+    layoutMode: 'one-column',
     recentDays: '14',
     recentLimit: '15',
     discordEnabled: true,
@@ -25,6 +26,9 @@ export function SettingsProvider({ children }) {
     // カラーテーマ設定
     const [themeMode, setThemeMode] =
         useLocalStorageState('settings.themeMode', DEFAULT_SETTINGS.themeMode);
+    // 画面レイアウト設定
+    const [layoutMode, setLayoutMode] =
+        useLocalStorageState('settings.layoutMode', DEFAULT_SETTINGS.layoutMode);
     // 最近使用した項目として表示するアクティビティを決める日数のしきい値
     const [recentDays, setRecentDays] =
         useLocalStorageState('settings.recentDays', DEFAULT_SETTINGS.recentDays);
@@ -43,13 +47,14 @@ export function SettingsProvider({ children }) {
         () => ({
             autoFilterOnSelect,
             themeMode, setThemeMode,
+            layoutMode, setLayoutMode,
             setAutoFilterOnSelect,
             recentDays, setRecentDays,
             recentLimit, setRecentLimit,
             discordEnabled, setDiscordEnabled,
             recordSaveMode, setRecordSaveMode,
         }),
-        [autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled, recordSaveMode]
+        [autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]
     );
 
     return (

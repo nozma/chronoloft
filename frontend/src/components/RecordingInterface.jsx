@@ -19,7 +19,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsDialog from './SettingsDialog';
 import { clearUiSettings } from '../utils/storageReset';
 
-function RecordingInterface() {
+function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
     const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
     const { setFilterState } = useFilter();
@@ -50,6 +50,7 @@ function RecordingInterface() {
         autoFilterOnSelect,
         discordEnabled,
         recordSaveMode,
+        layoutMode,
     } = useSettings();
 
     // 確認モード時の一時保存データ
@@ -246,128 +247,182 @@ function RecordingInterface() {
         setRecordDialogInitialDate(DateTime.local().toISO());
         dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
     };
+    const isTwoColumnLayout = layoutMode === 'two-column';
+    const showMainStopwatch = stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes';
+    const showSubStopwatch = subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes';
+    const hasStopwatchDisplay = showMainStopwatch || showSubStopwatch;
+    const twoColumnFrameSx = {
+        p: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.04)'
+                : 'rgba(0,0,0,0.02)',
+    };
+    const twoColumnStopwatchFrameSx = {
+        ...twoColumnFrameSx,
+        p: 1,
+        pb: 0.5,
+    };
 
     return (
         <Box sx={{ mb: 2 }}>
             {/* Stopwatch */}
-            {stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes' && (
-                <Stopwatch
-                    ref={stopwatchRef}
-                    onComplete={handleStopwatchComplete}
-                    onConfirmComplete={handleStopwatchConfirmComplete}
-                    recordSaveMode={recordSaveMode}
-                    onCancel={() => {
-                        localStorage.removeItem('stopwatchState');
-                        setStopwatchVisible(false);
-                        setActiveActivity(null);
-                    }}
-                    discordData={discordData}
-                    activityId={selectedActivity.id}
-                    activityName={selectedActivity.name}
-                    activityGroup={selectedActivity.group_name}
-                    onTick={(time) => setMainDisplayTime(time)}
-                />
-            )}
-            {subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes' && (
-                <SubStopwatch
-                    ref={subStopwatchRef}
-                    onComplete={async (minutes, memo) => {
-                        await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo });
-                        onRecordUpdate();
-                        await refreshActivities();
-                        localStorage.removeItem('subStopwatchState');
-                        setSubStopwatchVisible(false);
-                    }}
-                    onCancel={() => {
-                        localStorage.removeItem('subStopwatchState');
-                        setSubStopwatchVisible(false);
-                    }}
-                    activityName={subSelectedActivity.name}
-                    activityGroup={subSelectedActivity.group_name}
-                />
-            )}
-            {/* Heading / Title */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
-                <Typography variant="h5" sx={{ mr: 2 }}>
-                    Record Your Activity
-                </Typography>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: true,
-                                tagOpen: true,
-                                activityOpen: true,
+            {hasStopwatchDisplay && (
+                <Box
+                    sx={
+                        isTwoColumnLayout
+                            ? {
+                                position: 'sticky',
+                                top: 0,
+                                zIndex: (theme) => theme.zIndex.appBar + 1,
+                                width: '100%',
+                                mb: 0.5,
+                                backgroundColor: (theme) => theme.palette.background.default,
+                                pt: 0.25,
                             }
-                        })
+                            : {}
                     }
-                    sx={{ cursor: 'pointer' }}
                 >
-                    Open All
-                </Typography>
-                <Typography
-                    variant='caption'
-                    color='#ccc'
-                    onClick={() =>
-                        dispatch({
-                            type: 'UPDATE_UI',
-                            payload: {
-                                groupOpen: false,
-                                tagOpen: false,
-                                activityOpen: false,
-                            }
-                        })
-                    }
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Close All
-                </Typography>
-                <Box sx={{ ml: 'auto' }}>
-                    <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-                        <MoreVertIcon />
-                    </IconButton>
+                    <Box sx={isTwoColumnLayout ? twoColumnStopwatchFrameSx : {}}>
+                        {showMainStopwatch && (
+                            <Stopwatch
+                                ref={stopwatchRef}
+                                onComplete={handleStopwatchComplete}
+                                onConfirmComplete={handleStopwatchConfirmComplete}
+                                recordSaveMode={recordSaveMode}
+                                inlineMode={isTwoColumnLayout}
+                                onCancel={() => {
+                                    localStorage.removeItem('stopwatchState');
+                                    setStopwatchVisible(false);
+                                    setActiveActivity(null);
+                                }}
+                                discordData={discordData}
+                                activityId={selectedActivity.id}
+                                activityName={selectedActivity.name}
+                                activityGroup={selectedActivity.group_name}
+                                onTick={(time) => setMainDisplayTime(time)}
+                            />
+                        )}
+                        {showSubStopwatch && (
+                        <SubStopwatch
+                            ref={subStopwatchRef}
+                            inlineMode={isTwoColumnLayout}
+                            onComplete={async (minutes, memo) => {
+                                await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo });
+                                onRecordUpdate();
+                                await refreshActivities();
+                                    localStorage.removeItem('subStopwatchState');
+                                    setSubStopwatchVisible(false);
+                                }}
+                                onCancel={() => {
+                                    localStorage.removeItem('subStopwatchState');
+                                    setSubStopwatchVisible(false);
+                                }}
+                                activityName={subSelectedActivity.name}
+                                activityGroup={subSelectedActivity.group_name}
+                            />
+                        )}
+                    </Box>
                 </Box>
-            </Box>
-            <Menu
-                anchorEl={anchorEl}
-                open={menuOpen}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                transformOrigin={{ horizontal: 'right' }}
-            >
-                <MenuItem
-                    onClick={() => {
-                        setSettingsOpen(true);
-                        setAnchorEl(null);
-                    }}
-                >
-                    Settings
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        if (confirm('All UI settings will be cleared. Continue?')) {
-                            clearUiSettings();
-                            location.reload();
-                        }
-                    }}
-                >
-                    Reset UI Settings
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        location.reload();
-                    }}
-                >
-                    Reload
-                </MenuItem>
-            </Menu>
-            <SettingsDialog
-                open={settingsOpen}
-                onClose={() => setSettingsOpen(false)}
-            />
+            )}
+            <Box sx={isTwoColumnLayout ? twoColumnFrameSx : {}}>
+            {/* Heading / Title */}
+            {(showHeading || showSettingsMenu) && (
+                <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
+                    {showHeading && (
+                        <>
+                            <Typography variant="h5" sx={{ mr: 2 }}>
+                                Record Your Activity
+                            </Typography>
+                            <Typography
+                                variant='caption'
+                                color='#ccc'
+                                onClick={() =>
+                                    dispatch({
+                                        type: 'UPDATE_UI',
+                                        payload: {
+                                            groupOpen: true,
+                                            tagOpen: true,
+                                            activityOpen: true,
+                                        }
+                                    })
+                                }
+                                sx={{ cursor: 'pointer' }}
+                            >
+                                Open All
+                            </Typography>
+                            <Typography
+                                variant='caption'
+                                color='#ccc'
+                                onClick={() =>
+                                    dispatch({
+                                        type: 'UPDATE_UI',
+                                        payload: {
+                                            groupOpen: false,
+                                            tagOpen: false,
+                                            activityOpen: false,
+                                        }
+                                    })
+                                }
+                                sx={{ cursor: 'pointer' }}
+                            >
+                                Close All
+                            </Typography>
+                        </>
+                    )}
+                    {showSettingsMenu && (
+                        <Box sx={{ ml: 'auto' }}>
+                            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                                <MoreVertIcon />
+                            </IconButton>
+                        </Box>
+                    )}
+                </Box>
+            )}
+            {showSettingsMenu && (
+                <>
+                    <Menu
+                        anchorEl={anchorEl}
+                        open={menuOpen}
+                        onClose={() => setAnchorEl(null)}
+                        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                        transformOrigin={{ horizontal: 'right' }}
+                    >
+                        <MenuItem
+                            onClick={() => {
+                                setSettingsOpen(true);
+                                setAnchorEl(null);
+                            }}
+                        >
+                            Settings
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                if (confirm('All UI settings will be cleared. Continue?')) {
+                                    clearUiSettings();
+                                    location.reload();
+                                }
+                            }}
+                        >
+                            Reset UI Settings
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                location.reload();
+                            }}
+                        >
+                            Reload
+                        </MenuItem>
+                    </Menu>
+                    <SettingsDialog
+                        open={settingsOpen}
+                        onClose={() => setSettingsOpen(false)}
+                    />
+                </>
+            )}
             <ActivityStart
                 activities={activities}
                 onStart={handleStartRecordFromSelect}
@@ -377,6 +432,7 @@ function RecordingInterface() {
                 subSelectedActivity={subSelectedActivity}
                 subStopwatchVisible={subStopwatchVisible}
             />
+            </Box>
             {/* ダイアログ（回数＋確認モード共通） */}
             {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
                 <AddRecordDialog

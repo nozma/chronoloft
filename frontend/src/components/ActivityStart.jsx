@@ -39,7 +39,8 @@ function ActivityStart({
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
-    const { recentDays, recentLimit } = useSettings();
+    const { recentDays, recentLimit, layoutMode } = useSettings();
+    const isTwoColumnLayout = layoutMode === 'two-column';
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
     const [contextTargetActivity, setContextTargetActivity] = useState(null);
@@ -149,89 +150,146 @@ function ActivityStart({
         }
     };
 
+    const handleGroupFilterChange = (newGroupFilter) => {
+        setFilterState(prev => ({
+            ...prev,
+            groupFilter: newGroupFilter ?? '',
+            activityNameFilter: '',
+            tagFilter: '',
+        }));
+    };
+
 
     return (
         <>
             <Box sx={{ mb: 3 }}>
                 {/* グループフィルタ */}
-                <Typography
-                    variant='caption'
-                    color='#cccccc'
-                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                    onClick={() => dispatch({ type: 'SET_GROUP_OPEN', payload: !state.groupOpen })}
-                >
-                    Group
-                    <KeyboardArrowRightIcon
-                        fontSize='small'
-                        sx={{
-                            transition: 'transform 0.15s linear',
-                            transform: state.groupOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                            marginLeft: '4px'
-                        }}
-                    />
-                </Typography>
-                <Collapse in={state.groupOpen}>
-                    <Box>
-                        <ToggleButtonGroup
-                            value={groupFilter}
-                            exclusive
-                            size='medium'
-                            onChange={(e, newGroupFilter) => {
-                                if (newGroupFilter === null) {
-                                    return;
-                                }
-                                setFilterState(prev => ({
-                                    ...prev,
-                                    groupFilter: newGroupFilter ?? ``,
-                                    activityNameFilter: ``,
-                                    tagFilter: ``,
-                                }));
-                            }}
-                            aria-label="Group filter"
-                            sx={{ mb: 1, mr: 1 }}
+                <Box sx={{ mb: isTwoColumnLayout ? 1.5 : 0 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography
+                            variant='caption'
+                            color='#cccccc'
+                            sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                            onClick={() => dispatch({ type: 'SET_GROUP_OPEN', payload: !state.groupOpen })}
                         >
-                            <ToggleButton value="" aria-label="All">
-                                All
-                            </ToggleButton>
-                            {groups.map((group) => (
-                                <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
-                                    {getIconForGroup(group.name, groups)}
-                                    {group.name}
-                                </ToggleButton>
-                            ))}
-                        </ToggleButtonGroup>
-                        {!state.activityDialogOpen && (
-                            <IconButton
-                                onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                            Group
+                            <KeyboardArrowRightIcon
+                                fontSize='small'
                                 sx={{
-                                    opacity: 0,
-                                    transition: 'opacity 0.2s',
-                                    '&:hover': { opacity: 1 },
-                                }}>
-                                <SettingsIcon />
+                                    transition: 'transform 0.15s linear',
+                                    transform: state.groupOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    marginLeft: '4px'
+                                }}
+                            />
+                        </Typography>
+                        {isTwoColumnLayout && !state.activityDialogOpen && (
+                            <IconButton
+                                size="small"
+                                onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                                sx={{ color: '#cccccc' }}
+                            >
+                                <SettingsIcon fontSize="small" />
                             </IconButton>
                         )}
-                        <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                     </Box>
-                </Collapse>
+                    <Collapse in={state.groupOpen}>
+                        <Box>
+                            {isTwoColumnLayout ? (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1, mr: 1 }}>
+                                    <ToggleButton
+                                        value=""
+                                        aria-label="All"
+                                        size="small"
+                                        selected={groupFilter === ''}
+                                        onClick={() => handleGroupFilterChange('')}
+                                        sx={{ minHeight: 30, py: 0.25, px: 1 }}
+                                    >
+                                        All
+                                    </ToggleButton>
+                                    {groups.map((group) => (
+                                        <ToggleButton
+                                            key={group.id}
+                                            value={group.name}
+                                            aria-label={group.name}
+                                            size="small"
+                                            selected={groupFilter === group.name}
+                                            onClick={() => handleGroupFilterChange(group.name)}
+                                            sx={{ minHeight: 30, py: 0.25, px: 1 }}
+                                        >
+                                            {getIconForGroup(group.name, groups)}
+                                            {group.name}
+                                        </ToggleButton>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <ToggleButtonGroup
+                                    value={groupFilter}
+                                    exclusive
+                                    size='medium'
+                                    onChange={(e, newGroupFilter) => {
+                                        if (newGroupFilter === null) {
+                                            return;
+                                        }
+                                        handleGroupFilterChange(newGroupFilter);
+                                    }}
+                                    aria-label="Group filter"
+                                    sx={{ mb: 1, mr: 1 }}
+                                >
+                                    <ToggleButton value="" aria-label="All">
+                                        All
+                                    </ToggleButton>
+                                    {groups.map((group) => (
+                                        <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
+                                            {getIconForGroup(group.name, groups)}
+                                            {group.name}
+                                        </ToggleButton>
+                                    ))}
+                                </ToggleButtonGroup>
+                            )}
+                            {!isTwoColumnLayout && !state.activityDialogOpen && (
+                                <IconButton
+                                    onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
+                                    sx={{
+                                        opacity: 0,
+                                        transition: 'opacity 0.2s',
+                                        '&:hover': { opacity: 1 },
+                                    }}>
+                                    <SettingsIcon />
+                                </IconButton>
+                            )}
+                            <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
+                        </Box>
+                    </Collapse>
+                </Box>
 
                 {/* タグフィルタ */}
-                <Typography
-                    variant='caption'
-                    color='#cccccc'
-                    sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                    onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
-                >
-                    Tag
-                    <KeyboardArrowRightIcon
-                        fontSize='small'
-                        sx={{
-                            transition: 'transform 0.15s linear',
-                            transform: state.tagOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                            marginLeft: '4px'
-                        }}
-                    />
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography
+                        variant='caption'
+                        color='#cccccc'
+                        sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                        onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
+                    >
+                        Tag
+                        <KeyboardArrowRightIcon
+                            fontSize='small'
+                            sx={{
+                                transition: 'transform 0.15s linear',
+                                transform: state.tagOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                marginLeft: '4px'
+                            }}
+                        />
+                    </Typography>
+                    {isTwoColumnLayout && !state.activityDialogOpen && (
+                        <IconButton
+                            size="small"
+                            onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                            sx={{ color: '#cccccc' }}
+                        >
+                            <SettingsIcon fontSize="small" />
+                        </IconButton>
+                    )}
+                </Box>
                 <Collapse in={state.tagOpen}>
                     <Box>
                         <StyledToggleButtonGroup
@@ -256,7 +314,7 @@ function ActivityStart({
                                     {tagName}
                                 </ToggleButton>
                             ))}
-                            {!state.activityDialogOpen && (
+                            {!isTwoColumnLayout && !state.activityDialogOpen && (
                                 <IconButton
                                     onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                                     sx={{
@@ -274,22 +332,33 @@ function ActivityStart({
                 {/* アクティビティ表示 */}
                 {!state.activityDialogOpen && (
                     <>
-                        <Typography
-                            variant='caption'
-                            color='#cccccc'
-                            sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                            onClick={() => dispatch({ type: 'SET_ACTIVITY_OPEN', payload: !state.activityOpen })}
-                        >
-                            Activity (Click to start recording)
-                            <KeyboardArrowRightIcon
-                                fontSize='small'
-                                sx={{
-                                    transition: 'transform 0.15s linear',
-                                    transform: state.activityOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                                    marginLeft: '4px'
-                                }}
-                            />
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography
+                                variant='caption'
+                                color='#cccccc'
+                                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                                onClick={() => dispatch({ type: 'SET_ACTIVITY_OPEN', payload: !state.activityOpen })}
+                            >
+                                Activity (Click to start recording)
+                                <KeyboardArrowRightIcon
+                                    fontSize='small'
+                                    sx={{
+                                        transition: 'transform 0.15s linear',
+                                        transform: state.activityOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                        marginLeft: '4px'
+                                    }}
+                                />
+                            </Typography>
+                            {isTwoColumnLayout && (
+                                <IconButton
+                                    size="small"
+                                    onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
+                                    sx={{ color: '#cccccc' }}
+                                >
+                                    <SettingsIcon fontSize="small" />
+                                </IconButton>
+                            )}
+                        </Box>
                         <Collapse in={state.activityOpen}>
                             <Box>
                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -322,7 +391,7 @@ function ActivityStart({
                                         </Button>
                                     ))}
                                     {/* 設定アイコンの表示 */}
-                                    {!state.activityDialogOpen && (
+                                    {!isTwoColumnLayout && !state.activityDialogOpen && (
                                         <IconButton
                                             variant="contained" onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
                                             sx={{

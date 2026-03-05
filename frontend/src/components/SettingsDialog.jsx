@@ -21,6 +21,7 @@ function SettingsDialog({ open, onClose }) {
     const {
         autoFilterOnSelect, setAutoFilterOnSelect,
         themeMode, setThemeMode,
+        layoutMode, setLayoutMode,
         recentDays, setRecentDays,
         recentLimit, setRecentLimit,
         discordEnabled, setDiscordEnabled,
@@ -30,6 +31,7 @@ function SettingsDialog({ open, onClose }) {
     // ─── 設定値のローカルコピー ───
     const [tmpAutoFilter, setTmpAutoFilter] = useState(autoFilterOnSelect);
     const [tmpThemeMode, setTmpThemeMode] = useState(themeMode);
+    const [tmpLayoutMode, setTmpLayoutMode] = useState(layoutMode);
     const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
     const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
     const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
@@ -39,18 +41,20 @@ function SettingsDialog({ open, onClose }) {
         if (open) {
             setTmpAutoFilter(autoFilterOnSelect);
             setTmpThemeMode(themeMode);
+            setTmpLayoutMode(layoutMode);
             setTmpRecentDays(recentDays);
             setTmpRecentLimit(recentLimit);
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
         }
-    }, [open, autoFilterOnSelect, themeMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
+    }, [open, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
 
     // リセット用ハンドラ
     const handleReset = () => {
         // 既定値を適用
         setTmpAutoFilter(DEFAULT_SETTINGS.autoFilterOnSelect);
         setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
+        setTmpLayoutMode(DEFAULT_SETTINGS.layoutMode);
         setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
         setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
         setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
@@ -76,6 +80,17 @@ function SettingsDialog({ open, onClose }) {
                                 <FormControlLabel value="system" label="System" control={<Radio />} />
                                 <FormControlLabel value="light" label="Light" control={<Radio />} />
                                 <FormControlLabel value="dark" label="Dark" control={<Radio />} />
+                            </RadioGroup>
+                        </FormControl>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">Layout</FormLabel>
+                            <RadioGroup
+                                row
+                                value={tmpLayoutMode}
+                                onChange={(e) => setTmpLayoutMode(e.target.value)}
+                            >
+                                <FormControlLabel value="one-column" label="1 Column" control={<Radio />} />
+                                <FormControlLabel value="two-column" label="2 Columns" control={<Radio />} />
                             </RadioGroup>
                         </FormControl>
                     </Stack>
@@ -184,6 +199,7 @@ function SettingsDialog({ open, onClose }) {
                         onClick={() => {
                             setAutoFilterOnSelect(tmpAutoFilter);
                             setThemeMode(tmpThemeMode);
+                            setLayoutMode(tmpLayoutMode);
                             setRecentDays(tmpRecentDays);
                             setRecentLimit(tmpRecentLimit);
                             setDiscordEnabled(tmpDiscordEnabled);

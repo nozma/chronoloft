@@ -14,12 +14,12 @@ import { TagProvider } from './contexts/TagContext';
 import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
 import AppHeader from './components/AppHeader';
-import AppFooter from './components/AppFooter';
 import { useSettings } from './contexts/SettingsContext';
 
 function App() {
     // カラーテーマ対応
-    const { themeMode } = useSettings();
+    const { themeMode, layoutMode } = useSettings();
+    const isTwoColumnLayout = layoutMode === 'two-column';
     const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
     const resolvedMode =
         themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
@@ -46,15 +46,39 @@ function App() {
             }),
         [resolvedMode]
     );
+    const twoColumnSidebarSx = {
+        position: 'sticky',
+        top: '1rem',
+        maxHeight: 'calc(100dvh - 2rem)',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        '&::-webkit-scrollbar': {
+            display: 'none',
+        },
+    };
+    const twoColumnPaneFrameSx = {
+        p: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1,
+        backgroundColor: (theme) =>
+            theme.palette.mode === 'dark'
+                ? 'rgba(255,255,255,0.04)'
+                : 'rgba(0,0,0,0.02)',
+    };
 
     return (
         <ThemeProvider theme={theme}>
             <Box
                 sx={{
                     width: '100%',
-                    maxWidth: { xs: '800px', md: '980px' },
+                    maxWidth: isTwoColumnLayout
+                        ? { xs: '920px', md: '1180px' }
+                        : { xs: '800px', md: '980px' },
                     mx: 'auto',
-                    px: 1,       // サイドパディング
+                    px: isTwoColumnLayout ? 0.5 : 1, // サイドパディング
                 }}
             >
                 <CssBaseline enableColorScheme />
@@ -67,9 +91,33 @@ function App() {
                                         <ActiveActivityProvider>
                                             <div>
                                                 <AppHeader />
-                                                <RecordingInterface />
-                                                <History />
-                                                <AppFooter />
+                                                {isTwoColumnLayout ? (
+                                                    <Box
+                                                        sx={{
+                                                            display: 'grid',
+                                                            gridTemplateColumns: '320px minmax(0, 1fr)',
+                                                            gap: 2,
+                                                            alignItems: 'start',
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            component="aside"
+                                                            sx={twoColumnSidebarSx}
+                                                        >
+                                                            <RecordingInterface showSettingsMenu={false} showHeading={false} />
+                                                        </Box>
+                                                        <Box component="main" sx={{ minWidth: 0 }}>
+                                                            <Box sx={twoColumnPaneFrameSx}>
+                                                                <History />
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                ) : (
+                                                    <>
+                                                        <RecordingInterface showSettingsMenu={true} />
+                                                        <History />
+                                                    </>
+                                                )}
                                             </div>
                                         </ActiveActivityProvider>
                                     </FilterProvider>
