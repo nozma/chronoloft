@@ -5,6 +5,21 @@
  * @returns {Array} 分割されたイベントの配列
  */
 const CALENDAR_VISIBLE_START_HOUR = 4;
+const CALENDAR_VISIBLE_START_MINUTES = CALENDAR_VISIBLE_START_HOUR * 60;
+
+function getMinutesFromDayStart(date) {
+  return (
+    date.getHours() * 60 +
+    date.getMinutes() +
+    date.getSeconds() / 60 +
+    date.getMilliseconds() / 60000
+  );
+}
+
+function shouldRenderFinalDayByEndTime(endDate) {
+  // 4:00以前は表示しない（4:00ちょうどを含む）
+  return getMinutesFromDayStart(endDate) > CALENDAR_VISIBLE_START_MINUTES;
+}
 
 export function splitEvent(event) {
     const { id, title, start, end, ...rest } = event;
@@ -14,7 +29,7 @@ export function splitEvent(event) {
   
     // 同じ日ならそのまま返す
     if (startDate.toDateString() === endDate.toDateString()) {
-      return [event];
+      return shouldRenderFinalDayByEndTime(endDate) ? [event] : [];
     }
   
     let currentStart = new Date(startDate);
@@ -26,9 +41,10 @@ export function splitEvent(event) {
         currentEnd.setTime(endDate.getTime());
       }
 
-      const isFinalDay = currentEnd.getTime() === endDate.getTime();
-      const shouldRenderFinalDay =
-        endDate.getHours() >= CALENDAR_VISIBLE_START_HOUR;
+      // ミリ秒一致だと判定が不安定になり得るため、日付ベースで最終日を判定する
+      const isFinalDay = currentStart.toDateString() === endDate.toDateString();
+      // 最終日が表示開始時刻(例: 4:00)未満で終わる場合は表示しない
+      const shouldRenderFinalDay = shouldRenderFinalDayByEndTime(endDate);
 
       if (!isFinalDay || shouldRenderFinalDay) {
         events.push({

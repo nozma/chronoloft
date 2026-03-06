@@ -399,12 +399,8 @@ function RecordCalendar() {
                 is_live: rec.is_live === true,
             };
 
-            // If it spans multiple days, split it
-            if (startDT.toJSDate().toDateString() !== endDT.toJSDate().toDateString()) {
-                eventsData = eventsData.concat(splitEvent(event));
-            } else {
-                eventsData.push(event);
-            }
+            // 同日・日跨ぎともに共通の表示判定を適用する
+            eventsData = eventsData.concat(splitEvent(event));
         });
 
         return eventsData;
