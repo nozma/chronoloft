@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -11,7 +11,8 @@ import {
     TablePagination,
     TextField,
     MenuItem,
-    Button
+    Button,
+    Tooltip
 } from '@mui/material';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -188,6 +189,78 @@ function sortDecrease(data, by) {
     });
 }
 
+function TruncatedTrendName({ text }) {
+    const textRef = useRef(null);
+    const [isTruncated, setIsTruncated] = useState(false);
+
+    const measureTruncation = useCallback(() => {
+        const element = textRef.current;
+        if (!element) return;
+        setIsTruncated(
+            element.scrollHeight > element.clientHeight + 1 ||
+            element.scrollWidth > element.clientWidth + 1
+        );
+    }, []);
+
+    useLayoutEffect(() => {
+        const element = textRef.current;
+        if (!element) return;
+
+        const rafId = window.requestAnimationFrame(measureTruncation);
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', measureTruncation);
+            return () => {
+                window.cancelAnimationFrame(rafId);
+                window.removeEventListener('resize', measureTruncation);
+            };
+        }
+
+        const observer = new ResizeObserver(measureTruncation);
+        observer.observe(element);
+        if (element.parentElement) {
+            observer.observe(element.parentElement);
+        }
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+            observer.disconnect();
+        };
+    }, [text, measureTruncation]);
+
+    return (
+        <Tooltip title={text} arrow disableHoverListener={!isTruncated} enterDelay={0} enterNextDelay={0}>
+            <Box
+                component="span"
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    minWidth: 0,
+                    minHeight: '2.5em',
+                }}
+            >
+                <Box
+                    component="span"
+                    ref={textRef}
+                    sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        lineHeight: 1.25,
+                        maxHeight: '2.5em',
+                        wordBreak: 'break-word',
+                    }}
+                >
+                    {text}
+                </Box>
+            </Box>
+        </Tooltip>
+    );
+}
+
 function RecordTrend() {
     const { recordsWithLive: records } = useRecords();
     const { excludedGroupIds } = useGroups();
@@ -198,6 +271,7 @@ function RecordTrend() {
     const [groupBy, setGroupBy] = useLocalStorageState('trend.groupBy', 'activity');
     const [selectedPeriod, setSelectedPeriod] = useLocalStorageState('trend.selectedPeriod', '30day');
     const [settingsOpen, setSettingsOpen] = useLocalStorageState('trend.settingsOpen', false);
+    const [rowsPerPage, setRowsPerPage] = useLocalStorageState('trend.rowsPerPage', 10);
     const [incPage, setIncPage] = useState(0);
     const [decPage, setDecPage] = useState(0);
 
@@ -230,9 +304,48 @@ function RecordTrend() {
     const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
     const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
     const decrease = useMemo(() => sortDecrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
+    const paginationSx = {
+        minHeight: 36,
+        height: 36,
+        overflowX: 'hidden',
+        '& .MuiTablePagination-toolbar': {
+            minHeight: 36,
+            height: 36,
+            px: 0.5,
+            overflow: 'hidden',
+            justifyContent: 'flex-end',
+        },
+        '& .MuiTablePagination-spacer': {
+            display: 'none',
+        },
+        '& .MuiTablePagination-selectLabel': {
+            display: 'none',
+        },
+        '& .MuiTablePagination-input': {
+            display: 'none',
+        },
+        '& .MuiTablePagination-displayedRows': {
+            margin: 0,
+            whiteSpace: 'nowrap',
+            fontSize: '0.75rem',
+        },
+        '& .MuiTablePagination-actions': {
+            marginLeft: 0.5,
+        },
+        '& .MuiTablePagination-actions .MuiIconButton-root': {
+            p: 0.5,
+        },
+    };
 
-    const incRows = increase.slice(incPage * 10, incPage * 10 + 10);
-    const decRows = decrease.slice(decPage * 10, decPage * 10 + 10);
+    const incRows = increase.slice(incPage * rowsPerPage, incPage * rowsPerPage + rowsPerPage);
+    const decRows = decrease.slice(decPage * rowsPerPage, decPage * rowsPerPage + rowsPerPage);
+
+    useEffect(() => {
+        const maxIncPage = Math.max(0, Math.ceil(increase.length / rowsPerPage) - 1);
+        const maxDecPage = Math.max(0, Math.ceil(decrease.length / rowsPerPage) - 1);
+        if (incPage > maxIncPage) setIncPage(maxIncPage);
+        if (decPage > maxDecPage) setDecPage(maxDecPage);
+    }, [increase.length, decrease.length, rowsPerPage, incPage, decPage]);
 
     return (
         <Box
@@ -286,16 +399,38 @@ function RecordTrend() {
                             <MenuItem value='7day'>7 Days</MenuItem>
                             <MenuItem value='7v30'>7d vs 30d</MenuItem>
                         </TextField>
+                        <TextField
+                            select
+                            size='small'
+                            label='Rows / Page'
+                            value={String(rowsPerPage)}
+                            onChange={e => {
+                                setRowsPerPage(Number(e.target.value));
+                                setIncPage(0);
+                                setDecPage(0);
+                            }}
+                        >
+                            <MenuItem value='5'>5</MenuItem>
+                            <MenuItem value='10'>10</MenuItem>
+                            <MenuItem value='20'>20</MenuItem>
+                        </TextField>
                     </Box>
                 )}
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                        <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
+                        <Table
+                            size='small'
+                            sx={(theme) => ({
+                                tableLayout: 'fixed',
+                                width: '100%',
+                                backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa'
+                            })}
+                        >
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Increase Ranking</TableCell>
-                                    <TableCell align='center' sx={{ width: 100 }}>Total</TableCell>
-                                    <TableCell align='center' sx={{ width: 100 }}>Change</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>Total</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -318,8 +453,10 @@ function RecordTrend() {
                                                 : row.total30 * 7 / 30;
                                     return (
                                         <TableRow key={row.name}>
-                                            <TableCell>{row.name}</TableCell>
-                                            <TableCell align='center' sx={{ width: 100 }}>
+                                            <TableCell sx={{ width: 'auto', verticalAlign: 'middle' }}>
+                                                <TruncatedTrendName text={row.name} />
+                                            </TableCell>
+                                            <TableCell align='center' sx={{ width: 92 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
@@ -328,7 +465,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
-                                                    width: 100,
+                                                    width: 92,
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'
@@ -357,18 +494,29 @@ function RecordTrend() {
                             count={increase.length}
                             page={incPage}
                             onPageChange={(e, p) => setIncPage(p)}
-                            rowsPerPage={10}
-                            rowsPerPageOptions={[10]}
-                            sx={{ '& .MuiToolbar-root': { minHeight: 36, height: 36 } }}
+                            rowsPerPage={rowsPerPage}
+                            rowsPerPageOptions={[rowsPerPage]}
+                            labelRowsPerPage=""
+                            labelDisplayedRows={({ from, to, count }) =>
+                                `${from}-${to} of ${count !== -1 ? count : `${to}+`}`
+                            }
+                            sx={paginationSx}
                         />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
-                        <Table size='small' sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa' })}>
+                        <Table
+                            size='small'
+                            sx={(theme) => ({
+                                tableLayout: 'fixed',
+                                width: '100%',
+                                backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa'
+                            })}
+                        >
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>Decrease Ranking</TableCell>
-                                    <TableCell align='center' sx={{ width: 100 }}>Total</TableCell>
-                                    <TableCell align='center' sx={{ width: 100 }}>Change</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>Total</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>Change</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -391,8 +539,10 @@ function RecordTrend() {
                                                 : row.total30 * 7 / 30;
                                     return (
                                         <TableRow key={row.name}>
-                                            <TableCell>{row.name}</TableCell>
-                                            <TableCell align='center' sx={{ width: 100 }}>
+                                            <TableCell sx={{ width: 'auto', verticalAlign: 'middle' }}>
+                                                <TruncatedTrendName text={row.name} />
+                                            </TableCell>
+                                            <TableCell align='center' sx={{ width: 92 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
@@ -401,7 +551,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
-                                                    width: 100,
+                                                    width: 92,
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'
@@ -430,9 +580,13 @@ function RecordTrend() {
                             count={decrease.length}
                             page={decPage}
                             onPageChange={(e, p) => setDecPage(p)}
-                            rowsPerPage={10}
-                            rowsPerPageOptions={[10]}
-                            sx={{ '& .MuiToolbar-root': { minHeight: 36, height: 36 } }}
+                            rowsPerPage={rowsPerPage}
+                            rowsPerPageOptions={[rowsPerPage]}
+                            labelRowsPerPage=""
+                            labelDisplayedRows={({ from, to, count }) =>
+                                `${from}-${to} of ${count !== -1 ? count : `${to}+`}`
+                            }
+                            sx={paginationSx}
                         />
                     </Box>
                 </Box>
