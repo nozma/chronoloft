@@ -228,28 +228,42 @@ function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity
 
 /* ヘッダ部分のツールバーのカスタム定義 */
 function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode, summaryGroupBy, setSummaryGroupBy }) {
+    const compactToggleSx = {
+        minHeight: 28,
+        px: 1,
+        py: 0.25,
+        fontSize: '0.75rem',
+        lineHeight: 1.1,
+    };
+
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.75, flexWrap: 'wrap', gap: 0.75 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 {/* ナビゲーション */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
                     <IconButton
                         onClick={() => onNavigate('TODAY')}
                         size='small'
                         sx={{
-                            borderRadius: 8,
-                            padding: '12px'
+                            borderRadius: 1,
+                            px: 1,
+                            py: 0.5,
+                            fontSize: '0.78rem'
                         }}
                     >
-                        <span style={{ fontSize: '1rem' }}>Today</span>
+                        <span style={{ fontSize: '0.78rem' }}>Today</span>
                     </IconButton>
-                    <IconButton onClick={() => onNavigate('PREV')}><KeyboardArrowLeftIcon /></IconButton>
-                    <IconButton onClick={() => onNavigate('NEXT')}><KeyboardArrowRightIcon /></IconButton>
+                    <IconButton size='small' sx={{ p: 0.25 }} onClick={() => onNavigate('PREV')}>
+                        <KeyboardArrowLeftIcon fontSize='small' />
+                    </IconButton>
+                    <IconButton size='small' sx={{ p: 0.25 }} onClick={() => onNavigate('NEXT')}>
+                        <KeyboardArrowRightIcon fontSize='small' />
+                    </IconButton>
                 </Box>
                 {/* 期間ラベル */}
-                {label}
+                <Typography variant='body2' sx={{ fontSize: '0.82rem' }}>{label}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                 {/* View切り替え */}
                 <ToggleButtonGroup
                     value={view}
@@ -259,10 +273,10 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     }}
                     size="small"
                 >
-                    <ToggleButton value="day">Day</ToggleButton>
-                    <ToggleButton value="week">Week</ToggleButton>
-                    <ToggleButton value="month">Month</ToggleButton>
-                    <ToggleButton value="agenda">Summary</ToggleButton>
+                    <ToggleButton value="day" sx={compactToggleSx}>Day</ToggleButton>
+                    <ToggleButton value="week" sx={compactToggleSx}>Week</ToggleButton>
+                    <ToggleButton value="month" sx={compactToggleSx}>Month</ToggleButton>
+                    <ToggleButton value="agenda" sx={compactToggleSx}>Summary</ToggleButton>
                 </ToggleButtonGroup>
                 {view === 'agenda' && (
                     <TextField
@@ -272,7 +286,9 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                         value={summaryGroupBy}
                         onChange={(e) => setSummaryGroupBy(e.target.value)}
                         sx={{
-                            minWidth: 140,
+                            minWidth: 120,
+                            '& .MuiInputBase-root': { minHeight: 30, fontSize: '0.78rem' },
+                            '& .MuiInputLabel-root': { fontSize: '0.78rem' },
                             '& .MuiInputLabel-shrink': {
                                 transform: 'translate(14px, -4px) scale(0.75)',
                             },
@@ -294,8 +310,8 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     }}
                     size="small"
                 >
-                    <ToggleButton value="short">Short</ToggleButton>
-                    <ToggleButton value="long">Long</ToggleButton>
+                    <ToggleButton value="short" sx={compactToggleSx}>Short</ToggleButton>
+                    <ToggleButton value="long" sx={compactToggleSx}>Long</ToggleButton>
                 </ToggleButtonGroup>
             </Box>
         </Box>
