@@ -128,6 +128,46 @@ function inferVisibleRange(view, date) {
     return null;
 }
 
+function getVisibleEventBoundsWithinRange(event, rangeStart, rangeEnd) {
+    const eventStart = DateTime.fromJSDate(event.start);
+    const eventEnd = DateTime.fromJSDate(event.end);
+    if (!eventStart.isValid || !eventEnd.isValid || eventEnd <= eventStart) {
+        return null;
+    }
+
+    const clippedStart = eventStart > rangeStart ? eventStart : rangeStart;
+    const clippedEnd = eventEnd < rangeEnd ? eventEnd : rangeEnd;
+    if (clippedEnd <= clippedStart) {
+        return null;
+    }
+
+    // splitEvent 後のイベントは日単位なので、その日の表示開始時刻だけ考慮すればよい
+    const visibleDayStart = clippedStart.startOf('day').set({
+        hour: DEFAULT_MIN_HOUR,
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+    });
+    const visibleStart = clippedStart > visibleDayStart ? clippedStart : visibleDayStart;
+    if (clippedEnd <= visibleStart) {
+        return null;
+    }
+
+    return {
+        start: visibleStart,
+        end: clippedEnd,
+    };
+}
+
+function alignTimeToBaseDate(baseDateTime, sourceDateTime) {
+    return baseDateTime.set({
+        hour: sourceDateTime.hour,
+        minute: sourceDateTime.minute,
+        second: sourceDateTime.second,
+        millisecond: sourceDateTime.millisecond,
+    });
+}
+
 function toSafeCalendarBounds(minDateTime, maxDateTime, fallbackMin, fallbackMax) {
     const safeMin = minDateTime?.isValid ? minDateTime : fallbackMin;
     const safeMax = maxDateTime?.isValid ? maxDateTime : fallbackMax;
@@ -357,11 +397,9 @@ function RecordCalendar() {
         });
     }, [visibleRecords, excludedActivityIds]);
 
-    const minuteEvents = useMemo(() => {
+    const baseMinuteEvents = useMemo(() => {
         const minuteRecords = visibleRecordsByActivity.filter((rec) => rec.unit === 'minutes');
-        let eventsData = [];
-
-        minuteRecords.forEach((rec) => {
+        return minuteRecords.map((rec) => {
             // `created_at` is the end time (UTC) -> convert to local
             const endDT = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
             // start = end - rec.value( minutes )
@@ -399,12 +437,14 @@ function RecordCalendar() {
                 is_live: rec.is_live === true,
             };
 
-            // 同日・日跨ぎともに共通の表示判定を適用する
-            eventsData = eventsData.concat(splitEvent(event));
+            return event;
         });
-
-        return eventsData;
     }, [visibleRecordsByActivity, groups]);
+
+    const minuteEvents = useMemo(
+        () => baseMinuteEvents.flatMap((event) => splitEvent(event)),
+        [baseMinuteEvents]
+    );
 
     const events = useMemo(() => {
         if (currentView === 'month') {
@@ -442,22 +482,26 @@ function RecordCalendar() {
             return defaultBounds;
         }
 
-        const rangeEvents = minuteEvents.filter((event) =>
-            event.end > rangeStart.toJSDate() && event.start < rangeEnd.toJSDate()
-        );
+        const rangeEventBounds = minuteEvents
+            .map((event) => getVisibleEventBoundsWithinRange(event, rangeStart, rangeEnd))
+            .filter(Boolean);
 
-        if (rangeEvents.length === 0) {
+        if (rangeEventBounds.length === 0) {
             return defaultBounds;
         }
 
-        const earliestStart = rangeEvents.reduce((earliest, event) => {
-            const eventStart = DateTime.fromJSDate(event.start);
-            return eventStart < earliest ? eventStart : earliest;
-        }, DateTime.fromJSDate(rangeEvents[0].start));
-        const latestEnd = rangeEvents.reduce((latest, event) => {
-            const eventEnd = DateTime.fromJSDate(event.end);
-            return eventEnd > latest ? eventEnd : latest;
-        }, DateTime.fromJSDate(rangeEvents[0].end));
+        const normalizedStarts = rangeEventBounds.map((eventBounds) =>
+            alignTimeToBaseDate(baseDate, eventBounds.start)
+        );
+        const normalizedEnds = rangeEventBounds.map((eventBounds) =>
+            alignTimeToBaseDate(baseDate, eventBounds.end)
+        );
+        const earliestStart = normalizedStarts.reduce((earliest, current) =>
+            current < earliest ? current : earliest
+        , normalizedStarts[0]);
+        const latestEnd = normalizedEnds.reduce((latest, current) =>
+            current > latest ? current : latest
+        , normalizedEnds[0]);
 
         const computedMin = earliestStart.startOf('hour');
         const computedMax = ceilToNextHour(latestEnd);
