@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     Box,
     MenuItem,
@@ -42,6 +42,8 @@ function RecordHeatmap() {
     const { layoutMode } = useSettings();
     const isTwoColumnLayout = layoutMode === 'two-column';
     const groupFilter = filterCriteria?.groupFilter || '';
+    const heatmapContainerRef = useRef(null);
+    const [heatmapContainerWidth, setHeatmapContainerWidth] = useState(0);
 
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -206,12 +208,66 @@ function RecordHeatmap() {
             ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / 7d`
             : `${totalCount7.toFixed(0)} times / 7d`;
 
+    useEffect(() => {
+        const element = heatmapContainerRef.current;
+        if (!element) return undefined;
+
+        const updateWidth = () => {
+            setHeatmapContainerWidth(element.clientWidth);
+        };
+
+        updateWidth();
+
+        if (typeof ResizeObserver === 'undefined') {
+            window.addEventListener('resize', updateWidth);
+            return () => window.removeEventListener('resize', updateWidth);
+        }
+
+        const observer = new ResizeObserver(updateWidth);
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [heatmapData.length, uiState.heatmapOpen]);
+
     // min-width:1100px であるかどうかを判定
     const isWide = useMediaQuery('(min-width:1100px)');
-    const baseBlockSize = isWide ? 15 : 12;
-    const blockSize = isTwoColumnLayout ? baseBlockSize - 2 : baseBlockSize;
-    const blockMargin = isTwoColumnLayout ? 1 : 2;
-    const heatmapFontSize = isTwoColumnLayout ? 12 : 14;
+    const defaultBlockSize = isTwoColumnLayout ? (isWide ? 13 : 10) : (isWide ? 15 : 12);
+    const defaultBlockMargin = isTwoColumnLayout ? 1 : 2;
+    const estimatedWeekColumns = useMemo(() => {
+        if (heatmapData.length === 0) return 53;
+        const first = DateTime.fromISO(heatmapData[0].date).startOf('week');
+        const last = DateTime.fromISO(heatmapData[heatmapData.length - 1].date).startOf('week');
+        if (!first.isValid || !last.isValid) return 53;
+        const diffWeeks = Math.round(last.diff(first, 'weeks').weeks);
+        return Math.max(1, diffWeeks + 1);
+    }, [heatmapData]);
+    const { blockSize, blockMargin, heatmapFontSize } = useMemo(() => {
+        const weekColumns = estimatedWeekColumns;
+        const weekdayLabelReservedWidth = 30;
+        const outerPadding = 4;
+        const minBlockSize = 6;
+
+        if (!heatmapContainerWidth) {
+            return {
+                blockSize: defaultBlockSize,
+                blockMargin: defaultBlockMargin,
+                heatmapFontSize: isTwoColumnLayout ? 12 : 14,
+            };
+        }
+
+        const availableWidth = Math.max(0, heatmapContainerWidth - weekdayLabelReservedWidth - outerPadding);
+        const adaptiveMargin = isTwoColumnLayout || availableWidth < 900 ? 1 : defaultBlockMargin;
+        const estimatedBlockSize = Math.floor(
+            (availableWidth - Math.max(0, weekColumns - 1) * adaptiveMargin) / weekColumns
+        );
+        const adaptiveBlockSize = Math.max(minBlockSize, Math.min(defaultBlockSize, estimatedBlockSize));
+        const adaptiveFontSize = heatmapContainerWidth < 760 ? 11 : (isTwoColumnLayout ? 12 : 14);
+
+        return {
+            blockSize: adaptiveBlockSize,
+            blockMargin: adaptiveMargin,
+            heatmapFontSize: adaptiveFontSize,
+        };
+    }, [heatmapContainerWidth, defaultBlockSize, defaultBlockMargin, estimatedWeekColumns, isTwoColumnLayout]);
 
     return (
         <Box
@@ -293,41 +349,43 @@ function RecordHeatmap() {
                                 </TextField>
                             </Box>
                         )}
-                        <ActivityCalendar
-                            data={heatmapData}
-                            blockSize={blockSize}
-                            blockMargin={blockMargin}
-                            fontSize={heatmapFontSize}
-                            colorScheme={mode}
-                            theme={{
-                                light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
-                                dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
-                            }}
-                            hideMonthLabels={false}
-                            showWeekdayLabels={["Mon", "Wed", "Fri"]}
-                            labels={{
-                                legend: {
-                                    less: "少",
-                                    more: "多"
-                                },
-                                totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
-                            }}
-                            renderBlock={(block, activity) => {
-                                let tooltipText;
-                                if (displayMode === 'time') {
-                                    const totalMinutes = Number(activity.count);
-                                    const hours = Math.floor(totalMinutes / 60);
-                                    const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
-                                    tooltipText = `${hours}:${minutes} on ${activity.date}`;
-                                } else {
-                                    tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
-                                }
-                                return React.cloneElement(block, {
-                                    'data-tooltip-id': 'react-tooltip',
-                                    'data-tooltip-html': tooltipText
-                                });
-                            }}
-                        />
+                        <Box ref={heatmapContainerRef} sx={{ width: '100%', overflowX: 'hidden' }}>
+                            <ActivityCalendar
+                                data={heatmapData}
+                                blockSize={blockSize}
+                                blockMargin={blockMargin}
+                                fontSize={heatmapFontSize}
+                                colorScheme={mode}
+                                theme={{
+                                    light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
+                                    dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
+                                }}
+                                hideMonthLabels={false}
+                                showWeekdayLabels={["Mon", "Wed", "Fri"]}
+                                labels={{
+                                    legend: {
+                                        less: "少",
+                                        more: "多"
+                                    },
+                                    totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
+                                }}
+                                renderBlock={(block, activity) => {
+                                    let tooltipText;
+                                    if (displayMode === 'time') {
+                                        const totalMinutes = Number(activity.count);
+                                        const hours = Math.floor(totalMinutes / 60);
+                                        const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
+                                        tooltipText = `${hours}:${minutes} on ${activity.date}`;
+                                    } else {
+                                        tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
+                                    }
+                                    return React.cloneElement(block, {
+                                        'data-tooltip-id': 'react-tooltip',
+                                        'data-tooltip-html': tooltipText
+                                    });
+                                }}
+                            />
+                        </Box>
                         <ReactTooltip id="react-tooltip" />
                     </Box>
                 ) : (
