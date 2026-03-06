@@ -128,6 +128,24 @@ function inferVisibleRange(view, date) {
     return null;
 }
 
+function toSafeCalendarBounds(minDateTime, maxDateTime, fallbackMin, fallbackMax) {
+    const safeMin = minDateTime?.isValid ? minDateTime : fallbackMin;
+    const safeMax = maxDateTime?.isValid ? maxDateTime : fallbackMax;
+
+    // react-big-calendar は min < max を前提としているため、逆転時は安全な既定値に戻す
+    if (safeMax <= safeMin) {
+        return {
+            min: fallbackMin.toJSDate(),
+            max: fallbackMax.toJSDate(),
+        };
+    }
+
+    return {
+        min: safeMin.toJSDate(),
+        max: safeMax.toJSDate(),
+    };
+}
+
 function getEventGroupingTargets(event, groupBy) {
     if (groupBy === 'group') {
         const groupName = event.activityGroup || 'Unknown Group';
@@ -400,25 +418,24 @@ function RecordCalendar() {
             millisecond: 0,
         });
         const defaultMax = baseDate.set(DEFAULT_MAX_TIME);
+        const defaultBounds = toSafeCalendarBounds(defaultMin, defaultMax, defaultMin, defaultMax);
 
         if (![Views.DAY, Views.WEEK].includes(currentView) || !effectiveVisibleRange) {
-            return {
-                min: defaultMin.toJSDate(),
-                max: defaultMax.toJSDate(),
-            };
+            return defaultBounds;
         }
 
         const rangeStart = DateTime.fromJSDate(effectiveVisibleRange.start);
         const rangeEnd = DateTime.fromJSDate(effectiveVisibleRange.end);
+        if (!rangeStart.isValid || !rangeEnd.isValid) {
+            return defaultBounds;
+        }
+
         const rangeEvents = minuteEvents.filter((event) =>
             event.end > rangeStart.toJSDate() && event.start < rangeEnd.toJSDate()
         );
 
         if (rangeEvents.length === 0) {
-            return {
-                min: defaultMin.toJSDate(),
-                max: defaultMax.toJSDate(),
-            };
+            return defaultBounds;
         }
 
         const earliestStart = rangeEvents.reduce((earliest, event) => {
@@ -432,11 +449,10 @@ function RecordCalendar() {
 
         const computedMin = earliestStart.startOf('hour');
         const computedMax = ceilToNextHour(latestEnd);
+        const boundedMin = computedMin < defaultMin ? defaultMin : computedMin;
+        const boundedMax = computedMax > defaultMax ? defaultMax : computedMax;
 
-        return {
-            min: (computedMin < defaultMin ? defaultMin : computedMin).toJSDate(),
-            max: (computedMax > defaultMax ? defaultMax : computedMax).toJSDate(),
-        };
+        return toSafeCalendarBounds(boundedMin, boundedMax, defaultMin, defaultMax);
     }, [currentDate, currentView, effectiveVisibleRange, minuteEvents]);
 
     const handleDoubleClickEvent = (event) => {
