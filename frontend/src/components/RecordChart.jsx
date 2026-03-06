@@ -1001,7 +1001,7 @@ function RecordChart() {
                                 <BarChart
                                     data={selectedPeriod === '1d' ? oneDayChartData : chartData}
                                     margin={selectedPeriod === '1d'
-                                        ? { top: 8, right: 88, bottom: 8, left: 64 }
+                                        ? { top: 8, right: 24, bottom: 8, left: 20 }
                                         : { left: 20 }
                                     }
                                     layout={selectedPeriod === '1d' ? 'vertical' : 'horizontal'}
