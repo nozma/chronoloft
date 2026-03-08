@@ -10,6 +10,7 @@ import { useActivities } from './ActivityContext';
 
 const RecordContext = createContext();
 const LIVE_REFRESH_MS = 5000;
+export const STOPWATCH_SYNC_EVENT = 'chronoloft:stopwatch-sync';
 const MERGE_WINDOW_MINUTES = 5;
 const MERGE_WINDOW_MS = MERGE_WINDOW_MINUTES * 60 * 1000;
 const MILLIS_PER_MINUTE = 60000;
@@ -35,8 +36,26 @@ const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
     if (!activity || !stopwatchState) return null;
     if (activity.unit && activity.unit !== 'minutes') return null;
     const startTime = Number(stopwatchState.startTime);
-    if (!Number.isFinite(startTime) || startTime <= 0) return null;
-    const elapsedMs = Math.max(0, now - startTime);
+    const pausedStartTime = Number(stopwatchState.pausedStartTime);
+    const displayTime = Number(stopwatchState.displayTime);
+    let elapsedMs = null;
+    let createdAtMs = null;
+
+    if (Number.isFinite(startTime) && startTime > 0) {
+        elapsedMs = Math.max(0, now - startTime);
+        createdAtMs = now;
+    } else if (
+        Number.isFinite(pausedStartTime) &&
+        pausedStartTime > 0 &&
+        Number.isFinite(displayTime) &&
+        displayTime >= 0
+    ) {
+        elapsedMs = Math.max(0, displayTime);
+        createdAtMs = pausedStartTime + elapsedMs;
+    } else {
+        return null;
+    }
+
     const minutes = elapsedMs / 60000;
     const activityId = activity.id;
     if (activityId === null || activityId === undefined) return null;
@@ -47,14 +66,15 @@ const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
         id: `live-${idPrefix}-${activityId}`,
         activity_id: activityId,
         value: minutes,
-        created_at: formatLiveCreatedAt(now),
+        created_at: formatLiveCreatedAt(createdAtMs),
         unit: 'minutes',
         activity_name: activity.name,
         activity_group: activityGroup,
         activity_group_id: activityGroupId,
         tags: activity.tags || [],
         memo: stopwatchState.memo || '',
-        is_live: true
+        is_live: true,
+        is_paused: !(Number.isFinite(startTime) && startTime > 0),
     };
 };
 
@@ -80,6 +100,8 @@ const areLiveRecordsEqual = (prev, next) => {
         if (prev[i].id !== next[i].id) return false;
         if (prev[i].value !== next[i].value) return false;
         if (prev[i].memo !== next[i].memo) return false;
+        if (prev[i].created_at !== next[i].created_at) return false;
+        if (prev[i].is_paused !== next[i].is_paused) return false;
     }
     return true;
 };
@@ -103,6 +125,11 @@ export function RecordProvider({ children }) {
     const { activities } = useActivities();
     const [records, setRecords] = useState([]);
     const [liveRecords, setLiveRecords] = useState([]);
+
+    const syncLiveRecords = () => {
+        const next = buildLiveRecords();
+        setLiveRecords((prev) => (areLiveRecordsEqual(prev, next) ? prev : next));
+    };
 
     useEffect(() => {
         refreshRecords();
@@ -186,13 +213,18 @@ export function RecordProvider({ children }) {
     };
 
     useEffect(() => {
-        const updateLiveRecords = () => {
-            const next = buildLiveRecords();
-            setLiveRecords(prev => (areLiveRecordsEqual(prev, next) ? prev : next));
+        syncLiveRecords();
+        const timer = setInterval(syncLiveRecords, LIVE_REFRESH_MS);
+        const handleStopwatchSync = () => {
+            syncLiveRecords();
         };
-        updateLiveRecords();
-        const timer = setInterval(updateLiveRecords, LIVE_REFRESH_MS);
-        return () => clearInterval(timer);
+
+        window.addEventListener(STOPWATCH_SYNC_EVENT, handleStopwatchSync);
+
+        return () => {
+            clearInterval(timer);
+            window.removeEventListener(STOPWATCH_SYNC_EVENT, handleStopwatchSync);
+        };
     }, []);
 
     const recordsWithLive = useMemo(() => {

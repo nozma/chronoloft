@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
+import { STOPWATCH_SYNC_EVENT } from '../contexts/RecordContext';
 
 /**
  * useStopwatch
@@ -26,6 +27,25 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const timerRef = useRef(null); // setIntervalのID保持
     const discordLockRef = useRef(false); // Discord連係処理のリクエストが走っているかのRef
 
+    const notifyStopwatchSync = () => {
+        if (typeof window === 'undefined') return;
+        window.dispatchEvent(new CustomEvent(STOPWATCH_SYNC_EVENT));
+    };
+
+    const persistStopwatchState = (nextState) => {
+        localStorage.setItem(storageKey, JSON.stringify(nextState));
+    };
+
+    const persistStopwatchStateAndSync = (nextState) => {
+        persistStopwatchState(nextState);
+        notifyStopwatchSync();
+    };
+
+    const clearStopwatchStateAndSync = () => {
+        localStorage.removeItem(storageKey);
+        notifyStopwatchSync();
+    };
+
     // 親コンポーネント側でDiscord連係対象が変わったら内部状態にも反映する
     useEffect(() => {
         setDiscordData(initialDiscordData);
@@ -43,6 +63,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
             // 開始時刻や表示中時間をRefやstateに復元
             setCurrentStartTime(state.startTime);
             setDisplayTime(state.displayTime);
+            setPausedStartTime(state.pausedStartTime ?? null);
             setMemo(state.memo);
         } else {
             // localStorageに何もない場合は自動で開始
@@ -56,13 +77,17 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     useEffect(() => {
         if (!restored) return; // まだ復元が終わっていないならスキップ
-        const state = {
+        if (currentStartTime === null && pausedStartTime === null && displayTime === 0 && memo === '') {
+            localStorage.removeItem(storageKey);
+            return;
+        }
+        persistStopwatchState({
             startTime: currentStartTime,
+            pausedStartTime,
             displayTime,
             memo
-        };
-        localStorage.setItem(storageKey, JSON.stringify(state));
-    }, [currentStartTime, displayTime, restored, memo, storageKey]);
+        });
+    }, [currentStartTime, pausedStartTime, displayTime, restored, memo, storageKey]);
 
     // -----------------------------------------------
     // ストップウォッチの稼働状態管理
@@ -109,6 +134,13 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         const now = Date.now();
         setCurrentStartTime(now);
         setPausedStartTime(null);
+        setDisplayTime(0);
+        persistStopwatchStateAndSync({
+            startTime: now,
+            pausedStartTime: null,
+            displayTime: 0,
+            memo
+        });
 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData === undefined ? discordData : newDiscordData;
@@ -162,7 +194,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
             totalElapsed = Date.now() - Number(currentStartTime);
         }
         // リセット
-        localStorage.removeItem(storageKey);
+        clearStopwatchStateAndSync();
         setCurrentStartTime(null);
         setPausedStartTime(null);
         setDisplayTime(0);
@@ -200,6 +232,12 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         setDisplayTime(elapsed);
         setPausedStartTime(startTime);
         setCurrentStartTime(null);
+        persistStopwatchStateAndSync({
+            startTime: null,
+            pausedStartTime: startTime,
+            displayTime: elapsed,
+            memo
+        });
         await stopDiscordIfNeeded();
         return { minutes: elapsed / 60000, memo };
     };
@@ -211,14 +249,28 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         if (currentStartTime !== null) return;
         if (pausedStartTime !== null) {
             const startTime = pausedStartTime;
+            const nextDisplayTime = Date.now() - startTime;
             setCurrentStartTime(startTime);
             setPausedStartTime(null);
-            setDisplayTime(Date.now() - startTime);
+            setDisplayTime(nextDisplayTime);
+            persistStopwatchStateAndSync({
+                startTime,
+                pausedStartTime: null,
+                displayTime: nextDisplayTime,
+                memo
+            });
             await startDiscordIfNeeded(discordData);
             return;
         }
         const startTime = Date.now() - displayTime;
         setCurrentStartTime(startTime);
+        setPausedStartTime(null);
+        persistStopwatchStateAndSync({
+            startTime,
+            pausedStartTime: null,
+            displayTime,
+            memo
+        });
         await startDiscordIfNeeded(discordData);
     };
 
@@ -249,6 +301,12 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         // 表示用の経過時間を計算
         const elapsed = Date.now() - newStartTime;
         setDisplayTime(elapsed);
+        persistStopwatchStateAndSync({
+            startTime: newStartTime,
+            pausedStartTime: null,
+            displayTime: elapsed,
+            memo
+        });
     };
 
     const isRunning = (currentStartTime !== null);
