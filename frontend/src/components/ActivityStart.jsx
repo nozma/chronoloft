@@ -248,7 +248,7 @@ function ActivityStart({
 
     return (
         <>
-            <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: isTwoColumnLayout ? 1.5 : 0 }}>
+            <Box sx={{ mb: isTwoColumnLayout ? 0 : 3, display: 'flex', flexDirection: 'column', gap: isTwoColumnLayout ? 1.5 : 0 }}>
                 {/* グループフィルタ */}
                 <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
