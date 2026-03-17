@@ -248,9 +248,9 @@ function ActivityStart({
 
     return (
         <>
-            <Box sx={{ mb: 3 }}>
+            <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: isTwoColumnLayout ? 1.5 : 0 }}>
                 {/* グループフィルタ */}
-                <Box sx={{ mb: isTwoColumnLayout ? 1.5 : 0 }}>
+                <Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography
                             variant='caption'
@@ -349,92 +349,95 @@ function ActivityStart({
                 </Box>
 
                 {/* タグフィルタ */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography
-                        variant='caption'
-                        color='#cccccc'
-                        sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
-                        onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
-                    >
-                        Tag
-                        <KeyboardArrowRightIcon
-                            fontSize='small'
-                            sx={{
-                                transition: 'transform 0.15s linear',
-                                transform: state.tagOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                                marginLeft: '4px'
-                            }}
-                        />
-                    </Typography>
-                    {isTwoColumnLayout && !state.activityDialogOpen && (
-                        <IconButton
-                            size="small"
-                            onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                            sx={{ color: '#cccccc' }}
+                <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Typography
+                            variant='caption'
+                            color='#cccccc'
+                            sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                            onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
                         >
-                            <SettingsIcon fontSize="small" />
-                        </IconButton>
-                    )}
-                </Box>
-                <Collapse in={state.tagOpen}>
-                    <Box>
-                        <StyledToggleButtonGroup
-                            value={tagFilter}
-                            exclusive
-                            size='small'
-                            onChange={(e) => {
-                                const tagFilter = e.currentTarget.value;
-                                setFilterState(prev => ({
-                                    ...prev,
-                                    tagFilter: tagFilter || ``,
-                                }));
-                            }}
-                            multiple
-                            sx={{
-                                mb: 1,
-                                mr: isTwoColumnLayout ? 0 : 1,
-                                flexWrap: 'wrap',
-                                ...(isTwoColumnLayout
-                                    ? {
-                                        rowGap: 0,
-                                        [`& .${toggleButtonGroupClasses.grouped}`]: { margin: 0.25 },
-                                        '& .MuiToggleButton-root': { lineHeight: 1.1 },
-                                    }
-                                    : {}),
-                            }}
-                        >
-                            <ToggleButton
-                                value=""
-                                aria-label="All"
-                                sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
+                            Tag
+                            <KeyboardArrowRightIcon
+                                fontSize='small'
+                                sx={{
+                                    transition: 'transform 0.15s linear',
+                                    transform: state.tagOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    marginLeft: '4px'
+                                }}
+                            />
+                        </Typography>
+                        {isTwoColumnLayout && !state.activityDialogOpen && (
+                            <IconButton
+                                size="small"
+                                onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                                sx={{ color: '#cccccc' }}
                             >
-                                All
-                            </ToggleButton>
-                            {groupTags.map(tagName => (
+                                <SettingsIcon fontSize="small" />
+                            </IconButton>
+                        )}
+                    </Box>
+                    <Collapse in={state.tagOpen}>
+                        <Box>
+                            <StyledToggleButtonGroup
+                                value={tagFilter}
+                                exclusive
+                                size='small'
+                                onChange={(e) => {
+                                    const tagFilter = e.currentTarget.value;
+                                    setFilterState(prev => ({
+                                        ...prev,
+                                        tagFilter: tagFilter || ``,
+                                    }));
+                                }}
+                                multiple
+                                sx={{
+                                    mb: 1,
+                                    mr: isTwoColumnLayout ? 0 : 1,
+                                    flexWrap: 'wrap',
+                                    ...(isTwoColumnLayout
+                                        ? {
+                                            rowGap: 0,
+                                            [`& .${toggleButtonGroupClasses.grouped}`]: { margin: 0.25 },
+                                            '& .MuiToggleButton-root': { lineHeight: 1.1 },
+                                        }
+                                        : {}),
+                                }}
+                            >
                                 <ToggleButton
-                                    key={tagName}
-                                    value={tagName}
+                                    value=""
+                                    aria-label="All"
                                     sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
                                 >
-                                    {tagName}
+                                    All
                                 </ToggleButton>
-                            ))}
-                            {!isTwoColumnLayout && !state.activityDialogOpen && (
-                                <IconButton
-                                    onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                                    sx={{
-                                        opacity: 0,
-                                        transition: 'opacity 0.2s',
-                                        '&:hover': { opacity: 1 },
-                                    }}>
-                                    <SettingsIcon />
-                                </IconButton>
-                            )}
-                        </StyledToggleButtonGroup>
-                        <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
-                    </Box>
-                </Collapse>
+                                {groupTags.map(tagName => (
+                                    <ToggleButton
+                                        key={tagName}
+                                        value={tagName}
+                                        sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
+                                    >
+                                        {tagName}
+                                    </ToggleButton>
+                                ))}
+                                {!isTwoColumnLayout && !state.activityDialogOpen && (
+                                    <IconButton
+                                        onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
+                                        sx={{
+                                            opacity: 0,
+                                            transition: 'opacity 0.2s',
+                                            '&:hover': { opacity: 1 },
+                                        }}>
+                                        <SettingsIcon />
+                                    </IconButton>
+                                )}
+                            </StyledToggleButtonGroup>
+                            <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
+                        </Box>
+                    </Collapse>
+                </Box>
                 {/* アクティビティ表示 */}
+                <Box>
                 {!state.activityDialogOpen && (
                     <>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -649,6 +652,7 @@ function ActivityStart({
                         ...(subStopwatchVisible && subSelectedActivity ? [subSelectedActivity.id] : []),
                     ]}
                 />
+                </Box>
             </Box>
         </>
     );
