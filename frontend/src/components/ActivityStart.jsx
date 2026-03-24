@@ -108,6 +108,26 @@ function ActivityStart({
     const [showRemaining, setShowRemaining] = useState(false);
     const [showArchive, setShowArchive] = useState(false);
 
+    const selectableGroups = useMemo(() => {
+        return groups.filter((group) => !excludedGroupIds.has(Number(group.id)));
+    }, [groups, excludedGroupIds]);
+
+    useEffect(() => {
+        if (!groupFilter) return;
+
+        const selectedGroup = groups.find((group) => group.name === groupFilter);
+        if (!selectedGroup) return;
+        if (!excludedGroupIds.has(Number(selectedGroup.id))) return;
+
+        // 除外されたグループが選択中なら、表示可能な状態に戻す
+        setFilterState((prev) => ({
+            ...prev,
+            groupFilter: '',
+            activityNameFilter: '',
+            tagFilter: '',
+        }));
+    }, [groupFilter, groups, excludedGroupIds, setFilterState]);
+
     // アクティビティに対するフィルターの適用
     const filteredActivities = activities.filter(act => {
         // グループフィルタ
@@ -292,7 +312,7 @@ function ActivityStart({
                                     >
                                         All
                                     </ToggleButton>
-                                    {groups.map((group) => (
+                                    {selectableGroups.map((group) => (
                                         <ToggleButton
                                             key={group.id}
                                             value={group.name}
@@ -324,7 +344,7 @@ function ActivityStart({
                                     <ToggleButton value="" aria-label="All">
                                         All
                                     </ToggleButton>
-                                    {groups.map((group) => (
+                                    {selectableGroups.map((group) => (
                                         <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
                                             {getIconForGroup(group.name, groups)}
                                             {group.name}
