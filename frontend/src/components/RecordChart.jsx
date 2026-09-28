@@ -42,6 +42,15 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
 
+const PERIOD_DAYS = {
+    '1d': 1,
+    '7d': 7,
+    '30d': 30,
+    '90d': 90,
+    '180d': 180,
+    '365d': 365,
+};
+
 function formatPeriodKey(dt, xAxisUnit) {
     if (!dt?.isValid) return '';
     if (xAxisUnit === 'day') return dt.toFormat('yyyy-MM-dd');
@@ -186,15 +195,6 @@ function getPeriodRange(period, offset = 0) {
     // 今日の 00:00 を基準
     const today = DateTime.now().startOf('day');
 
-    const PERIOD_DAYS = {
-        '1d': 1,
-        '7d': 7,
-        '30d': 30,
-        '90d': 90,
-        '180d': 180,
-        '365d': 365,
-    };
-
     if (period in PERIOD_DAYS) {
         const days = PERIOD_DAYS[period];
         const end = today.minus({ days: days * offset });
@@ -266,9 +266,8 @@ function RecordChart() {
         });
     }, [visibleRecords, excludedActivityIds]);
 
-    const filteredRecords = useMemo(() => {
-        const [start, end] = getPeriodRange(selectedPeriod, offset);
-        const filteredByState = visibleRecordsByActivity.filter(r => {
+    const recordsMatchingFilters = useMemo(() => {
+        return visibleRecordsByActivity.filter(r => {
             if (groupFilter && r.activity_group !== groupFilter) return false;
             if (tagFilter) {
                 const tagNames = r.tags ? r.tags.map(t => t.name) : [];
@@ -277,11 +276,53 @@ function RecordChart() {
             if (activityNameFilter && r.activity_name !== activityNameFilter) return false;
             return true;
         });
-        return filteredByState.filter(r => {
+    }, [visibleRecordsByActivity, groupFilter, tagFilter, activityNameFilter]);
+
+    const filteredRecords = useMemo(() => {
+        const [start, end] = getPeriodRange(selectedPeriod, offset);
+        return recordsMatchingFilters.filter(r => {
             const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
-    }, [visibleRecordsByActivity, groupFilter, tagFilter, activityNameFilter, selectedPeriod, offset]);
+    }, [recordsMatchingFilters, selectedPeriod, offset]);
+
+    // 矢印移動時に、現在の条件でチャート表示できるデータがある期間だけを移動候補にする
+    const navigableOffsets = useMemo(() => {
+        const periodDays = PERIOD_DAYS[selectedPeriod];
+        if (!periodDays) return [];
+
+        const today = DateTime.now().startOf('day');
+        const offsets = new Set();
+        recordsMatchingFilters.forEach(record => {
+            const isSupportedUnit = isAggregationManual
+                ? aggregationUnit === 'time'
+                    ? record.unit === 'minutes'
+                    : record.unit === 'count' || record.unit === 'minutes'
+                : record.unit === 'count' || record.unit === 'minutes';
+            if (!isSupportedUnit) return;
+
+            const recordDate = DateTime.fromISO(record.created_at, { zone: 'utc' }).toLocal();
+            if (!recordDate.isValid || recordDate > today.endOf('day')) return;
+
+            const daysAgo = Math.floor(today.diff(recordDate.startOf('day'), 'days').days);
+            offsets.add(Math.floor(daysAgo / periodDays));
+        });
+
+        return Array.from(offsets).sort((a, b) => a - b);
+    }, [recordsMatchingFilters, selectedPeriod, isAggregationManual, aggregationUnit]);
+
+    const previousDataOffset = useMemo(
+        () => navigableOffsets.find(candidate => candidate > offset),
+        [navigableOffsets, offset]
+    );
+
+    const nextDataOffset = useMemo(() => {
+        for (let index = navigableOffsets.length - 1; index >= 0; index -= 1) {
+            if (navigableOffsets[index] < offset) return navigableOffsets[index];
+        }
+        // 本日を含む範囲はデータがなくても必ず遷移先にする
+        return offset > 0 ? 0 : undefined;
+    }, [navigableOffsets, offset]);
     // グローバルなフィルタ条件を更新する
     const handleFilterChange = useCallback((newCriteria) => {
         recordListDispatch({ type: 'SET_FILTER_CRITERIA', payload: newCriteria });
@@ -824,13 +865,16 @@ function RecordChart() {
                         <span style={{ fontSize: '1rem' }}>Today</span>
                     </IconButton>
                     {/* 前へ */}
-                    <IconButton onClick={() => setOffset(o => o + 1)}>
+                    <IconButton
+                        onClick={() => setOffset(previousDataOffset)}
+                        disabled={previousDataOffset === undefined}
+                    >
                         <ChevronLeftIcon />
                     </IconButton>
                     {/* 次へ（最新期間より先には進まない） */}
                     <IconButton
-                        onClick={() => setOffset(o => Math.max(o - 1, 0))}
-                        disabled={offset === 0}
+                        onClick={() => setOffset(nextDataOffset)}
+                        disabled={nextDataOffset === undefined}
                     >
                         <ChevronRightIcon />
                     </IconButton>
