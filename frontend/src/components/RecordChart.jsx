@@ -51,6 +51,34 @@ const PERIOD_DAYS = {
     '365d': 365,
 };
 
+const ONE_DAY_CHART_HORIZONTAL_MARGIN = 44;
+const ONE_DAY_LABEL_HORIZONTAL_PADDING = 24;
+
+function truncateOneDayLabel(ctx, itemLabel, valueLabel, maxWidth) {
+    const fullLabel = `${itemLabel} ${valueLabel}`;
+    if (ctx.measureText(fullLabel).width <= maxWidth) return fullLabel;
+
+    const suffix = `… ${valueLabel}`;
+    const suffixWidth = ctx.measureText(suffix).width;
+    if (suffixWidth >= maxWidth) return suffix;
+
+    const characters = Array.from(itemLabel);
+    let low = 0;
+    let high = characters.length;
+
+    while (low < high) {
+        const middle = Math.ceil((low + high) / 2);
+        const candidate = `${characters.slice(0, middle).join('')}${suffix}`;
+        if (ctx.measureText(candidate).width <= maxWidth) {
+            low = middle;
+        } else {
+            high = middle - 1;
+        }
+    }
+
+    return `${characters.slice(0, low).join('')}${suffix}`;
+}
+
 function formatPeriodKey(dt, xAxisUnit) {
     if (!dt?.isValid) return '';
     if (xAxisUnit === 'day') return dt.toFormat('yyyy-MM-dd');
@@ -229,6 +257,7 @@ function RecordChart() {
     const [offset, setOffset] = useState(0); // ページング用オフセット
     const chartAreaRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
+    const [oneDayLabelHoverIndex, setOneDayLabelHoverIndex] = useState(null);
     const [periodStart, periodEnd] = useMemo(
         () => getPeriodRange(selectedPeriod, offset),
         [selectedPeriod, offset]
@@ -484,18 +513,35 @@ function RecordChart() {
         );
     };
 
-    const OneDayYAxisTick = ({ x, y, payload }) => (
-        <text
-            x={x - 8}
-            y={y}
-            dy={4}
-            textAnchor="end"
-            fill={theme.palette.text.secondary}
-            fontSize={16}
-        >
-            {payload.value}
-        </text>
-    );
+    const OneDayYAxisTick = ({ x, y, payload, index }) => {
+        const label = oneDayTickLabels.get(payload.value) ?? payload.value;
+        return (
+            <g
+                onMouseEnter={() => setOneDayLabelHoverIndex(index)}
+                onMouseLeave={() => setOneDayLabelHoverIndex(null)}
+            >
+                {/* 省略後の文字幅に関係なく、ラベル行全体をホバー対象にする */}
+                <rect
+                    x={x - oneDayLabelWidth}
+                    y={y - oneDayBarSize / 2}
+                    width={oneDayLabelWidth}
+                    height={oneDayBarSize}
+                    fill="transparent"
+                />
+                <text
+                    x={x - 8}
+                    y={y}
+                    dy={4}
+                    textAnchor="end"
+                    fill={theme.palette.text.secondary}
+                    fontSize={16}
+                    pointerEvents="none"
+                >
+                    {label}
+                </text>
+            </g>
+        );
+    };
     // 月日の表示のフォーマッタ
     const xAxisTickFormatter = (val) => {
         if (!val) return '';
@@ -556,13 +602,42 @@ function RecordChart() {
         return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
     }, [visibleKeys]);
 
-    const oneDayLabelWidth = useMemo(() => {
+    const oneDayNaturalLabelWidth = useMemo(() => {
         if (oneDayChartData.length === 0) return 160;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         ctx.font = '16px sans-serif';
-        return Math.max(...oneDayChartData.map(item => ctx.measureText(item.displayLabel).width)) + 24;
+        return Math.max(...oneDayChartData.map(item => ctx.measureText(item.displayLabel).width))
+            + ONE_DAY_LABEL_HORIZONTAL_PADDING;
     }, [oneDayChartData]);
+
+    const oneDayLabelWidth = useMemo(() => {
+        if (chartWidth === 0) return oneDayNaturalLabelWidth;
+        // 棒グラフ部分がチャート全体の半分以上残るようにラベル幅を制限する
+        const maxLabelWidth = Math.max(
+            0,
+            Math.floor(chartWidth / 2) - ONE_DAY_CHART_HORIZONTAL_MARGIN
+        );
+        return Math.min(oneDayNaturalLabelWidth, maxLabelWidth);
+    }, [chartWidth, oneDayNaturalLabelWidth]);
+
+    const oneDayTickLabels = useMemo(() => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.font = '16px sans-serif';
+        const maxTextWidth = Math.max(
+            0,
+            oneDayLabelWidth - ONE_DAY_LABEL_HORIZONTAL_PADDING
+        );
+
+        return new Map(oneDayChartData.map(item => {
+            const valueLabel = `(${oneDayLabelValueFormatter(item.value)})`;
+            return [
+                item.itemLabel,
+                truncateOneDayLabel(ctx, item.itemLabel, valueLabel, maxTextWidth),
+            ];
+        }));
+    }, [oneDayChartData, oneDayLabelValueFormatter, oneDayLabelWidth]);
 
     const oneDayBarSize = 30;
     const oneDayChartVerticalPadding = 16;
@@ -1072,7 +1147,7 @@ function RecordChart() {
                                     {selectedPeriod === '1d' && (
                                         <YAxis
                                             type="category"
-                                            dataKey="displayLabel"
+                                            dataKey="itemLabel"
                                             width={oneDayLabelWidth}
                                             interval={0}
                                             tick={<OneDayYAxisTick />}
@@ -1106,7 +1181,17 @@ function RecordChart() {
                                     {selectedPeriod !== '1d' && (
                                         <Legend />
                                     )}
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip
+                                        content={<CustomTooltip />}
+                                        defaultIndex={selectedPeriod === '1d'
+                                            ? oneDayLabelHoverIndex ?? undefined
+                                            : undefined
+                                        }
+                                        active={selectedPeriod === '1d' && oneDayLabelHoverIndex !== null
+                                            ? true
+                                            : undefined
+                                        }
+                                    />
                                     {selectedPeriod === '1d' ? (
                                         <Bar
                                             dataKey="value"
