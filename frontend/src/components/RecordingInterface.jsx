@@ -247,10 +247,23 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         setRecordDialogInitialDate(DateTime.local().toISO());
         dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
     };
+
+    useEffect(() => {
+        // localStorage から復元した UI 状態だけが残っている場合はダイアログを閉じる
+        if (state.recordDialogOpen && !recordDialogActivity && !pendingRecord) {
+            dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
+            setRecordDialogInitialDate(null);
+        }
+    }, [state.recordDialogOpen, recordDialogActivity, pendingRecord, dispatch]);
+
     const isTwoColumnLayout = layoutMode === 'two-column';
     const showMainStopwatch = stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes';
     const showSubStopwatch = subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes';
     const hasStopwatchDisplay = showMainStopwatch || showSubStopwatch;
+    const shouldRenderRecordDialog =
+        state.recordDialogOpen &&
+        recordDialogActivity &&
+        (recordDialogActivity.unit === 'count' || pendingRecord);
     const twoColumnFrameSx = {
         p: 2,
         border: '1px solid',
@@ -434,7 +447,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             />
             </Box>
             {/* ダイアログ（回数＋確認モード共通） */}
-            {state.recordDialogOpen && (recordDialogActivity.unit === 'count' || pendingRecord) && (
+            {shouldRenderRecordDialog && (
                 <AddRecordDialog
                     open={true}
                     autoFocusMemo={Boolean(pendingRecord)}
