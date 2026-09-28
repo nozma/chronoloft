@@ -9,7 +9,8 @@ import {
     TextField,
     MenuItem,
     Box,
-    IconButton
+    IconButton,
+    Typography
 } from '@mui/material';
 import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
@@ -154,6 +155,10 @@ function AddRecordDialog({
         setter(dt.plus({ minutes: delta }).toFormat("yyyy-MM-dd'T'HH:mm"));
     };
 
+    const isValidTime = (timeStr) => (
+        DateTime.fromFormat(timeStr, "yyyy-MM-dd'T'HH:mm").isValid
+    );
+
     // 回数を増減させる
     const adjustCount = (delta) => {
         setValue(prev => {
@@ -280,57 +285,113 @@ function AddRecordDialog({
                 {selectedActivity?.unit === 'minutes' && (
                     <>
                         {/* 開始時刻入力＋ボタン群 */}
-                        <Box display="flex" alignItems="center" mb={1}>
-                            <TextField
-                                label="開始時刻"
-                                type="datetime-local"
-                                value={startTime}
-                                onChange={(e) => setStartTime(e.target.value)}
-                                sx={{ flex: 1 }}
-                                margin="dense"
-                            />
-                            <Button size="small" onClick={fillStartWithPrevEnd}>
-                                fill
-                            </Button>
-                            <IconButton size="small" onClick={() => adjustTime(startTime, -5, setStartTime)}>
-                                −5
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(startTime, -1, setStartTime)}>
-                                −1
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(startTime, +1, setStartTime)}>
-                                +1
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(startTime, +5, setStartTime)}>
-                                +5
-                            </IconButton>
+                        <Box mb={1.5}>
+                            <Box display="flex" alignItems="center">
+                                <TextField
+                                    label="開始時刻"
+                                    type="datetime-local"
+                                    value={startTime}
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                    sx={{ flex: 1 }}
+                                    margin="dense"
+                                />
+                                <Button size="small" onClick={fillStartWithPrevEnd}>
+                                    fill
+                                </Button>
+                                <IconButton size="small" onClick={() => adjustTime(startTime, -5, setStartTime)}>
+                                    −5
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(startTime, -1, setStartTime)}>
+                                    −1
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(startTime, +1, setStartTime)}>
+                                    +1
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(startTime, +5, setStartTime)}>
+                                    +5
+                                </IconButton>
+                            </Box>
+                            {!isEdit && (
+                                <Box
+                                    display="flex"
+                                    alignItems="center"
+                                    flexWrap="wrap"
+                                    gap={0.75}
+                                    mt={0.5}
+                                >
+                                    <Typography variant="caption" color="text.secondary" sx={{ mr: 0.25 }}>
+                                        終了時刻から
+                                    </Typography>
+                                    {[15, 30, 60].map((minutes) => (
+                                        <Button
+                                            key={minutes}
+                                            size="small"
+                                            variant="outlined"
+                                            disabled={!isValidTime(endTime)}
+                                            aria-label={`終了時刻の${minutes}分前を開始時刻に設定`}
+                                            onClick={() => adjustTime(endTime, -minutes, setStartTime)}
+                                            sx={{ minWidth: 0, px: 1.25 }}
+                                        >
+                                            {minutes}分前
+                                        </Button>
+                                    ))}
+                                </Box>
+                            )}
                         </Box>
 
                         {/* 終了時刻入力＋ボタン群 */}
-                        <Box display="flex" alignItems="center" mb={1}>
-                            <TextField
-                                label="終了時刻"
-                                type="datetime-local"
-                                value={endTime}
-                                onChange={(e) => setEndTime(e.target.value)}
-                                sx={{ flex: 1 }}
-                                margin="dense"
-                            />
-                            <Button size="small" onClick={fillEndWithNextStart}>
-                                fill
-                            </Button>
-                            <IconButton size="small" onClick={() => adjustTime(endTime, -5, setEndTime)}>
-                                −5
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(endTime, -1, setEndTime)}>
-                                −1
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(endTime, +1, setEndTime)}>
-                                +1
-                            </IconButton>
-                            <IconButton size="small" onClick={() => adjustTime(endTime, +5, setEndTime)}>
-                                +5
-                            </IconButton>
+                        <Box mb={1}>
+                            <Box display="flex" alignItems="center">
+                                <TextField
+                                    label="終了時刻"
+                                    type="datetime-local"
+                                    value={endTime}
+                                    onChange={(e) => setEndTime(e.target.value)}
+                                    sx={{ flex: 1 }}
+                                    margin="dense"
+                                />
+                                <Button size="small" onClick={fillEndWithNextStart}>
+                                    fill
+                                </Button>
+                                <IconButton size="small" onClick={() => adjustTime(endTime, -5, setEndTime)}>
+                                    −5
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(endTime, -1, setEndTime)}>
+                                    −1
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(endTime, +1, setEndTime)}>
+                                    +1
+                                </IconButton>
+                                <IconButton size="small" onClick={() => adjustTime(endTime, +5, setEndTime)}>
+                                    +5
+                                </IconButton>
+                            </Box>
+                            {!isEdit && (
+                                <Box
+                                    display="flex"
+                                    alignItems="center"
+                                    flexWrap="wrap"
+                                    gap={0.75}
+                                    mt={0.5}
+                                >
+                                    <Typography variant="caption" color="text.secondary" sx={{ mr: 0.25 }}>
+                                        開始時刻から
+                                    </Typography>
+                                    {[15, 30, 60].map((minutes) => (
+                                        <Button
+                                            key={minutes}
+                                            size="small"
+                                            variant="outlined"
+                                            disabled={!isValidTime(startTime)}
+                                            aria-label={`開始時刻の${minutes}分後を終了時刻に設定`}
+                                            onClick={() => adjustTime(startTime, minutes, setEndTime)}
+                                            sx={{ minWidth: 0, px: 1.25 }}
+                                        >
+                                            {minutes}分後
+                                        </Button>
+                                    ))}
+                                </Box>
+                            )}
                         </Box>
 
                         <TextField
