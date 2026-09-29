@@ -16,6 +16,7 @@ import {
     Line,
     BarChart,
     Bar,
+    LabelList,
     Cell,
     XAxis,
     YAxis,
@@ -51,33 +52,7 @@ const PERIOD_DAYS = {
     '365d': 365,
 };
 
-const ONE_DAY_CHART_HORIZONTAL_MARGIN = 44;
 const ONE_DAY_LABEL_HORIZONTAL_PADDING = 24;
-
-function truncateOneDayLabel(ctx, itemLabel, valueLabel, maxWidth) {
-    const fullLabel = `${itemLabel} ${valueLabel}`;
-    if (ctx.measureText(fullLabel).width <= maxWidth) return fullLabel;
-
-    const suffix = `… ${valueLabel}`;
-    const suffixWidth = ctx.measureText(suffix).width;
-    if (suffixWidth >= maxWidth) return suffix;
-
-    const characters = Array.from(itemLabel);
-    let low = 0;
-    let high = characters.length;
-
-    while (low < high) {
-        const middle = Math.ceil((low + high) / 2);
-        const candidate = `${characters.slice(0, middle).join('')}${suffix}`;
-        if (ctx.measureText(candidate).width <= maxWidth) {
-            low = middle;
-        } else {
-            high = middle - 1;
-        }
-    }
-
-    return `${characters.slice(0, low).join('')}${suffix}`;
-}
 
 function formatPeriodKey(dt, xAxisUnit) {
     if (!dt?.isValid) return '';
@@ -475,17 +450,43 @@ function RecordChart() {
         return `${roundedValue}`;
     }, [aggregationUnit]);
 
+    const activityMemoLabels = useMemo(() => {
+        const labels = new Map();
+        filteredRecords.forEach(record => {
+            const activityLabel = record.activity_name || 'Unknown Activity';
+            const memoLabel = record.memo || '';
+            const key = activityLabel + (memoLabel ? ` / ${memoLabel}` : '');
+            labels.set(key, { activityLabel, memoLabel });
+        });
+        return labels;
+    }, [filteredRecords]);
+
     const oneDayChartData = useMemo(() => {
         if (selectedPeriod !== '1d') return [];
         return sortedEntries
             .filter(({ key }) => visibleKeys.includes(key))
-            .map(({ key, total }) => ({
-                key,
-                itemLabel: key,
-                displayLabel: `${key} (${oneDayLabelValueFormatter(total)})`,
-                value: total,
-            }));
-    }, [selectedPeriod, sortedEntries, visibleKeys, oneDayLabelValueFormatter]);
+            .map(({ key, total }) => {
+                const labelParts = groupBy === 'activityMemo'
+                    ? activityMemoLabels.get(key)
+                    : undefined;
+                const axisLabel = labelParts?.activityLabel ?? key;
+                return {
+                    key,
+                    itemLabel: key,
+                    axisLabel,
+                    memoLabel: labelParts?.memoLabel ?? '',
+                    displayLabel: `${axisLabel} (${oneDayLabelValueFormatter(total)})`,
+                    value: total,
+                };
+            });
+    }, [
+        selectedPeriod,
+        sortedEntries,
+        visibleKeys,
+        groupBy,
+        activityMemoLabels,
+        oneDayLabelValueFormatter,
+    ]);
 
     const OneDayXAxisTick = (props) => {
         const {
@@ -602,7 +603,7 @@ function RecordChart() {
         return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
     }, [visibleKeys]);
 
-    const oneDayNaturalLabelWidth = useMemo(() => {
+    const oneDayLabelWidth = useMemo(() => {
         if (oneDayChartData.length === 0) return 160;
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
@@ -611,33 +612,9 @@ function RecordChart() {
             + ONE_DAY_LABEL_HORIZONTAL_PADDING;
     }, [oneDayChartData]);
 
-    const oneDayLabelWidth = useMemo(() => {
-        if (chartWidth === 0) return oneDayNaturalLabelWidth;
-        // 棒グラフ部分がチャート全体の半分以上残るようにラベル幅を制限する
-        const maxLabelWidth = Math.max(
-            0,
-            Math.floor(chartWidth / 2) - ONE_DAY_CHART_HORIZONTAL_MARGIN
-        );
-        return Math.min(oneDayNaturalLabelWidth, maxLabelWidth);
-    }, [chartWidth, oneDayNaturalLabelWidth]);
-
-    const oneDayTickLabels = useMemo(() => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        ctx.font = '16px sans-serif';
-        const maxTextWidth = Math.max(
-            0,
-            oneDayLabelWidth - ONE_DAY_LABEL_HORIZONTAL_PADDING
-        );
-
-        return new Map(oneDayChartData.map(item => {
-            const valueLabel = `(${oneDayLabelValueFormatter(item.value)})`;
-            return [
-                item.itemLabel,
-                truncateOneDayLabel(ctx, item.itemLabel, valueLabel, maxTextWidth),
-            ];
-        }));
-    }, [oneDayChartData, oneDayLabelValueFormatter, oneDayLabelWidth]);
+    const oneDayTickLabels = useMemo(() => new Map(
+        oneDayChartData.map(item => [item.key, item.displayLabel])
+    ), [oneDayChartData]);
 
     const oneDayBarSize = 30;
     const oneDayChartVerticalPadding = 16;
@@ -1147,7 +1124,7 @@ function RecordChart() {
                                     {selectedPeriod === '1d' && (
                                         <YAxis
                                             type="category"
-                                            dataKey="itemLabel"
+                                            dataKey="key"
                                             width={oneDayLabelWidth}
                                             interval={0}
                                             tick={<OneDayYAxisTick />}
@@ -1201,6 +1178,19 @@ function RecordChart() {
                                             {oneDayChartData.map(entry => (
                                                 <Cell key={entry.key} fill={colorScale(entry.key)} />
                                             ))}
+                                            {groupBy === 'activityMemo' && (
+                                                <LabelList
+                                                    dataKey="memoLabel"
+                                                    position="insideLeft"
+                                                    offset={8}
+                                                    fill={theme.palette.text.primary}
+                                                    stroke={theme.palette.background.paper}
+                                                    strokeWidth={3}
+                                                    paintOrder="stroke fill"
+                                                    fontSize={12}
+                                                    pointerEvents="none"
+                                                />
+                                            )}
                                         </Bar>
                                     ) : (
                                         visibleKeys.map(key => (
