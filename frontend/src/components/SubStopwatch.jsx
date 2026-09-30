@@ -1,5 +1,5 @@
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
+import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
+import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
 import { DateTime } from 'luxon';
@@ -8,6 +8,7 @@ import { useRecords } from '../contexts/RecordContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
+import { getRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const SubStopwatch = forwardRef((props, ref) => {
     const isInlineMode = Boolean(props.inlineMode);
@@ -99,6 +100,11 @@ const SubStopwatch = forwardRef((props, ref) => {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     };
 
+    const memoOptions = useMemo(
+        () => getRecentMemoOptions(records, props.activityId),
+        [records, props.activityId]
+    );
+
     return (
         <>
             <Box sx={(theme) => ({
@@ -156,12 +162,22 @@ const SubStopwatch = forwardRef((props, ref) => {
                     </Box>
                 </Box>
                 <Box sx={isInlineMode ? { width: '100%', mt: 1 } : { flex: 1 }}>
-                    <TextField
-                        label="Memo"
-                        multiline
-                        fullWidth
-                        value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
+                    <Autocomplete
+                        freeSolo
+                        options={memoOptions}
+                        inputValue={memo ?? ''}
+                        onInputChange={(event, newValue) => setMemo(newValue)}
+                        onChange={(event, newValue) => setMemo(newValue ?? '')}
+                        forcePopupIcon={false}
+                        disableClearable
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Memo"
+                                multiline
+                                fullWidth
+                            />
+                        )}
                     />
                 </Box>
             </Box>

@@ -1,6 +1,7 @@
 // AddRecordDialog.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
+    Autocomplete,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -15,6 +16,7 @@ import {
 import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
 import { useRecords } from '../contexts/RecordContext';
+import { getRecentMemoOptions } from '../utils/recentMemoOptions';
 
 function AddRecordDialog({
     open,
@@ -40,6 +42,10 @@ function AddRecordDialog({
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
     const compatibleActivities = activities.filter(a => a.unit === activity.unit);
+    const memoOptions = useMemo(
+        () => getRecentMemoOptions(records, selectedActivity?.id),
+        [records, selectedActivity?.id]
+    );
 
     useEffect(() => {
         if (!activity) return;
@@ -268,16 +274,26 @@ function AddRecordDialog({
                             fullWidth
                             margin="dense"
                         />
-                        <TextField
-                            label="memo"
-                            multiline
-                            minRows={2}
-                            fullWidth
-                            value={memo}
-                            onChange={(e) => setMemo(e.target.value)}
-                            inputRef={memoRef}
-                            autoFocus={autoFocusMemo}
+                        <Autocomplete
+                            freeSolo
+                            options={memoOptions}
+                            inputValue={memo ?? ''}
+                            onInputChange={(event, newValue) => setMemo(newValue)}
+                            onChange={(event, newValue) => setMemo(newValue ?? '')}
+                            forcePopupIcon={false}
+                            disableClearable
                             sx={{ mt: 2 }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="memo"
+                                    multiline
+                                    minRows={2}
+                                    fullWidth
+                                    inputRef={memoRef}
+                                    autoFocus={autoFocusMemo}
+                                />
+                            )}
                         />
                     </>
                 )}
@@ -394,16 +410,26 @@ function AddRecordDialog({
                             )}
                         </Box>
 
-                        <TextField
-                            label="memo"
-                            multiline
-                            minRows={2}
-                            fullWidth
-                            value={memo}
-                            onChange={(e) => setMemo(e.target.value)}
-                            inputRef={memoRef}
-                            autoFocus={autoFocusMemo}
+                        <Autocomplete
+                            freeSolo
+                            options={memoOptions}
+                            inputValue={memo ?? ''}
+                            onInputChange={(event, newValue) => setMemo(newValue)}
+                            onChange={(event, newValue) => setMemo(newValue ?? '')}
+                            forcePopupIcon={false}
+                            disableClearable
                             sx={{ mt: 2 }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="memo"
+                                    multiline
+                                    minRows={2}
+                                    fullWidth
+                                    inputRef={memoRef}
+                                    autoFocus={autoFocusMemo}
+                                />
+                            )}
                         />
                     </>
                 )}

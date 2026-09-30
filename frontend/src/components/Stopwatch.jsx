@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
-import { Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
+import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useGroups } from '../contexts/GroupContext';
@@ -10,6 +10,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import { updateDiscordPresence } from '../services/api';
+import { getRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const Stopwatch = forwardRef((props, ref) => {
     const isInlineMode = Boolean(props.inlineMode);
@@ -161,6 +162,10 @@ const Stopwatch = forwardRef((props, ref) => {
     };
     const diffLabel7 = formatDiff(diff7);
     const diffLabel30 = formatDiff(diff30);
+    const memoOptions = useMemo(
+        () => getRecentMemoOptions(records, props.activityId),
+        [records, props.activityId]
+    );
 
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
@@ -381,13 +386,23 @@ const Stopwatch = forwardRef((props, ref) => {
                 </Box>
                 <Box sx={isInlineMode ? { position: 'relative', width: '100%', mt: 1 } : { position: 'relative', flex: 1, mt: 1 }}>
                     {/* メモ入力欄 */}
-                    <TextField
-                        label="Memo"
-                        multiline
-                        rows={2}
-                        fullWidth
-                        value={memo}
-                        onChange={(e) => setMemo(e.target.value)}
+                    <Autocomplete
+                        freeSolo
+                        options={memoOptions}
+                        inputValue={memo ?? ''}
+                        onInputChange={(event, newValue) => setMemo(newValue)}
+                        onChange={(event, newValue) => setMemo(newValue ?? '')}
+                        forcePopupIcon={false}
+                        disableClearable
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Memo"
+                                multiline
+                                rows={2}
+                                fullWidth
+                            />
+                        )}
                     />
                     {/* Update Presence ボタン */}
                     {props.discordData && (

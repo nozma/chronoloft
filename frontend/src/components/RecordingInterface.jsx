@@ -336,6 +336,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 }}
                                 activityName={subSelectedActivity.name}
                                 activityGroup={subSelectedActivity.group_name}
+                                activityId={subSelectedActivity.id}
                             />
                         )}
                     </Box>
