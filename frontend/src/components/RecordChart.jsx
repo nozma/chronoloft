@@ -237,6 +237,7 @@ function RecordChart() {
     const chartAreaRef = useRef(null);
     const [chartWidth, setChartWidth] = useState(0);
     const [oneDayLabelHoverIndex, setOneDayLabelHoverIndex] = useState(null);
+    const [isChartPointerInside, setIsChartPointerInside] = useState(null);
     const [periodStart, periodEnd] = useMemo(
         () => getPeriodRange(selectedPeriod, offset),
         [selectedPeriod, offset]
@@ -257,6 +258,16 @@ function RecordChart() {
             setItemLimit('50'); // 旧設定の移行
         }
     }, [itemLimit, setItemLimit]);
+
+    useEffect(() => {
+        const handleWindowBlur = () => {
+            setIsChartPointerInside(false);
+            setOneDayLabelHoverIndex(null);
+        };
+
+        window.addEventListener('blur', handleWindowBlur);
+        return () => window.removeEventListener('blur', handleWindowBlur);
+    }, []);
 
     // フィルタ条件を反映して表示に使うレコードをフィルタ
     const visibleRecords = useMemo(() => {
@@ -518,35 +529,13 @@ function RecordChart() {
         );
     };
 
-    const OneDayYAxisTick = ({ x, y, payload, index }) => {
-        const label = oneDayTickLabels.get(payload.value) ?? payload.value;
-        return (
-            <g
-                onMouseEnter={() => setOneDayLabelHoverIndex(index)}
-                onMouseLeave={() => setOneDayLabelHoverIndex(null)}
-            >
-                {/* 省略後の文字幅に関係なく、ラベル行全体をホバー対象にする */}
-                <rect
-                    x={x - oneDayLabelWidth}
-                    y={y - oneDayBarSize / 2}
-                    width={oneDayLabelWidth}
-                    height={oneDayBarSize}
-                    fill="transparent"
-                />
-                <text
-                    x={x - 8}
-                    y={y}
-                    dy={4}
-                    textAnchor="end"
-                    fill={theme.palette.text.secondary}
-                    fontSize={16}
-                    pointerEvents="none"
-                >
-                    {label}
-                </text>
-            </g>
-        );
-    };
+    const handleOneDayLabelEnter = useCallback((index) => {
+        setOneDayLabelHoverIndex(index);
+    }, []);
+
+    const handleOneDayLabelLeave = useCallback(() => {
+        setOneDayLabelHoverIndex(null);
+    }, []);
     // 月日の表示のフォーマッタ
     const xAxisTickFormatter = (val) => {
         if (!val) return '';
@@ -626,6 +615,42 @@ function RecordChart() {
 
     const oneDayBarSize = 30;
     const oneDayChartVerticalPadding = 16;
+    const renderOneDayYAxisTick = useCallback(({ x, y, payload, index }) => {
+        const label = oneDayTickLabels.get(payload.value) ?? payload.value;
+
+        return (
+            <g
+                onMouseEnter={() => handleOneDayLabelEnter(index)}
+                onMouseLeave={handleOneDayLabelLeave}
+            >
+                {/* 省略後の文字幅に関係なく、ラベル行全体をホバー対象にする */}
+                <rect
+                    x={x - oneDayLabelWidth}
+                    y={y - oneDayBarSize / 2}
+                    width={oneDayLabelWidth}
+                    height={oneDayBarSize}
+                    fill="transparent"
+                />
+                <text
+                    x={x - 8}
+                    y={y}
+                    dy={4}
+                    textAnchor="end"
+                    fill={theme.palette.text.secondary}
+                    fontSize={16}
+                    pointerEvents="none"
+                >
+                    {label}
+                </text>
+            </g>
+        );
+    }, [
+        handleOneDayLabelEnter,
+        handleOneDayLabelLeave,
+        oneDayLabelWidth,
+        oneDayTickLabels,
+        theme.palette.text.secondary,
+    ]);
 
     const baseChartHeight = selectedPeriod === '1d'
         ? Math.max(80, oneDayChartData.length * oneDayBarSize + oneDayChartVerticalPadding)
@@ -644,6 +669,26 @@ function RecordChart() {
         return rows > 1 ? (rows - 1) * rowHeight : 0;
     }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod, baseChartHeight]);
     const chartHeight = baseChartHeight + legendExtraHeight;
+    const tooltipActive = isChartPointerInside === false
+        ? false
+        : selectedPeriod === '1d' && oneDayLabelHoverIndex !== null
+            ? true
+            : undefined;
+
+    const handleChartPointerEnter = useCallback(() => {
+        setIsChartPointerInside(true);
+    }, []);
+
+    const handleChartPointerLeave = useCallback(() => {
+        setIsChartPointerInside(false);
+        setOneDayLabelHoverIndex(null);
+    }, []);
+
+    const handleChartFocus = useCallback(() => {
+        // キーボード操作時は Recharts のアクセシビリティ制御に戻す
+        setIsChartPointerInside(null);
+    }, []);
+
     const compactSettingFieldSx = {
         mt: 0.5,
         '& .MuiInputBase-root': { minHeight: 36, fontSize: 12 },
@@ -954,7 +999,14 @@ function RecordChart() {
                     </Typography>
                 </Box>
                 {/* チャート描画部 */}
-                <Box ref={chartAreaRef}>
+                <Box
+                    ref={chartAreaRef}
+                    onPointerEnter={handleChartPointerEnter}
+                    onPointerMove={handleChartPointerEnter}
+                    onPointerLeave={handleChartPointerLeave}
+                    onPointerCancel={handleChartPointerLeave}
+                    onFocusCapture={handleChartFocus}
+                >
                     {chartData.length === 0 ? (
                         /* ----- データが無い場合の表示 ----- */
                         <Box
@@ -993,7 +1045,10 @@ function RecordChart() {
                                         tickFormatter={yAxisTimeValueFormatter}
                                         domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
                                     />
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip
+                                        content={<CustomTooltip />}
+                                        active={tooltipActive}
+                                    />
                                     {/* カスタムラベル */}
                                     <Customized
                                         component={({ xAxisMap, yAxisMap }) => {
@@ -1142,7 +1197,7 @@ function RecordChart() {
                                             dataKey="key"
                                             width={oneDayLabelWidth}
                                             interval={0}
-                                            tick={<OneDayYAxisTick />}
+                                            tick={renderOneDayYAxisTick}
                                         />
                                     )}
 
@@ -1175,14 +1230,7 @@ function RecordChart() {
                                     )}
                                     <Tooltip
                                         content={<CustomTooltip />}
-                                        defaultIndex={selectedPeriod === '1d'
-                                            ? oneDayLabelHoverIndex ?? undefined
-                                            : undefined
-                                        }
-                                        active={selectedPeriod === '1d' && oneDayLabelHoverIndex !== null
-                                            ? true
-                                            : undefined
-                                        }
+                                        active={tooltipActive}
                                     />
                                     {selectedPeriod === '1d' ? (
                                         <Bar
