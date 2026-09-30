@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 import { Calendar, Views } from 'react-big-calendar';
@@ -25,6 +25,13 @@ import { useRecords } from '../contexts/RecordContext';
 import { useActivities } from '../contexts/ActivityContext';
 import DescendingAgendaView from './DescendingAgendaView';
 import { useTheme } from '@mui/material/styles';
+import {
+    CHART_GROUPING_CHANGE_EVENT,
+    getGroupingBorderColor,
+    getGroupingColor,
+    getGroupingFillColor,
+    getRecordGroupingKeys,
+} from '../utils/groupingColors';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
@@ -76,36 +83,14 @@ function ceilToNextHour(dateTime) {
     return roundedDown.plus({ hours: 1 });
 }
 
-function blendColor(hexColor, targetHex, mixRatio, fallbackColor) {
-    const normalized = hexColor?.replace('#', '');
-    const target = targetHex?.replace('#', '');
-    if (
-        !normalized || !target ||
-        !/^[0-9a-fA-F]{6}$/.test(normalized) ||
-        !/^[0-9a-fA-F]{6}$/.test(target)
-    ) {
-        return fallbackColor;
-    }
-
-    const red = parseInt(normalized.slice(0, 2), 16);
-    const green = parseInt(normalized.slice(2, 4), 16);
-    const blue = parseInt(normalized.slice(4, 6), 16);
-    const targetRed = parseInt(target.slice(0, 2), 16);
-    const targetGreen = parseInt(target.slice(2, 4), 16);
-    const targetBlue = parseInt(target.slice(4, 6), 16);
-    const mixedRed = Math.round(red + (targetRed - red) * mixRatio);
-    const mixedGreen = Math.round(green + (targetGreen - green) * mixRatio);
-    const mixedBlue = Math.round(blue + (targetBlue - blue) * mixRatio);
-
-    return `rgb(${mixedRed}, ${mixedGreen}, ${mixedBlue})`;
-}
-
-function blendColorWithWhite(hexColor, mixRatio) {
-    return blendColor(hexColor, '#ffffff', mixRatio, '#dbe7f3');
-}
-
-function blendColorWithBlack(hexColor, mixRatio) {
-    return blendColor(hexColor, '#000000', mixRatio, '#26445f');
+function createColorBands(colors) {
+    if (colors.length <= 1) return colors[0];
+    const stops = colors.flatMap((color, index) => {
+        const start = (index / colors.length) * 100;
+        const end = ((index + 1) / colors.length) * 100;
+        return [`${color} ${start}%`, `${color} ${end}%`];
+    });
+    return `linear-gradient(to right, ${stops.join(', ')})`;
 }
 
 function inferVisibleRange(view, date) {
@@ -239,6 +224,7 @@ function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity
 
     const aggregatedArray = Object.values(aggregated).map((agg) => ({
         id: `${agg.groupKey}-${agg.start.toDateString()}`,
+        groupKey: agg.groupKey,
         activityName: agg.activityName,
         title: `(${Math.floor(agg.totalValue / 60)}:${String(Math.round(agg.totalValue % 60)).padStart(2, '0')}) ${agg.activityName}`,
         // All-day event for the aggregated day
@@ -374,9 +360,17 @@ function RecordCalendar() {
         : null;
     const [calendarMode, setCalendarMode] = useLocalStorageState('calendar.mode', 'short');
     const [summaryGroupBy, setSummaryGroupBy] = useLocalStorageState('calendar.summaryGroupBy', 'activity');
+    const [chartGroupBy, setChartGroupBy] = useLocalStorageState('chart.groupBy', 'group');
     const [newRecordSlot, setNewRecordSlot] = useState(null);
     const [visibleRange, setVisibleRange] = useState(null);
     const calendarRootRef = useRef(null);
+
+    useEffect(() => {
+        const handleChartGroupingChange = (event) => setChartGroupBy(event.detail);
+        window.addEventListener(CHART_GROUPING_CHANGE_EVENT, handleChartGroupingChange);
+        return () => window.removeEventListener(CHART_GROUPING_CHANGE_EVENT, handleChartGroupingChange);
+    }, [setChartGroupBy]);
+
     const defaultActivity = useMemo(
         () => activities.find((a) => a.unit === 'minutes') || activities[0],
         [activities]
@@ -455,6 +449,24 @@ function RecordCalendar() {
         }
         return minuteEvents;
     }, [currentView, minuteEvents, summaryGroupBy]);
+
+    const getEventColors = useCallback((event) => {
+        let colorGroupBy;
+        let colorKeys;
+
+        if (currentView === Views.MONTH) {
+            colorGroupBy = 'activity';
+            colorKeys = [event.groupKey || event.activityName || 'Unknown Activity'];
+        } else if (currentView === Views.AGENDA) {
+            colorGroupBy = summaryGroupBy;
+            colorKeys = [event.groupKey || event.activityName];
+        } else {
+            colorGroupBy = chartGroupBy;
+            colorKeys = getRecordGroupingKeys(event, chartGroupBy);
+        }
+
+        return colorKeys.map(key => getGroupingColor(colorGroupBy, key, theme.palette.mode));
+    }, [chartGroupBy, currentView, summaryGroupBy, theme.palette.mode]);
 
     const effectiveVisibleRange = useMemo(
         () => visibleRange ?? inferVisibleRange(currentView, currentDate),
@@ -790,23 +802,30 @@ function RecordCalendar() {
                         // Double-click -> open edit
                         onDoubleClickEvent={handleDoubleClickEvent}
 
-                        eventPropGetter={(event) => ({
-                            style: {
-                                backgroundColor: isDarkMode
-                                    ? blendColorWithBlack(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)
-                                    : blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.9),
-                                borderRadius: '5px',
-                                border: currentView === Views.AGENDA
-                                    ? `1px solid ${isDarkMode ? '#555555' : '#d0d7de'}`
-                                    : `1px solid ${
-                                        isDarkMode
-                                            ? blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.2)
-                                            : blendColorWithWhite(event.groupColor || DEFAULT_EVENT_COLOR, 0.7)
-                                    }`,
-                                color: isDarkMode ? '#f3f4f6' : '#111111',
-                                fontSize: currentView === Views.MONTH ? '10px' : '12px',
-                            },
-                        })}
+                        eventPropGetter={(event) => {
+                            const baseColors = getEventColors(event);
+                            const displayColors = baseColors.map(color =>
+                                getGroupingFillColor(
+                                    color || DEFAULT_EVENT_COLOR,
+                                    theme.palette.mode
+                                )
+                            );
+                            const borderBaseColor = baseColors[0] || DEFAULT_EVENT_COLOR;
+                            return {
+                                style: {
+                                    background: createColorBands(displayColors),
+                                    borderRadius: '5px',
+                                    border: currentView === Views.AGENDA
+                                        ? `1px solid ${isDarkMode ? '#555555' : '#d0d7de'}`
+                                        : `1px solid ${getGroupingBorderColor(
+                                            borderBaseColor,
+                                            theme.palette.mode
+                                        )}`,
+                                    color: isDarkMode ? '#f3f4f6' : '#111111',
+                                    fontSize: currentView === Views.MONTH ? '10px' : '12px',
+                                },
+                            };
+                        }}
                     />
                 </Box>
             </Collapse>
