@@ -9,7 +9,7 @@ import {
     IconButton,
     Button
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
     ResponsiveContainer,
     LineChart,
@@ -32,8 +32,6 @@ import { useRecords } from '../contexts/RecordContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useUI } from '../contexts/UIContext';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import { scaleOrdinal } from 'd3-scale';
-import { schemeSet3, schemeCategory10 } from 'd3-scale-chromatic';
 import RecordFilter from './RecordFilter';
 import useRecordListState from '../hooks/useRecordListState';
 import { useGroups } from '../contexts/GroupContext';
@@ -42,6 +40,12 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { forEachLocalDayMinuteSegment } from '../utils/recordTimeDistribution';
+import {
+    CHART_GROUPING_CHANGE_EVENT,
+    getGroupingBorderColor,
+    getGroupingColor,
+    getGroupingFillColor,
+} from '../utils/groupingColors';
 
 const PERIOD_DAYS = {
     '1d': 1,
@@ -568,15 +572,19 @@ function RecordChart() {
 
     // 配色設定
     const theme = useTheme();
-    // テーマに応じたパレットを選択
-    const colorArray = theme.palette.mode === 'light' ? schemeCategory10 : schemeSet3;
-    // 表示対象のキー
-    const keys = useMemo(() => visibleKeys, [visibleKeys]);
+    // Groupingと項目名から、表示順に依存しない共通色を割り当てる
+    const colorScale = useCallback(
+        (key) => getGroupingColor(groupBy, key, theme.palette.mode),
+        [groupBy, theme.palette.mode]
+    );
 
-    // d3 の ordinal scale で色を割り当てる
-    const colorScale = useMemo(() => {
-        return scaleOrdinal(colorArray).domain(keys);
-    }, [keys, colorArray]);
+    const oneDayBarColor = useCallback((key) => {
+        const color = colorScale(key);
+        return {
+            fill: getGroupingFillColor(color, theme.palette.mode),
+            stroke: getGroupingBorderColor(color, theme.palette.mode),
+        };
+    }, [colorScale, theme.palette.mode]);
 
     // y軸のtickは最大値が120以上なら60の倍数にする
     const domain = useMemo(() => {
@@ -877,7 +885,14 @@ function RecordChart() {
                             label="Grouping"
                             size="small"
                             value={groupBy}
-                            onChange={(e) => setGroupBy(e.target.value)}
+                            onChange={(e) => {
+                                const nextGroupBy = e.target.value;
+                                setGroupBy(nextGroupBy);
+                                window.dispatchEvent(new CustomEvent(
+                                    CHART_GROUPING_CHANGE_EVENT,
+                                    { detail: nextGroupBy }
+                                ));
+                            }}
                             sx={{ minWidth: 104, ...compactSettingFieldSx }}
                         >
                             <MenuItem value="group">Group</MenuItem>
@@ -1175,17 +1190,25 @@ function RecordChart() {
                                             barSize={oneDayBarSize}
                                             isAnimationActive={false}
                                         >
-                                            {oneDayChartData.map(entry => (
-                                                <Cell key={entry.key} fill={colorScale(entry.key)} />
-                                            ))}
+                                            {oneDayChartData.map(entry => {
+                                                const color = oneDayBarColor(entry.key);
+                                                return (
+                                                    <Cell
+                                                        key={entry.key}
+                                                        fill={color.fill}
+                                                        stroke={color.stroke}
+                                                        strokeWidth={1}
+                                                    />
+                                                );
+                                            })}
                                             {groupBy === 'activityMemo' && (
                                                 <LabelList
                                                     dataKey="memoLabel"
                                                     position="insideLeft"
                                                     offset={8}
                                                     fill={theme.palette.text.primary}
-                                                    stroke={theme.palette.background.paper}
-                                                    strokeWidth={3}
+                                                    stroke={alpha(theme.palette.background.paper, 0.6)}
+                                                    strokeWidth={1}
                                                     paintOrder="stroke fill"
                                                     fontSize={12}
                                                     pointerEvents="none"
