@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -18,7 +19,9 @@ import {
 import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 
 function SettingsDialog({ open, onClose }) {
+    const { t } = useI18n();
     const {
+        language: savedLanguage, setLanguage,
         autoFilterOnSelect, setAutoFilterOnSelect,
         themeMode, setThemeMode,
         layoutMode, setLayoutMode,
@@ -29,6 +32,7 @@ function SettingsDialog({ open, onClose }) {
     } = useSettings();
 
     // ─── 設定値のローカルコピー ───
+    const [tmpLanguage, setTmpLanguage] = useState(savedLanguage);
     const [tmpAutoFilter, setTmpAutoFilter] = useState(autoFilterOnSelect);
     const [tmpThemeMode, setTmpThemeMode] = useState(themeMode);
     const [tmpLayoutMode, setTmpLayoutMode] = useState(layoutMode);
@@ -39,6 +43,7 @@ function SettingsDialog({ open, onClose }) {
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open) {
+            setTmpLanguage(savedLanguage);
             setTmpAutoFilter(autoFilterOnSelect);
             setTmpThemeMode(themeMode);
             setTmpLayoutMode(layoutMode);
@@ -47,11 +52,12 @@ function SettingsDialog({ open, onClose }) {
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
         }
-    }, [open, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
+    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
 
     // リセット用ハンドラ
     const handleReset = () => {
         // 既定値を適用
+        setTmpLanguage(DEFAULT_SETTINGS.language);
         setTmpAutoFilter(DEFAULT_SETTINGS.autoFilterOnSelect);
         setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
         setTmpLayoutMode(DEFAULT_SETTINGS.layoutMode);
@@ -63,34 +69,41 @@ function SettingsDialog({ open, onClose }) {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm">
-            <DialogTitle>Settings</DialogTitle>
+            <DialogTitle>{t("Settings")}</DialogTitle>
 
             <DialogContent dividers>
                 <Stack spacing={3} divider={<Divider flexItem />}>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">{t("Language")}</FormLabel>
+                        <RadioGroup row value={tmpLanguage} onChange={e => setTmpLanguage(e.target.value)}>
+                            <FormControlLabel value="ja" label="日本語" control={<Radio />} />
+                            <FormControlLabel value="en" label="English" control={<Radio />} />
+                        </RadioGroup>
+                    </FormControl>
                     {/* ------------- 外観関連設定 ------------- */}
                     <Stack spacing={3}>
                         {/* ダークモード・ライトモード切り替え */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Theme</FormLabel>
+                            <FormLabel component="legend">{t("Theme")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpThemeMode}
                                 onChange={(e) => setTmpThemeMode(e.target.value)}
                             >
-                                <FormControlLabel value="system" label="System" control={<Radio />} />
-                                <FormControlLabel value="light" label="Light" control={<Radio />} />
-                                <FormControlLabel value="dark" label="Dark" control={<Radio />} />
+                                <FormControlLabel value="system" label={t("System")} control={<Radio />} />
+                                <FormControlLabel value="light" label={t("Light")} control={<Radio />} />
+                                <FormControlLabel value="dark" label={t("Dark")} control={<Radio />} />
                             </RadioGroup>
                         </FormControl>
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Layout</FormLabel>
+                            <FormLabel component="legend">{t("Layout")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpLayoutMode}
                                 onChange={(e) => setTmpLayoutMode(e.target.value)}
                             >
-                                <FormControlLabel value="one-column" label="1 Column" control={<Radio />} />
-                                <FormControlLabel value="two-column" label="2 Columns" control={<Radio />} />
+                                <FormControlLabel value="one-column" label={t("1 Column")} control={<Radio />} />
+                                <FormControlLabel value="two-column" label={t("2 Columns")} control={<Radio />} />
                             </RadioGroup>
                         </FormControl>
                     </Stack>
@@ -98,7 +111,7 @@ function SettingsDialog({ open, onClose }) {
                     <Stack spacing={3}>
                         {/* アクティビティフィルタの自動切り替え */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Activity Filter</FormLabel>
+                            <FormLabel component="legend">{t("Activity Filter")}</FormLabel>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -106,12 +119,12 @@ function SettingsDialog({ open, onClose }) {
                                         onChange={(e) => setTmpAutoFilter(e.target.checked)}
                                     />
                                 }
-                                label="Auto-switch activity filter on select"
+                                label={t("Auto-switch activity filter on select")}
                             />
                         </FormControl>
                         {/* 最近使用した項目を決めるしきい値の日数設定 */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Initial-Display Activities Used in</FormLabel>
+                            <FormLabel component="legend">{t("Initial-Display Activities Used in")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecentDays}
@@ -122,14 +135,14 @@ function SettingsDialog({ open, onClose }) {
                                         key={v}
                                         value={v}
                                         control={<Radio />}
-                                        label={v === 'all' ? 'Unlimited' : `${v}d`}
+                                        label={v === 'all' ? t("Unlimited") : t("{count} days", { count: v })}
                                     />
                                 )}
                             </RadioGroup>
                         </FormControl>
                         {/* 最近使用した項目として表示するactivityの件数の上限 */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Initial-Display Activities Limit</FormLabel>
+                            <FormLabel component="legend">{t("Initial-Display Activities Limit")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecentLimit}
@@ -140,7 +153,7 @@ function SettingsDialog({ open, onClose }) {
                                         key={v}
                                         value={v}
                                         control={<Radio />}
-                                        label={v === 'all' ? 'Unlimited' : v}
+                                        label={v === 'all' ? t("Unlimited") : v}
                                     />
                                 )}
                             </RadioGroup>
@@ -150,7 +163,7 @@ function SettingsDialog({ open, onClose }) {
                     <Stack spacing={3}>
                         {/* Discord 連係 ON/OFF */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Discord Integration</FormLabel>
+                            <FormLabel component="legend">{t("Discord Integration")}</FormLabel>
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -158,21 +171,21 @@ function SettingsDialog({ open, onClose }) {
                                         onChange={(e) => setTmpDiscordEnabled(e.target.checked)}
                                     />
                                 }
-                                label="Enable Discord Rich Presence"
+                                label={t("Enable Discord Rich Presence")}
                             />
                         </FormControl>
                     </Stack>
                     {/* ------------- レコード保存モード ------------- */}
                     <Stack spacing={3}>
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">Record Save Mode</FormLabel>
+                            <FormLabel component="legend">{t("Record Save Mode")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecordSaveMode}
                                 onChange={e => setTmpRecordSaveMode(e.target.value)}
                             >
-                                <FormControlLabel value="auto" control={<Radio />} label="Auto" />
-                                <FormControlLabel value="confirm" control={<Radio />} label="Confirm" />
+                                <FormControlLabel value="auto" control={<Radio />} label={t("Auto")} />
+                                <FormControlLabel value="confirm" control={<Radio />} label={t("Confirm")} />
                             </RadioGroup>
                         </FormControl>
                     </Stack>
@@ -186,17 +199,18 @@ function SettingsDialog({ open, onClose }) {
                     color="inherit"
                     sx={{ mr: 'auto', textTransform: 'none' }}
                 >
-                    Reset to Defaults
+                    {t("Reset to Defaults")}
                 </Button>
 
                 <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                     {/* Cancel = 変更を捨てて閉じるだけ */}
-                    <Button onClick={onClose}>Cancel</Button>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
 
                     {/* Apply = Context に書き戻して閉じる */}
                     <Button
                         variant="contained"
                         onClick={() => {
+                            setLanguage(tmpLanguage);
                             setAutoFilterOnSelect(tmpAutoFilter);
                             setThemeMode(tmpThemeMode);
                             setLayoutMode(tmpLayoutMode);
@@ -207,7 +221,7 @@ function SettingsDialog({ open, onClose }) {
                             onClose();
                         }}
                     >
-                        Apply
+                        {t("Apply")}
                     </Button>
                 </Box>
             </DialogActions>

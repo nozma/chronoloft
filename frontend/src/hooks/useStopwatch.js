@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails } from '../utils/recordDetails';
 import { useState, useEffect, useRef } from 'react';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
@@ -16,6 +17,7 @@ import { STOPWATCH_SYNC_EVENT } from '../contexts/RecordContext';
  * - localStorageに計測状態を保存・復元
  */
 function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) {
+    const { t } = useI18n();
 
     const [displayTime, setDisplayTime] = useState(0); // ストップウォッチの経過時間(ms)
     const [restored, setRestored] = useState(false); // localStorageからの復元完了フラグ
@@ -295,7 +297,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     const updateStartTime = (newStartTime) => {
         if (newStartTime > Date.now()) {
-            throw new Error("Start time cannot be in the future");
+            throw new Error(t("Start time cannot be in the future"));
         }
         setCurrentStartTime(newStartTime);
         setPausedStartTime(null);

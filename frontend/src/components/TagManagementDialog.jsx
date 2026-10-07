@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
@@ -18,6 +19,7 @@ import { useActivities } from '../contexts/ActivityContext';
  * - 一覧がテーブル表示され、編集/削除が可能
  */
 function TagManagementDialog({ open, onClose }) {
+    const { t } = useI18n();
     const { tags, setTags } = useTags();
     const { refreshActivities } = useActivities();
 
@@ -86,18 +88,18 @@ function TagManagementDialog({ open, onClose }) {
             fullWidth
             PaperProps={{ sx: { width: '66%' } }}
         >
-            <DialogTitle>タグの管理</DialogTitle>
+            <DialogTitle>{t("Tag management")}</DialogTitle>
             <DialogContent>
                 {/* タグ追加フォーム */}
                 <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                     <TextField
-                        label="タグ名"
+                        label={t("Tag name")}
                         value={newTagName}
                         onChange={(e) => setNewTagName(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
                     <Button variant="contained" color="primary" onClick={handleAdd}>
-                        追加
+                        {t("Add")}
                     </Button>
                 </Box>
 
@@ -105,7 +107,7 @@ function TagManagementDialog({ open, onClose }) {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>タグ名</TableCell>
+                            <TableCell>{t("Tag name")}</TableCell>
                             <TableCell align="left"></TableCell>
                         </TableRow>
                     </TableHead>
@@ -125,12 +127,12 @@ function TagManagementDialog({ open, onClose }) {
                                 <TableCell align="left">
                                     {editTagId === tag.id ? (
                                         <>
-                                            <Button onClick={handleUpdate} color="primary">更新</Button>
+                                            <Button onClick={handleUpdate} color="primary">{t("Update")}</Button>
                                             <Button onClick={() => {
                                                 setEditTagId(null);
                                                 setEditTagName('');
                                             }}>
-                                                キャンセル
+                                                {t("Cancel")}
                                             </Button>
                                         </>
                                     ) : (
@@ -150,7 +152,7 @@ function TagManagementDialog({ open, onClose }) {
                 </Table>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>閉じる</Button>
+                <Button onClick={onClose}>{t("Close")}</Button>
             </DialogActions>
         </Dialog>
     );

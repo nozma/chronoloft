@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useRef, useState, useEffect } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
@@ -20,6 +21,7 @@ import SettingsDialog from './SettingsDialog';
 import { clearUiSettings } from '../utils/storageReset';
 
 function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
+    const { t } = useI18n();
     const { state, dispatch } = useUI();
     const { setActiveActivity } = useActiveActivity();
     const { setFilterState } = useFilter();
@@ -113,7 +115,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                     const presenceRes = await fetch('/api/discord_presence/status');
                     const presenceData = await presenceRes.json();
                     if (presenceData.connected) {
-                        alert("Discord presence is active. Skipping stopwatch start.");
+                        alert(t("Discord presence is active. Skipping stopwatch start."));
                         return;
                     }
                 } catch (e) {
@@ -349,7 +351,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                     {showHeading && (
                         <>
                             <Typography variant="h5" sx={{ mr: 2 }}>
-                                Record Your Activity
+                                {t("Record Your Activity")}
                             </Typography>
                             <Typography
                                 variant='caption'
@@ -366,7 +368,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 }
                                 sx={{ cursor: 'pointer' }}
                             >
-                                Open All
+                                {t("Open All")}
                             </Typography>
                             <Typography
                                 variant='caption'
@@ -383,7 +385,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 }
                                 sx={{ cursor: 'pointer' }}
                             >
-                                Close All
+                                {t("Close All")}
                             </Typography>
                         </>
                     )}
@@ -411,24 +413,24 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 setAnchorEl(null);
                             }}
                         >
-                            Settings
+                            {t("Settings")}
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                if (confirm('All UI settings will be cleared. Continue?')) {
+                                if (confirm(t("All UI settings will be cleared. Continue?"))) {
                                     clearUiSettings();
                                     location.reload();
                                 }
                             }}
                         >
-                            Reset UI Settings
+                            {t("Reset UI Settings")}
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
                                 location.reload();
                             }}
                         >
-                            Reload
+                            {t("Reload")}
                         </MenuItem>
                     </Menu>
                     <SettingsDialog

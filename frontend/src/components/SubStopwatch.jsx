@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
@@ -12,6 +13,7 @@ import useStopwatch from '../hooks/useStopwatch';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const SubStopwatch = forwardRef((props, ref) => {
+    const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
     const { records } = useRecords();
@@ -91,7 +93,7 @@ const SubStopwatch = forwardRef((props, ref) => {
 
     const formattedStartTime = currentStartTime
         ? DateTime.fromMillis(currentStartTime).toFormat("HH:mm")
-        : "Undefined";
+        : t("Undefined");
 
     const formatTime = (ms) => {
         const totalSeconds = Math.floor(ms / 1000);
@@ -121,12 +123,12 @@ const SubStopwatch = forwardRef((props, ref) => {
                 mb: isInlineMode ? 0.5 : 2
             })}
             >
-                <Typography variant='caption' color='#555'>Sub Stopwatch</Typography>
+                <Typography variant='caption' color='#555'>{t("Sub Stopwatch")}</Typography>
                 <Box sx={isInlineMode ? { width: '100%' } : { flex: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                         {getIconForGroup(props.activityGroup, groups)}
                         <Typography variant="body2" sx={{ mr: 1 }}>{props.activityName}</Typography>
-                        <Typography variant="body2">Start: {formattedStartTime}</Typography>
+                        <Typography variant="body2">{t("Start")}: {formattedStartTime}</Typography>
                         <IconButton onClick={handleOpenPicker} size='small'>
                             <CalendarMonthIcon fontSize='small' />
                         </IconButton>
@@ -143,7 +145,7 @@ const SubStopwatch = forwardRef((props, ref) => {
                                     onChange={(e) => handleChangeStartTime(e.target.value)}
                                     size='small'
                                 />
-                                <Button size="small" onClick={handleFillPrevEnd}>Fill</Button>
+                                <Button size="small" onClick={handleFillPrevEnd}>FILL</Button>
                                 <IconButton size="small" onClick={() => adjustStartTime(-5)}>-5</IconButton>
                                 <IconButton size="small" onClick={() => adjustStartTime(-1)}>-1</IconButton>
                                 <IconButton size="small" onClick={() => adjustStartTime(1)}>+1</IconButton>
@@ -175,7 +177,7 @@ const SubStopwatch = forwardRef((props, ref) => {
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label="Details"
+                                label={t("Details")}
                                 size="small"
                                 onPaste={(event) => pasteDetails(event, setMemo)}
                                 fullWidth

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { useState, useRef, useMemo } from 'react';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
@@ -17,6 +18,7 @@ import { useActivities } from '../contexts/ActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 
 function RecordList() {
+    const { t, language } = useI18n();
     const [error] = useState(null);
     const { state, dispatch } = useRecordListState();
     const { confirmDialogOpen, selectedRecordId } = state;
@@ -103,13 +105,13 @@ function RecordList() {
     const columns = [
         {
             field: 'created_at',
-            headerName: '記録日時',
+            headerName: t("Recorded at"),
             width: 160,
-            valueFormatter: (params) => formatToLocal(params)
+            valueFormatter: (params) => formatToLocal(params, undefined, language)
         },
         {
             field: 'activity_name',
-            headerName: '項目名',
+            headerName: t("Activity name"),
             width: 240,
             renderCell: (params) => {
                 const groupName = params.row.activity_group;
@@ -125,14 +127,14 @@ function RecordList() {
         },
         {
             field: 'value',
-            headerName: '記録',
+            headerName: t("Record"),
             width: 60,
             renderCell: (params) => {
                 const val = params.row.value;
                 const unit = params.row.unit;
                 let val_txt;
                 if (unit === 'count') {
-                    val_txt = `${val}回`;
+                    val_txt = t("{count} times", { count: val });
                 } else if (unit === 'minutes') {
                     const minutes_round = Math.round(val)
                     const hours = Math.floor(minutes_round / 60);
@@ -148,7 +150,7 @@ function RecordList() {
         },
         {
             field: 'memo',
-            headerName: 'Details',
+            headerName: t("Details"),
             width: 200,
             editable: true,
             renderCell: (params) => (
@@ -180,7 +182,7 @@ function RecordList() {
         },
         {
             field: 'actions',
-            headerName: 'Actions',
+            headerName: t("Actions"),
             width: 100,
             sortable: false,
             filterable: false,
@@ -214,7 +216,7 @@ function RecordList() {
                         : 'rgba(0,0,0,0.03)',
             })}
         >
-            {error && <div>Error: {error}</div>}
+            {error && <div>{t("Error")}: {error}</div>}
             <div style={{ width: '100%' }}>
                 <Typography
                     variant='caption'
@@ -222,7 +224,7 @@ function RecordList() {
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_RECORDS_OPEN', payload: !uiState.recordsOpen })}
                 >
-                    Records
+                    {t("Records")}
                     <KeyboardArrowRightIcon
                         fontSize='small'
                         sx={{
@@ -267,8 +269,8 @@ function RecordList() {
             </div>
             <ConfirmDialog
                 open={confirmDialogOpen}
-                title="Confirm Deletion"
-                content="Are you sure you want to delete this record?"
+                title={t("Confirm Deletion")}
+                content={t("Are you sure you want to delete this record?")}
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />

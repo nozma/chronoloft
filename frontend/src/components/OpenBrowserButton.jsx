@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React from 'react';
 import { Button } from '@mui/material';
 
@@ -6,6 +7,7 @@ import { Button } from '@mui/material';
  * PyWebView API経由でブラウザを開くためのコンポーネント
  */
 function OpenBrowserButton() {
+    const { t } = useI18n();
     // pywebview上でのみ描画する
     if (
         typeof window === 'undefined' ||
@@ -26,7 +28,7 @@ function OpenBrowserButton() {
 
     return (
         <Button variant="contained" onClick={handleOpenBrowser}>
-            Open in Browser
+            {t("Open in Browser")}
         </Button>
     );
 }

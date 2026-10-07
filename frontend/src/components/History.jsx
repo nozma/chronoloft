@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState } from 'react';
 import { Box, Typography, IconButton } from '@mui/material';
 import RecordList from './RecordList';
@@ -10,6 +11,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import HistoryDisplayDialog from './HistoryDisplayDialog';
 
 function History() {
+    const { t } = useI18n();
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -26,7 +28,7 @@ function History() {
             {/* Heading / Title */}
             <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
                 <Typography variant="h5" sx={{ mr: 2 }}>
-                    History
+                    {t("History")}
                 </Typography>
                 <Typography
                     variant='caption'
@@ -45,7 +47,7 @@ function History() {
                     }
                     sx={{ cursor: 'pointer' }}
                 >
-                    Open All
+                    {t("Open All")}
                 </Typography>
                 <Typography
                     variant='caption'
@@ -64,7 +66,7 @@ function History() {
                     }
                     sx={{ cursor: 'pointer' }}
                 >
-                    Close All
+                    {t("Close All")}
                 </Typography>
                 <Box sx={{ flexGrow: 1 }} />
                 <IconButton size="small" onClick={() => setSettingsOpen(true)}>

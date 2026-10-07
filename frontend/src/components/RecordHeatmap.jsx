@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
     Box,
@@ -27,6 +28,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function RecordHeatmap() {
+    const { t, language } = useI18n();
     const [displayMode, setDisplayMode] = useState('time');
     const [heatmapData, setHeatmapData] = useState([]);
     const [settingsOpen, setSettingsOpen] = useLocalStorageState('heatmap.settingsOpen', false);
@@ -195,18 +197,18 @@ function RecordHeatmap() {
     // displayMode に応じた表示フォーマット
     const totalCountLabel =
         displayMode === 'time'
-            ? `${Math.floor(totalCount / 60)} h / year`
-            : `${totalCount.toFixed(0)} times / year`;
+            ? `${t("{count} hours", { count: Math.floor(totalCount / 60) })} / ${t("Year")}`
+            : `${t("{count} times", { count: totalCount.toFixed(0) })} / ${t("Year")}`;
 
     const totalCountLabel30 =
         displayMode === 'time'
-            ? `${Math.floor(totalCount30 / 60)} h / 30d`
-            : `${totalCount30.toFixed(0)} times / 30d`;
+            ? `${t("{count} hours", { count: Math.floor(totalCount30 / 60) })} / ${t("{count} days", { count: 30 })}`
+            : `${t("{count} times", { count: totalCount30.toFixed(0) })} / ${t("{count} days", { count: 30 })}`;
 
     const totalCountLabel7 =
         displayMode === 'time'
-            ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / 7d`
-            : `${totalCount7.toFixed(0)} times / 7d`;
+            ? `${Math.floor(totalCount7 / 60)}:${String((totalCount7 % 60).toFixed(0)).padStart(2, '0')} / ${t("{count} days", { count: 7 })}`
+            : `${t("{count} times", { count: totalCount7.toFixed(0) })} / ${t("{count} days", { count: 7 })}`;
 
     useEffect(() => {
         const element = heatmapContainerRef.current;
@@ -289,7 +291,7 @@ function RecordHeatmap() {
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_HEATMAP_OPEN', payload: !uiState.heatmapOpen })}
                 >
-                    Heatmap
+                    {t("Heatmap")}
                     <KeyboardArrowRightIcon
                         fontSize='small'
                         sx={{
@@ -305,7 +307,7 @@ function RecordHeatmap() {
                     sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
                     onClick={() => setSettingsOpen(prev => !prev)}
                 >
-                    {settingsOpen ? 'Close' : 'Open'}
+                    {settingsOpen ? t("Close") : t("Open")}
                 </Button>
             </Box>
             <Collapse in={uiState.heatmapOpen}>
@@ -330,12 +332,13 @@ function RecordHeatmap() {
                                     records={visibleRecordsByActivity}
                                     compact
                                     sx={{ mt: 0, flex: '0 0 auto' }}
+                                    textFieldSx={{ minWidth: 160 }}
                                 />
                                 <TextField
                                     value={displayMode}
                                     select
                                     onChange={(e) => setDisplayMode(e.target.value)}
-                                    label="Unit"
+                                    label={t("Unit")}
                                     size='small'
                                     sx={{
                                         mt: 0.5,
@@ -344,8 +347,8 @@ function RecordHeatmap() {
                                         '& .MuiInputLabel-root': { fontSize: 12 },
                                     }}
                                 >
-                                    <MenuItem value="time">Time</MenuItem>
-                                    <MenuItem value="count">Count</MenuItem>
+                                    <MenuItem value="time">{t("Time")}</MenuItem>
+                                    <MenuItem value="count">{t("Count")}</MenuItem>
                                 </TextField>
                             </Box>
                         )}
@@ -356,6 +359,7 @@ function RecordHeatmap() {
                                 blockMargin={blockMargin}
                                 fontSize={heatmapFontSize}
                                 colorScheme={mode}
+                                weekStart={1}
                                 theme={{
                                     light: ["#f0f0f0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"],
                                     dark: ["#161b22", "#1b3a2d", "#236b3a", "#2a9d47", "#33cf54"]
@@ -363,9 +367,11 @@ function RecordHeatmap() {
                                 hideMonthLabels={false}
                                 showWeekdayLabels={["Mon", "Wed", "Fri"]}
                                 labels={{
+                                    months: Array.from({ length: 12 }, (_, month) => new Intl.DateTimeFormat(language, { month: 'short' }).format(new Date(2024, month, 1))),
+                                    weekdays: Array.from({ length: 7 }, (_, day) => new Intl.DateTimeFormat(language, { weekday: 'short' }).format(new Date(2024, 0, 7 + day))),
                                     legend: {
-                                        less: "少",
-                                        more: "多"
+                                        less: t("Less"),
+                                        more: t("More")
                                     },
                                     totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
                                 }}
@@ -375,9 +381,9 @@ function RecordHeatmap() {
                                         const totalMinutes = Number(activity.count);
                                         const hours = Math.floor(totalMinutes / 60);
                                         const minutes = String(Math.round(totalMinutes % 60)).padStart(2, '0');
-                                        tooltipText = `${hours}:${minutes} on ${activity.date}`;
+                                        tooltipText = t("{value} on {date}", { value: `${hours}:${minutes}`, date: activity.date });
                                     } else {
-                                        tooltipText = `${Number(activity.count).toFixed(0)} times on ${activity.date}`;
+                                        tooltipText = t("{value} on {date}", { value: t("{count} times", { count: Number(activity.count).toFixed(0) }), date: activity.date });
                                     }
                                     return React.cloneElement(block, {
                                         'data-tooltip-id': 'react-tooltip',
@@ -389,7 +395,7 @@ function RecordHeatmap() {
                         <ReactTooltip id="react-tooltip" />
                     </Box>
                 ) : (
-                    <Box>表示する記録データがありません。</Box>
+                    <Box>{t("No records to display.")}</Box>
                 )}
             </Collapse>
         </Box>

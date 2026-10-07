@@ -1,8 +1,10 @@
+import { detectLanguage, resolveLanguage } from '../i18n/translate.js';
 import React, { createContext, useContext, useMemo } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 // ───────── 既定値定義（リセット用に公開する） ─────────
 export const DEFAULT_SETTINGS = {
+    language: detectLanguage(),
     autoFilterOnSelect: true,
     themeMode: 'system',
     layoutMode: 'one-column',
@@ -20,6 +22,9 @@ const SettingsContext = createContext();
  *   - setAutoFilterOnSelect: (bool) => void
  */
 export function SettingsProvider({ children }) {
+    // 表示言語をブラウザー内に保存する
+    const [storedLanguage, setLanguage] = useLocalStorageState('settings.language', DEFAULT_SETTINGS.language);
+    const language = resolveLanguage(storedLanguage);
     // アクティビティ選択時に自動でアクティビティフィルタを切り替えるかどうかの設定
     const [autoFilterOnSelect, setAutoFilterOnSelect] =
         useLocalStorageState('settings.autoFilterOnSelect', DEFAULT_SETTINGS.autoFilterOnSelect);
@@ -45,6 +50,7 @@ export function SettingsProvider({ children }) {
 
     const value = useMemo(
         () => ({
+            language, setLanguage,
             autoFilterOnSelect,
             themeMode, setThemeMode,
             layoutMode, setLayoutMode,
@@ -54,7 +60,7 @@ export function SettingsProvider({ children }) {
             discordEnabled, setDiscordEnabled,
             recordSaveMode, setRecordSaveMode,
         }),
-        [autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]
+        [language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setDiscordEnabled, setRecordSaveMode]
     );
 
     return (

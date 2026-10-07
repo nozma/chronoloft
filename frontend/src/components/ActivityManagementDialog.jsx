@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useMemo, useState } from 'react';
 import {
     Dialog,
@@ -29,6 +30,7 @@ import { setActivityTags } from '../services/api';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
+    const { t } = useI18n();
     const { groups } = useGroups();
     const { tags } = useTags();
     const {
@@ -133,7 +135,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     const columns = [
         {
             field: 'is_active',
-            headerName: 'State',
+            headerName: t("State"),
             width: 125,
             renderCell: (params) => {
                 const disabled = runningActivityIds.includes(params.row.id);
@@ -145,15 +147,15 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                         disabled={disabled}
                         onChange={(event) => handleStateChange(params.row.id, event.target.value)}
                     >
-                        <MenuItem value={true}>Active</MenuItem>
-                        <MenuItem value={false}>Inactive</MenuItem>
+                        <MenuItem value={true}>{t("Active")}</MenuItem>
+                        <MenuItem value={false}>{t("Inactive")}</MenuItem>
                     </Select>
                 );
             }
         },
         {
             field: 'group_name',
-            headerName: 'Group',
+            headerName: t("Group"),
             renderCell: (params) => {
                 const groupName = params.row.group_name;
                 return (
@@ -164,10 +166,10 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                 );
             }
         },
-        { field: 'name', headerName: 'Name', width: 200 },
+        { field: 'name', headerName: t("Name"), width: 200 },
         {
             field: 'excluded',
-            headerName: '集計除外',
+            headerName: t("Exclude from totals"),
             width: 110,
             sortable: false,
             filterable: false,
@@ -176,23 +178,23 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                     size="small"
                     checked={isActivityExcluded(params.row.id)}
                     onChange={(e) => setActivityExcluded(params.row.id, e.target.checked)}
-                    inputProps={{ 'aria-label': '集計除外' }}
+                    inputProps={{ 'aria-label': t("Exclude from totals") }}
                 />
             )
         },
         {
             field: 'unit',
-            headerName: 'Unit',
+            headerName: t("Unit"),
             valueFormatter: (params) => {
-                if (params === 'minutes') return '分';
-                else if (params === 'count') return '回';
+                if (params === 'minutes') return t("Minutes");
+                else if (params === 'count') return t("Times");
                 else return params;
             }
         },
-        { field: 'asset_key', headerName: 'Asset Key', width: 150 },
+        { field: 'asset_key', headerName: t("Asset Key"), width: 150 },
         {
             field: 'tags',
-            headerName: 'Tags',
+            headerName: t("Tags"),
             width: 200,
             renderCell: (params) => {
                 const tags = params.row.tags || [];
@@ -218,7 +220,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         },
         {
             field: 'actions',
-            headerName: 'Actions',
+            headerName: t("Actions"),
             sortable: false,
             filterable: false,
             renderCell: (params) => {
@@ -241,7 +243,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
-            <DialogTitle>アクティビティの管理</DialogTitle>
+            <DialogTitle>{t("Activity management")}</DialogTitle>
             <DialogContent>
                 <Box sx={{ width: '100%' }}>
                     <DataGrid
@@ -265,12 +267,12 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                         }}
                         processRowUpdate={processRowUpdate}
                         slots={{ toolbar: CustomToolbar }}
-                        slotProps={{ toolbar: { addButtonLabel: 'Add Activity', onAddClick: handleAddClick } }}
+                        slotProps={{ toolbar: { addButtonLabel: t("Add Activity"), onAddClick: handleAddClick } }}
                     />
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>閉じる</Button>
+                <Button onClick={onClose}>{t("Close")}</Button>
             </DialogActions>
             <AddActivityDialog
                 open={dialogOpen}
@@ -281,8 +283,8 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
             />
             <ConfirmDialog
                 open={state.confirmDialogOpen}
-                title='Confirm Deletion'
-                content='Are you sure you want to delete this activity?'
+                title={t("Confirm Deletion")}
+                content={t("Are you sure you want to delete this activity?")}
                 onConfirm={handleConfirmDelete}
                 onCancel={handleCancelDelete}
             />

@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
@@ -74,7 +75,7 @@ function formatPeriodKey(dt, xAxisUnit) {
  * @param {string} aggregationUnit - 'time'（＝minutes）または 'count'
  * @returns {Array} - 集計済みデータの配列。各オブジェクトは { date: 'YYYY-MM-DD', group1: value, group2: value, ... } の形式
  */
-function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumulative, options = {}) {
+function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumulative, options = {}, t) {
     // aggregationUnit に合わせて対象レコードを絞る
     const filtered = records.filter(r => {
         if (aggregationUnit === 'time') {
@@ -91,19 +92,19 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
         // グループ化キーを決定
         let groupKeys = [];
         if (groupBy === 'group') {
-            groupKeys.push(record.activity_group || 'Unknown Group');
+            groupKeys.push(record.activity_group || t("Unknown Group"));
         } else if (groupBy === 'activity') {
-            groupKeys.push(record.activity_name || 'Unknown Activity');
+            groupKeys.push(record.activity_name || t("Unknown Activity"));
         } else if (groupBy === 'tag') {
             if (record.tags && record.tags.length > 0) {
                 record.tags.forEach(t => groupKeys.push(t.name));
             } else {
-                groupKeys.push('No Tag');
+                groupKeys.push(t("No Tag"));
             }
         } else if (groupBy === 'activityMemo') {
             // Activity 名と memo を連結して 1 つのキーにする
             const memoPart = record.memo ? ` / ${record.memo}` : '';
-            groupKeys.push((record.activity_name || 'Unknown Activity') + memoPart);
+            groupKeys.push((record.activity_name || t("Unknown Activity")) + memoPart);
         }
 
         const addValueToGroupKeys = (periodKey, value) => {
@@ -213,6 +214,7 @@ function getPeriodRange(period, offset = 0) {
 }
 
 function RecordChart() {
+    const { t, language } = useI18n();
     // コンテキストから必要なデータを取得
     const { recordsWithLive: records } = useRecords();
     const { excludedGroupIds } = useGroups();
@@ -375,7 +377,8 @@ function RecordChart() {
             {
                 rangeStart: periodStart,
                 rangeEnd: periodEnd.endOf('day'),
-            }
+            },
+            t
         );
         // 各データに数値（timestamp）を示す dateValue を付与
         aggregated.forEach(item => {
@@ -390,7 +393,7 @@ function RecordChart() {
             item.dateValue = dt.isValid ? dt.toMillis() : null;
         });
         return aggregated;
-    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType, periodStart, periodEnd]);
+    }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType, periodStart, periodEnd, t]);
 
     // 表示範囲の累積合計値で降順ソートしたエントリ
     const sortedEntries = useMemo(() => {
@@ -440,7 +443,7 @@ function RecordChart() {
         if (aggregationUnit === 'time') {
             const hours = Math.floor(roundedValue / 60);
             const minutes = String(Math.round(roundedValue % 60)).padStart(2, '0');
-            return `${hours}時間${minutes}分`;
+            return t("{hours}h {minutes}m", { hours, minutes });
         }
         return value;
     };
@@ -448,9 +451,9 @@ function RecordChart() {
     const yAxisTimeValueFormatter = (value) => {
         const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
-            if (maxValue < 120) return `${value}分` // 最大値が2時間未満の場合はそのまま表示する
+            if (maxValue < 120) return t("{count} minutes", { count: value }) // 最大値が2時間未満の場合はそのまま表示する
             const hours = Math.floor(roundedValue / 60);
-            return `${hours}時間`;
+            return t("{count} hours", { count: hours });
         }
         return value;
     };
@@ -468,13 +471,13 @@ function RecordChart() {
     const activityMemoLabels = useMemo(() => {
         const labels = new Map();
         filteredRecords.forEach(record => {
-            const activityLabel = record.activity_name || 'Unknown Activity';
+            const activityLabel = record.activity_name || t("Unknown Activity");
             const memoLabel = record.memo || '';
             const key = activityLabel + (memoLabel ? ` / ${memoLabel}` : '');
             labels.set(key, { activityLabel, memoLabel });
         });
         return labels;
-    }, [filteredRecords]);
+    }, [filteredRecords, t]);
 
     const oneDayChartData = useMemo(() => {
         if (selectedPeriod !== '1d') return [];
@@ -541,12 +544,12 @@ function RecordChart() {
         if (!val) return '';
         const dt = DateTime.fromMillis(val);
         if (xAxisUnit === 'month') {
-            return dt.isValid ? `${dt.month}月` : '';
+            return dt.isValid ? dt.setLocale(language).toFormat(language === 'ja' ? 'M月' : 'MMM') : '';
         } else if (xAxisUnit === 'week') {
-            return dt.isValid ? dt.toFormat('M月d日') : '';
+            return dt.isValid ? dt.setLocale(language).toFormat(language === 'ja' ? 'M月d日' : 'MMM d') : '';
         } else {
             // day
-            return dt.isValid ? dt.toFormat('M月d日') : '';
+            return dt.isValid ? dt.setLocale(language).toFormat(language === 'ja' ? 'M月d日' : 'MMM d') : '';
         }
     };
     // ツールチップの日時のフォーマッタ
@@ -812,7 +815,7 @@ function RecordChart() {
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_CHART_OPEN', payload: !uiState.chartOpen })}
                 >
-                    Chart
+                    {t("Chart")}
                     <KeyboardArrowRightIcon
                         fontSize='small'
                         sx={{
@@ -828,7 +831,7 @@ function RecordChart() {
                     sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
                     onClick={() => setSettingsOpen(prev => !prev)}
                 >
-                    {settingsOpen ? 'Close' : 'Open'}
+                    {settingsOpen ? t("Close") : t("Open")}
                 </Button>
             </Box>
             <Collapse in={uiState.chartOpen}>
@@ -862,7 +865,7 @@ function RecordChart() {
                         {/* 表示項目数上限 */}
                         <TextField
                             select
-                            label="Item Limit"
+                            label={t("Item Limit")}
                             size="small"
                             value={itemLimit}
                             onChange={(e) => setItemLimit(e.target.value)}
@@ -876,7 +879,7 @@ function RecordChart() {
                         {/* 表示期間選択 */}
                         <TextField
                             select
-                            label="Date Range"
+                            label={t("Date Range")}
                             size="small"
                             value={selectedPeriod}
                             onChange={(e) => {
@@ -889,18 +892,18 @@ function RecordChart() {
                             }}
                             sx={{ minWidth: 108, ...compactSettingFieldSx }}
                         >
-                            <MenuItem value="all">All</MenuItem>
-                            <MenuItem value="365d">365 Days</MenuItem>
-                            <MenuItem value="180d">180 Days</MenuItem>
-                            <MenuItem value="90d">90 Days</MenuItem>
-                            <MenuItem value="30d">30 Days</MenuItem>
-                            <MenuItem value="7d">7 Days</MenuItem>
-                            <MenuItem value="1d">1 Day</MenuItem>
+                            <MenuItem value="all">{t("All")}</MenuItem>
+                            <MenuItem value="365d">{t("365 Days")}</MenuItem>
+                            <MenuItem value="180d">{t("180 Days")}</MenuItem>
+                            <MenuItem value="90d">{t("90 Days")}</MenuItem>
+                            <MenuItem value="30d">{t("30 Days")}</MenuItem>
+                            <MenuItem value="7d">{t("7 Days")}</MenuItem>
+                            <MenuItem value="1d">{t("1 Day")}</MenuItem>
                         </TextField>
                         {/* 折れ線グラフ・棒グラフ切り替え */}
                         <TextField
                             select
-                            label="Chart Type"
+                            label={t("Chart Type")}
                             variant="outlined"
                             size="small"
                             value={chartType}
@@ -908,26 +911,26 @@ function RecordChart() {
                             sx={{ minWidth: 96, ...compactSettingFieldSx }}
                             disabled={selectedPeriod === '1d'} // 1 Day選択時は変更不可（棒グラフ固定）
                         >
-                            <MenuItem value="line">Line</MenuItem>
-                            <MenuItem value="bar">Bar</MenuItem>
+                            <MenuItem value="line">{t("Line")}</MenuItem>
+                            <MenuItem value="bar">{t("Bar")}</MenuItem>
                         </TextField>
                         {/* x軸の集計単位切替 */}
                         <TextField
                             select
-                            label="Interval"
+                            label={t("Interval")}
                             size="small"
                             value={xAxisUnit}
                             onChange={(e) => setXAxisUnit(e.target.value)}
                             sx={{ minWidth: 82, ...compactSettingFieldSx }}
                         >
-                            <MenuItem value="day">Day</MenuItem>
-                            <MenuItem value="week">Week</MenuItem>
-                            <MenuItem value="month">Month</MenuItem>
+                            <MenuItem value="day">{t("Day")}</MenuItem>
+                            <MenuItem value="week">{t("Week")}</MenuItem>
+                            <MenuItem value="month">{t("Month")}</MenuItem>
                         </TextField>
                         {/* グループ化モード切替 */}
                         <TextField
                             select
-                            label="Grouping"
+                            label={t("Grouping")}
                             size="small"
                             value={groupBy}
                             onChange={(e) => {
@@ -940,15 +943,15 @@ function RecordChart() {
                             }}
                             sx={{ minWidth: 104, ...compactSettingFieldSx }}
                         >
-                            <MenuItem value="group">Group</MenuItem>
-                            <MenuItem value="tag">Tag</MenuItem>
-                            <MenuItem value="activity">Activity</MenuItem>
-                            <MenuItem value="activityMemo">Activity + Details</MenuItem>
+                            <MenuItem value="group">{t("Group")}</MenuItem>
+                            <MenuItem value="tag">{t("Tag")}</MenuItem>
+                            <MenuItem value="activity">{t("Activity")}</MenuItem>
+                            <MenuItem value="activityMemo">{t("Activity + Details")}</MenuItem>
                         </TextField>
                         {/* 集計単位の手動切替 */}
                         <TextField
                             select
-                            label="Unit"
+                            label={t("Unit")}
                             size="small"
                             value={aggregationUnit}
                             onChange={(e) => {
@@ -957,8 +960,8 @@ function RecordChart() {
                             }}
                             sx={{ minWidth: 78, ...compactSettingFieldSx }}
                         >
-                            <MenuItem value="time">Time</MenuItem>
-                            <MenuItem value="count">Count</MenuItem>
+                            <MenuItem value="time">{t("Time")}</MenuItem>
+                            <MenuItem value="count">{t("Count")}</MenuItem>
                         </TextField>
                         </Box>
                     )}
@@ -974,7 +977,7 @@ function RecordChart() {
                             padding: '12px'
                         }}
                     >
-                        <span style={{ fontSize: '1rem' }}>Today</span>
+                        <span style={{ fontSize: '1rem' }}>{t("Today")}</span>
                     </IconButton>
                     {/* 前へ */}
                     <IconButton
@@ -1023,7 +1026,7 @@ function RecordChart() {
                             }}
                         >
                             <Typography variant="subtitle2">
-                                No data in this period
+                                {t("No data in this period")}
                             </Typography>
                         </Box>
                     ) : (

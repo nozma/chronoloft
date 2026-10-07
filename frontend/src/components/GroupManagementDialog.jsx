@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
@@ -18,6 +19,7 @@ import iconMapping from '../utils/iconMapping';
 import { useGroups } from '../contexts/GroupContext';
 
 function GroupManagementDialog({ open, onClose }) {
+    const { t } = useI18n();
     const { groups, setGroups, isGroupExcluded, setGroupExcluded } = useGroups();
     const [newGroupName, setNewGroupName] = useState('');
     const [newClientId, setNewClientId] = useState('');
@@ -125,30 +127,30 @@ function GroupManagementDialog({ open, onClose }) {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>グループの管理</DialogTitle>
+            <DialogTitle>{t("Group management")}</DialogTitle>
             <DialogContent>
                 {/* グループ追加フォーム */}
                 <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                     <TextField
-                        label="グループ名"
+                        label={t("Group name")}
                         value={newGroupName}
                         onChange={(e) => setNewGroupName(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
                     <TextField
-                        label="Discord Client ID"
+                        label={t("Discord Client ID")}
                         value={newClientId}
                         onChange={(e) => setNewClientId(e.target.value)}
                         style={{ marginRight: '16px' }}
                     />
                     <TextField
-                        label="アイコン"
+                        label={t("Icon")}
                         select
                         value={newIconName}
                         onChange={(e) => setNewIconName(e.target.value)}
                         style={{ marginRight: '16px', minWidth: '120px' }}
                     >
-                        <MenuItem value="">--デフォルト--</MenuItem>
+                        <MenuItem value="">{t("Default")}</MenuItem>
                         {Object.keys(iconMapping).map((key) => {
                             const IconComponent = iconMapping[key];
                             return (
@@ -169,18 +171,18 @@ function GroupManagementDialog({ open, onClose }) {
                         <span>{newIconColor}</span>
                     </Box>
                     <Button variant="contained" color="primary" onClick={handleAdd}>
-                        追加
+                        {t("Add")}
                     </Button>
                 </Box>
                 {/* グループ一覧のテーブル */}
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell>グループ名</TableCell>
-                            <TableCell>Discord Client ID</TableCell>
-                            <TableCell>アイコン</TableCell>
-                            <TableCell>アイコン色</TableCell>
-                            <TableCell>集計除外</TableCell>
+                            <TableCell>{t("Group name")}</TableCell>
+                            <TableCell>{t("Discord Client ID")}</TableCell>
+                            <TableCell>{t("Icon")}</TableCell>
+                            <TableCell>{t("Icon color")}</TableCell>
+                            <TableCell>{t("Exclude from totals")}</TableCell>
                             <TableCell></TableCell>
                         </TableRow>
                     </TableHead>
@@ -211,12 +213,12 @@ function GroupManagementDialog({ open, onClose }) {
                                     {editGroupId === group.id ? (
                                         <TextField
                                             select
-                                            label="アイコン"
+                                            label={t("Icon")}
                                             value={editIconName}
                                             onChange={(e) => setEditIconName(e.target.value)}
                                             style={{ minWidth: '120px' }}
                                         >
-                                            <MenuItem value="">--デフォルト--</MenuItem>
+                                            <MenuItem value="">{t("Default")}</MenuItem>
                                             {Object.keys(iconMapping).map((key) => {
                                                 const IconComponent = iconMapping[key];
                                                 return (
@@ -273,17 +275,17 @@ function GroupManagementDialog({ open, onClose }) {
                                         size="small"
                                         checked={isGroupExcluded(group.id)}
                                         onChange={(e) => setGroupExcluded(group.id, e.target.checked)}
-                                        inputProps={{ 'aria-label': '集計除外' }}
+                                        inputProps={{ 'aria-label': t("Exclude from totals") }}
                                     />
                                 </TableCell>
                                 <TableCell align="left">
                                     {editGroupId === group.id ? (
                                         <>
                                             <Button onClick={handleUpdate} color="primary">
-                                                更新
+                                                {t("Update")}
                                             </Button>
                                             <Button onClick={() => setEditGroupId(null)}>
-                                                キャンセル
+                                                {t("Cancel")}
                                             </Button>
                                         </>
                                     ) : (
@@ -315,7 +317,7 @@ function GroupManagementDialog({ open, onClose }) {
                 </Table>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>閉じる</Button>
+                <Button onClick={onClose}>{t("Close")}</Button>
             </DialogActions>
         </Dialog>
     );

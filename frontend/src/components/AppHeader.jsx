@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 // frontend/src/components/AppHeader.jsx
 import { useState } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
@@ -15,6 +16,7 @@ import { useSettings } from '../contexts/SettingsContext';
  * などを配置するレイアウト用コンポーネント
  */
 function AppHeader() {
+    const { t } = useI18n();
     const { layoutMode } = useSettings();
     const showSettingsMenu = layoutMode === 'two-column';
     const [anchorEl, setAnchorEl] = useState(null);
@@ -68,24 +70,24 @@ function AppHeader() {
                                 setAnchorEl(null);
                             }}
                         >
-                            Settings
+                            {t("Settings")}
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
-                                if (confirm('All UI settings will be cleared. Continue?')) {
+                                if (confirm(t("All UI settings will be cleared. Continue?"))) {
                                     clearUiSettings();
                                     location.reload();
                                 }
                             }}
                         >
-                            Reset UI Settings
+                            {t("Reset UI Settings")}
                         </MenuItem>
                         <MenuItem
                             onClick={() => {
                                 location.reload();
                             }}
                         >
-                            Reload
+                            {t("Reload")}
                         </MenuItem>
                     </Menu>
                     <SettingsDialog
