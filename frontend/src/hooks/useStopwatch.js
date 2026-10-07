@@ -1,3 +1,4 @@
+import { normalizeDetails } from '../utils/recordDetails';
 import { useState, useEffect, useRef } from 'react';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
 import { STOPWATCH_SYNC_EVENT } from '../contexts/RecordContext';
@@ -64,7 +65,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
             setCurrentStartTime(state.startTime);
             setDisplayTime(state.displayTime);
             setPausedStartTime(state.pausedStartTime ?? null);
-            setMemo(state.memo);
+            setMemo(normalizeDetails(state.memo));
         } else {
             // localStorageに何もない場合は自動で開始
             handleStart();

@@ -1,3 +1,4 @@
+import { normalizeDetails } from '../utils/recordDetails';
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import {
@@ -72,7 +73,7 @@ const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
         activity_group: activityGroup,
         activity_group_id: activityGroupId,
         tags: activity.tags || [],
-        memo: stopwatchState.memo || '',
+        memo: normalizeDetails(stopwatchState.memo),
         is_live: true,
         is_paused: !(Number.isFinite(startTime) && startTime > 0),
     };
@@ -106,7 +107,7 @@ const areLiveRecordsEqual = (prev, next) => {
     return true;
 };
 
-const normalizeMemo = (memo) => (memo ?? '');
+const normalizeMemo = normalizeDetails;
 
 const resolveActivityUnit = (activityId, activities, records) => {
     const activity = activities.find((item) => item.id === activityId);
@@ -138,14 +139,14 @@ export function RecordProvider({ children }) {
     const refreshRecords = async () => {
         try {
             const data = await apiFetchRecords();
-            setRecords(data);
+            setRecords(data.map((record) => ({ ...record, memo: normalizeDetails(record.memo) })));
         } catch (error) {
             console.error("Failed to fetch records:", error);
         }
     };
 
     const createRecord = async (recordData) => {
-        const payload = { ...recordData };
+        const payload = { ...recordData, memo: normalizeDetails(recordData.memo) };
         if (!payload.created_at) {
             payload.created_at = new Date().toISOString();
         }
@@ -203,7 +204,11 @@ export function RecordProvider({ children }) {
     };
 
     const updateRecord = async (recordId, updateData) => {
-        await apiUpdateRecord(recordId, updateData);
+        const payload = { ...updateData };
+        if (Object.prototype.hasOwnProperty.call(payload, 'memo')) {
+            payload.memo = normalizeDetails(payload.memo);
+        }
+        await apiUpdateRecord(recordId, payload);
         await refreshRecords();
     };
 

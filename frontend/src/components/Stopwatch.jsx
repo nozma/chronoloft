@@ -1,3 +1,4 @@
+import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
@@ -10,7 +11,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import { updateDiscordPresence } from '../services/api';
-import { getRecentMemoOptions } from '../utils/recentMemoOptions';
+import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const Stopwatch = forwardRef((props, ref) => {
     const isInlineMode = Boolean(props.inlineMode);
@@ -389,17 +390,18 @@ const Stopwatch = forwardRef((props, ref) => {
                     <Autocomplete
                         freeSolo
                         options={memoOptions}
+                        filterOptions={filterRecentMemoOptions}
                         inputValue={memo ?? ''}
-                        onInputChange={(event, newValue) => setMemo(newValue)}
-                        onChange={(event, newValue) => setMemo(newValue ?? '')}
+                        onInputChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
+                        onChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
                         forcePopupIcon={false}
                         disableClearable
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label="Memo"
-                                multiline
-                                rows={2}
+                                label="Details"
+                                size="small"
+                                onPaste={(event) => pasteDetails(event, setMemo)}
                                 fullWidth
                             />
                         )}

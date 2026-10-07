@@ -1,3 +1,4 @@
+import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 // AddRecordDialog.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
@@ -16,7 +17,7 @@ import {
 import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
 import { useRecords } from '../contexts/RecordContext';
-import { getRecentMemoOptions } from '../utils/recentMemoOptions';
+import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 function AddRecordDialog({
     open,
@@ -37,7 +38,7 @@ function AddRecordDialog({
     const [dateValue, setDateValue] = useState(''); // count用: 記録日時
     const [startTime, setStartTime] = useState(''); // minutes用: 開始日時
     const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
-    const [memo, setMemo] = useState(initialMemo || '');
+    const [memo, setMemo] = useState(normalizeDetails(initialMemo));
     const memoRef = useRef(null);
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
@@ -78,7 +79,7 @@ function AddRecordDialog({
                 setStartTime(nowLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
             }
         }
-        setMemo(initialMemo ?? '');
+        setMemo(normalizeDetails(initialMemo));
     }, [activity, initialValue, initialDate, initialMemo]);
 
     useEffect(() => {
@@ -277,18 +278,19 @@ function AddRecordDialog({
                         <Autocomplete
                             freeSolo
                             options={memoOptions}
+                            filterOptions={filterRecentMemoOptions}
                             inputValue={memo ?? ''}
-                            onInputChange={(event, newValue) => setMemo(newValue)}
-                            onChange={(event, newValue) => setMemo(newValue ?? '')}
+                            onInputChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
+                            onChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
                             forcePopupIcon={false}
                             disableClearable
                             sx={{ mt: 2 }}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="memo"
-                                    multiline
-                                    minRows={2}
+                                    label="Details"
+                                    size="small"
+                                    onPaste={(event) => pasteDetails(event, setMemo)}
                                     fullWidth
                                     inputRef={memoRef}
                                     autoFocus={autoFocusMemo}
@@ -413,18 +415,19 @@ function AddRecordDialog({
                         <Autocomplete
                             freeSolo
                             options={memoOptions}
+                            filterOptions={filterRecentMemoOptions}
                             inputValue={memo ?? ''}
-                            onInputChange={(event, newValue) => setMemo(newValue)}
-                            onChange={(event, newValue) => setMemo(newValue ?? '')}
+                            onInputChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
+                            onChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
                             forcePopupIcon={false}
                             disableClearable
                             sx={{ mt: 2 }}
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="memo"
-                                    multiline
-                                    minRows={2}
+                                    label="Details"
+                                    size="small"
+                                    onPaste={(event) => pasteDetails(event, setMemo)}
                                     fullWidth
                                     inputRef={memoRef}
                                     autoFocus={autoFocusMemo}
