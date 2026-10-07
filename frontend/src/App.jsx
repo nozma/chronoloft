@@ -1,3 +1,6 @@
+import { useI18n } from './i18n/I18nContext';
+import { jaJP, enUS } from '@mui/material/locale';
+import { jaJP as gridJaJP, enUS as gridEnUS } from '@mui/x-data-grid/locales';
 import React, { useEffect } from 'react';
 import './App.css';
 import Box from '@mui/material/Box';
@@ -17,6 +20,7 @@ import AppHeader from './components/AppHeader';
 import { useSettings } from './contexts/SettingsContext';
 
 function App() {
+    const { language } = useI18n();
     // カラーテーマ対応
     const { themeMode, layoutMode } = useSettings();
     const isTwoColumnLayout = layoutMode === 'two-column';
@@ -43,8 +47,8 @@ function App() {
                         md: 1100
                     },
                 },
-            }),
-        [resolvedMode]
+            }, language === 'ja' ? jaJP : enUS, language === 'ja' ? gridJaJP : gridEnUS),
+        [resolvedMode, language]
     );
     const twoColumnSidebarSx = {
         position: 'sticky',

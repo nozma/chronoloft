@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 // AddRecordDialog.jsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
@@ -31,6 +32,7 @@ function AddRecordDialog({
     onDelete,
     autoFocusMemo = false
 }) {
+    const { t } = useI18n();
     const { activities } = useActivities();
     const { records } = useRecords();
     const [selectedActivity, setSelectedActivity] = useState(activity);
@@ -94,12 +96,12 @@ function AddRecordDialog({
         if (selectedActivity?.unit === 'count') { // 回数により記録するもの
             const numValue = parseFloat(value);
             if (isNaN(numValue) || numValue < 0) {
-                alert("有効な数値（回数）を入力してください。");
+                alert(t("Enter a valid count."));
                 return;
             }
             const dtLocal = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm");
             if (!dtLocal.isValid) {
-                alert("日時が不正です");
+                alert(t("Invalid date and time."));
                 return;
             }
             const dtUtc = dtLocal.toUTC().toISO();
@@ -116,12 +118,12 @@ function AddRecordDialog({
             const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
             if (!startLocal.isValid || !endLocal.isValid) {
-                alert("開始時刻または終了時刻が不正です");
+                alert(t("Invalid start or end time."));
                 return;
             }
             // バリデーション: 開始<=終了
             if (startLocal > endLocal) {
-                alert("開始時刻が終了時刻を超えています。");
+                alert(t("Start time must not be later than end time."));
                 return;
             }
 
@@ -223,11 +225,11 @@ function AddRecordDialog({
             onClose={handleClose}
             onKeyDown={handleKeyDown}
         >
-            <DialogTitle>{isEdit ? "編集" : "新規作成"}</DialogTitle>
+            <DialogTitle>{isEdit ? t("Edit") : t("Create")}</DialogTitle>
             <DialogContent>
                 <TextField
                     select
-                    label="アクティビティ"
+                    label={t("Activity")}
                     fullWidth
                     margin="dense"
                     value={selectedActivity?.id || ''}
@@ -247,7 +249,7 @@ function AddRecordDialog({
                     <>
                         <Box display="flex" alignItems="center" mb={1}>
                             <TextField
-                                label="回数"
+                                label={t("Count")}
                                 type="number"
                                 value={value}
                                 onChange={(e) => setValue(e.target.value)}
@@ -268,7 +270,7 @@ function AddRecordDialog({
                             </IconButton>
                         </Box>
                         <TextField
-                            label="記録日時"
+                            label={t("Recorded at")}
                             type="datetime-local"
                             value={dateValue}
                             onChange={(e) => setDateValue(e.target.value)}
@@ -288,7 +290,7 @@ function AddRecordDialog({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Details"
+                                    label={t("Details")}
                                     size="small"
                                     onPaste={(event) => pasteDetails(event, setMemo)}
                                     fullWidth
@@ -306,7 +308,7 @@ function AddRecordDialog({
                         <Box mb={1.5}>
                             <Box display="flex" alignItems="center">
                                 <TextField
-                                    label="開始時刻"
+                                    label={t("Start time")}
                                     type="datetime-local"
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
@@ -314,7 +316,7 @@ function AddRecordDialog({
                                     margin="dense"
                                 />
                                 <Button size="small" onClick={fillStartWithPrevEnd}>
-                                    fill
+                                    FILL
                                 </Button>
                                 <IconButton size="small" onClick={() => adjustTime(startTime, -5, setStartTime)}>
                                     −5
@@ -338,7 +340,7 @@ function AddRecordDialog({
                                     mt={0.5}
                                 >
                                     <Typography variant="caption" color="text.secondary" sx={{ mr: 0.25 }}>
-                                        終了時刻から
+                                        {t("From end time")}
                                     </Typography>
                                     {[15, 30, 60].map((minutes) => (
                                         <Button
@@ -346,11 +348,11 @@ function AddRecordDialog({
                                             size="small"
                                             variant="outlined"
                                             disabled={!isValidTime(endTime)}
-                                            aria-label={`終了時刻の${minutes}分前を開始時刻に設定`}
+                                            aria-label={t("Set start to {count} minutes before end", { count: minutes })}
                                             onClick={() => adjustTime(endTime, -minutes, setStartTime)}
                                             sx={{ minWidth: 0, px: 1.25 }}
                                         >
-                                            {minutes}分前
+                                            {t("{count} minutes before", { count: minutes })}
                                         </Button>
                                     ))}
                                 </Box>
@@ -361,7 +363,7 @@ function AddRecordDialog({
                         <Box mb={1}>
                             <Box display="flex" alignItems="center">
                                 <TextField
-                                    label="終了時刻"
+                                    label={t("End time")}
                                     type="datetime-local"
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
@@ -369,7 +371,7 @@ function AddRecordDialog({
                                     margin="dense"
                                 />
                                 <Button size="small" onClick={fillEndWithNextStart}>
-                                    fill
+                                    FILL
                                 </Button>
                                 <IconButton size="small" onClick={() => adjustTime(endTime, -5, setEndTime)}>
                                     −5
@@ -393,7 +395,7 @@ function AddRecordDialog({
                                     mt={0.5}
                                 >
                                     <Typography variant="caption" color="text.secondary" sx={{ mr: 0.25 }}>
-                                        開始時刻から
+                                        {t("From start time")}
                                     </Typography>
                                     {[15, 30, 60].map((minutes) => (
                                         <Button
@@ -401,11 +403,11 @@ function AddRecordDialog({
                                             size="small"
                                             variant="outlined"
                                             disabled={!isValidTime(startTime)}
-                                            aria-label={`開始時刻の${minutes}分後を終了時刻に設定`}
+                                            aria-label={t("Set end to {count} minutes after start", { count: minutes })}
                                             onClick={() => adjustTime(startTime, minutes, setEndTime)}
                                             sx={{ minWidth: 0, px: 1.25 }}
                                         >
-                                            {minutes}分後
+                                            {t("{count} minutes after", { count: minutes })}
                                         </Button>
                                     ))}
                                 </Box>
@@ -425,7 +427,7 @@ function AddRecordDialog({
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
-                                    label="Details"
+                                    label={t("Details")}
                                     size="small"
                                     onPaste={(event) => pasteDetails(event, setMemo)}
                                     fullWidth
@@ -440,12 +442,12 @@ function AddRecordDialog({
             <DialogActions>
                 {isEdit && onDelete && (
                     <Button onClick={handleDelete} color="error" sx={{ mr: 'auto' }}>
-                        Delete
+                        {t("Delete")}
                     </Button>
                 )}
-                <Button onClick={handleClose}>キャンセル</Button>
+                <Button onClick={handleClose}>{t("Cancel")}</Button>
                 <Button onClick={handleSubmit} variant="contained" color="primary">
-                    Submit
+                    {t("Submit")}
                 </Button>
             </DialogActions>
         </Dialog>

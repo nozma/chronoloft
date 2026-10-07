@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useEffect, useMemo } from 'react';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
@@ -8,6 +9,7 @@ import { useFilter } from '../contexts/FilterContext';
 import { useActivities } from '../contexts/ActivityContext';
 
 function RecordFilter({ onFilterChange, records, sx = {}, compact = false, textFieldSx = {} }) {
+    const { t } = useI18n();
     const { activities } = useActivities();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter, activityNameFilter } = filterState;
@@ -56,7 +58,7 @@ function RecordFilter({ onFilterChange, records, sx = {}, compact = false, textF
     return (
         <Box sx={{ mt: compact ? 0.5 : 1, ...sx }}>
             <TextField
-                label="Activity"
+                label={t("Activity")}
                 select
                 variant='outlined'
                 size='small'
@@ -67,7 +69,7 @@ function RecordFilter({ onFilterChange, records, sx = {}, compact = false, textF
                 }}
                 sx={{ mt: compact ? 0.5 : 0, minWidth: compact ? 120 : 180, ...textFieldSx }}
             >
-                <MenuItem value="">All</MenuItem>
+                <MenuItem value="">{t("All")}</MenuItem>
                 {filteredActivityNames.map((name, idx) => (
                     <MenuItem key={idx} value={name}>
                         {name}

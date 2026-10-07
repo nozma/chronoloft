@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
@@ -171,9 +172,9 @@ function toSafeCalendarBounds(minDateTime, maxDateTime, fallbackMin, fallbackMax
     };
 }
 
-function getEventGroupingTargets(event, groupBy) {
+function getEventGroupingTargets(event, groupBy, t) {
     if (groupBy === 'group') {
-        const groupName = event.activityGroup || 'Unknown Group';
+        const groupName = event.activityGroup || t("Unknown Group");
         return [{ key: groupName, label: groupName, color: event.groupColor }];
     }
     if (groupBy === 'tag') {
@@ -184,15 +185,15 @@ function getEventGroupingTargets(event, groupBy) {
                 color: null,
             }));
         }
-        return [{ key: 'No Tag', label: 'No Tag', color: null }];
+        return [{ key: t("No Tag"), label: t("No Tag"), color: null }];
     }
     if (groupBy === 'activityMemo') {
-        const activityName = event.activityName || 'Unknown Activity';
+        const activityName = event.activityName || t("Unknown Activity");
         const memoPart = event.memo ? ` / ${event.memo}` : '';
         const label = `${activityName}${memoPart}`;
         return [{ key: label, label, color: event.groupColor }];
     }
-    const activityName = event.activityName || 'Unknown Activity';
+    const activityName = event.activityName || t("Unknown Activity");
     return [{ key: activityName, label: activityName, color: event.groupColor }];
 }
 
@@ -201,12 +202,12 @@ function getEventGroupingTargets(event, groupBy) {
  * @param {Array} events 集計対象のイベント
  * @param {{ sortBy: 'value' | 'dateDesc', groupBy: 'group' | 'tag' | 'activity' | 'activityMemo' }} options
  */
-function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity' } = {}) {
+function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity', t } = {}) {
     const aggregated = {};
 
     events.forEach((event) => {
         const dayStr = event.start.toDateString();
-        const groupTargets = getEventGroupingTargets(event, groupBy);
+        const groupTargets = getEventGroupingTargets(event, groupBy, t);
         groupTargets.forEach((target) => {
             const key = `${dayStr}_${target.key}`;
             if (!aggregated[key]) {
@@ -254,6 +255,7 @@ function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity
 
 /* ヘッダ部分のツールバーのカスタム定義 */
 function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalendarMode, summaryGroupBy, setSummaryGroupBy }) {
+    const { t } = useI18n();
     const compactToggleSx = {
         minHeight: 28,
         px: 1,
@@ -277,7 +279,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                             fontSize: '0.78rem'
                         }}
                     >
-                        <span style={{ fontSize: '0.78rem' }}>Today</span>
+                        <span style={{ fontSize: '0.78rem' }}>{t("Today")}</span>
                     </IconButton>
                     <IconButton size='small' sx={{ p: 0.25 }} onClick={() => onNavigate('PREV')}>
                         <KeyboardArrowLeftIcon fontSize='small' />
@@ -299,15 +301,15 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     }}
                     size="small"
                 >
-                    <ToggleButton value="day" sx={compactToggleSx}>Day</ToggleButton>
-                    <ToggleButton value="week" sx={compactToggleSx}>Week</ToggleButton>
-                    <ToggleButton value="month" sx={compactToggleSx}>Month</ToggleButton>
-                    <ToggleButton value="agenda" sx={compactToggleSx}>Summary</ToggleButton>
+                    <ToggleButton value="day" sx={compactToggleSx}>{t("Day")}</ToggleButton>
+                    <ToggleButton value="week" sx={compactToggleSx}>{t("Week")}</ToggleButton>
+                    <ToggleButton value="month" sx={compactToggleSx}>{t("Month")}</ToggleButton>
+                    <ToggleButton value="agenda" sx={compactToggleSx}>{t("Summary")}</ToggleButton>
                 </ToggleButtonGroup>
                 {view === 'agenda' && (
                     <TextField
                         select
-                        label="Grouping"
+                        label={t("Grouping")}
                         size="small"
                         value={summaryGroupBy}
                         onChange={(e) => setSummaryGroupBy(e.target.value)}
@@ -321,10 +323,10 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                         }}
                         InputLabelProps={{ shrink: true }}
                     >
-                        <MenuItem value="group">Group</MenuItem>
-                        <MenuItem value="tag">Tag</MenuItem>
-                        <MenuItem value="activity">Activity</MenuItem>
-                        <MenuItem value="activityMemo">Activity + Details</MenuItem>
+                        <MenuItem value="group">{t("Group")}</MenuItem>
+                        <MenuItem value="tag">{t("Tag")}</MenuItem>
+                        <MenuItem value="activity">{t("Activity")}</MenuItem>
+                        <MenuItem value="activityMemo">{t("Activity + Details")}</MenuItem>
                     </TextField>
                 )}
                 {/* 表示モード切り替え */}
@@ -336,8 +338,8 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                     }}
                     size="small"
                 >
-                    <ToggleButton value="short" sx={compactToggleSx}>Short</ToggleButton>
-                    <ToggleButton value="long" sx={compactToggleSx}>Long</ToggleButton>
+                    <ToggleButton value="short" sx={compactToggleSx}>{t("Short")}</ToggleButton>
+                    <ToggleButton value="long" sx={compactToggleSx}>{t("Long")}</ToggleButton>
                 </ToggleButtonGroup>
             </Box>
         </Box>
@@ -345,6 +347,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
 }
 
 function RecordCalendar() {
+    const { t, language } = useI18n();
     const theme = useTheme();
     const { groups, excludedGroupIds } = useGroups();
     const { activities, excludedActivityIds } = useActivities();
@@ -442,13 +445,13 @@ function RecordCalendar() {
 
     const events = useMemo(() => {
         if (currentView === 'month') {
-            return aggregateEventsForMonth(minuteEvents);
+            return aggregateEventsForMonth(minuteEvents, { t });
         }
         if (currentView === 'agenda') {
-            return aggregateEventsForMonth(minuteEvents, { sortBy: 'dateDesc', groupBy: summaryGroupBy });
+            return aggregateEventsForMonth(minuteEvents, { sortBy: 'dateDesc', groupBy: summaryGroupBy, t });
         }
         return minuteEvents;
-    }, [currentView, minuteEvents, summaryGroupBy]);
+    }, [currentView, minuteEvents, summaryGroupBy, t]);
 
     const getEventColors = useCallback((event) => {
         let colorGroupBy;
@@ -456,7 +459,7 @@ function RecordCalendar() {
 
         if (currentView === Views.MONTH) {
             colorGroupBy = 'activity';
-            colorKeys = [event.groupKey || event.activityName || 'Unknown Activity'];
+            colorKeys = [event.groupKey || event.activityName || t("Unknown Activity")];
         } else if (currentView === Views.AGENDA) {
             colorGroupBy = summaryGroupBy;
             colorKeys = [event.groupKey || event.activityName];
@@ -466,7 +469,7 @@ function RecordCalendar() {
         }
 
         return colorKeys.map(key => getGroupingColor(colorGroupBy, key, theme.palette.mode));
-    }, [chartGroupBy, currentView, summaryGroupBy, theme.palette.mode]);
+    }, [chartGroupBy, currentView, summaryGroupBy, theme.palette.mode, t]);
 
     const effectiveVisibleRange = useMemo(
         () => visibleRange ?? inferVisibleRange(currentView, currentDate),
@@ -607,7 +610,7 @@ function RecordCalendar() {
         dayHeaderFormat: 'yyyy/MM/dd (EEE)',
         monthHeaderFormat: 'yyyy/M',
         dayRangeHeaderFormat: ({ start, end }, culture, localizer) =>
-            localizer.format(start, 'M/d') + ' - ' + localizer.format(end, 'M/d'),
+            localizer.format(start, 'M/d', culture) + ' - ' + localizer.format(end, 'M/d', culture),
         agendaDateFormat: 'M/d(EEE)',
         eventTimeRangeFormat: () => '',
     }), []);
@@ -626,8 +629,8 @@ function RecordCalendar() {
             tooltipContent = (
                 <div>
                     <div><strong>{event.title}</strong></div>
-                    <div>開始: {start}</div>
-                    <div>終了: {end}</div>
+                    <div>{t("Start")}: {start}</div>
+                    <div>{t("End")}: {end}</div>
                     <div>{event.memo}</div>
                 </div>
             );
@@ -655,8 +658,12 @@ function RecordCalendar() {
         agenda: DescendingAgendaView,
     }), []);
     const calendarMessages = useMemo(() => ({
-        agenda: 'Summary',
-    }), []);
+        agenda: t("Summary"), today: t("Today"), previous: t("Previous"), next: t("Next"),
+        month: t("Month"), week: t("Week"), day: t("Day"), date: t("Date"),
+        time: t("Time"), event: t("Event"), allDay: t("All day"),
+        noEventsInRange: t("No events in this range."),
+        showMore: count => t("Show {count} more", { count }),
+    }), [t]);
     const isDarkMode = theme.palette.mode === 'dark';
 
     const isAgendaView = currentView === 'agenda';
@@ -724,7 +731,7 @@ function RecordCalendar() {
                     uiDispatch({ type: 'SET_CALENDAR_OPEN', payload: !uiState.calendarOpen })
                 }
             >
-                Calendar
+                {t("Calendar")}
                 <KeyboardArrowRightIcon
                     fontSize="small"
                     sx={{
@@ -787,7 +794,7 @@ function RecordCalendar() {
                         }}
                         dayLayoutAlgorithm="no-overlap"
                         showAllEvents
-                        culture="ja"
+                        culture={language}
 
                         // Drag & Drop
                         onEventDrop={handleEventDrop}

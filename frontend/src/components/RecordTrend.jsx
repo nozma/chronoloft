@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { useMemo, useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import {
     Box,
@@ -26,7 +27,7 @@ import { useUI } from '../contexts/UIContext';
 import { useFilter } from '../contexts/FilterContext';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
-function groupRecords(records, groupBy) {
+function groupRecords(records, groupBy, t) {
     const now = DateTime.local();
     const start7 = now.minus({ days: 7 });
     const start14 = now.minus({ days: 14 });
@@ -37,14 +38,14 @@ function groupRecords(records, groupBy) {
     records.forEach(rec => {
         let keys = [];
         if (groupBy === 'activity') {
-            keys.push(rec.activity_name || 'Unknown Activity');
+            keys.push(rec.activity_name || t("Unknown Activity"));
         } else if (groupBy === 'group') {
-            keys.push(rec.activity_group || 'Unknown Group');
+            keys.push(rec.activity_group || t("Unknown Group"));
         } else if (groupBy === 'tag') {
             if (rec.tags && rec.tags.length > 0) {
                 rec.tags.forEach(t => keys.push(t.name));
             } else {
-                keys.push('No Tag');
+                keys.push(t("No Tag"));
             }
         }
         const dt = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
@@ -106,23 +107,23 @@ function formatValue(val, unit) {
     return `${sign}${Math.round(abs)}`;
 }
 
-function formatDailyAverage(total, unit, days) {
+function formatDailyAverage(total, unit, days, t) {
     const avg = total / days;
     if (unit === 'minutes') {
         const rounded = Math.round(avg);
         const hours = Math.floor(rounded / 60);
         const minutes = Math.floor(rounded % 60);
-        return `${String(hours)}:${String(minutes).padStart(2, '0')}/d`;
+        return `${String(hours)}:${String(minutes).padStart(2, '0')}/${t("Per day")}`;
     }
     if (unit === 'count') {
-        return `${avg.toFixed(1)}/d`;
+        return `${avg.toFixed(1)}/${t("Per day")}`;
     }
-    return `${Math.round(avg)}/d`;
+    return `${Math.round(avg)}/${t("Per day")}`;
 }
 
-function formatRate(total, prev) {
+function formatRate(total, prev, t) {
     if (total === 0 && prev === 0) return ' - ';
-    if (total !== 0 && prev === 0) return 'new!!';
+    if (total !== 0 && prev === 0) return t("New");
     const rate = (total / prev - 1) * 100;
     return `${rate >= 0 ? '+' : ''}${rate.toFixed(1)}%`;
 }
@@ -262,6 +263,7 @@ function TruncatedTrendName({ text }) {
 }
 
 function RecordTrend() {
+    const { t } = useI18n();
     const { recordsWithLive: records } = useRecords();
     const { excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
@@ -301,7 +303,7 @@ function RecordTrend() {
         });
     }, [visibleRecordsByActivity, groupFilter, tagFilter]);
 
-    const grouped = useMemo(() => groupRecords(filteredRecords, groupBy), [filteredRecords, groupBy]);
+    const grouped = useMemo(() => groupRecords(filteredRecords, groupBy, t), [filteredRecords, groupBy, t]);
     const increase = useMemo(() => sortIncrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
     const decrease = useMemo(() => sortDecrease(grouped, selectedPeriod), [grouped, selectedPeriod]);
     const paginationSx = {
@@ -367,7 +369,7 @@ function RecordTrend() {
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_TREND_OPEN', payload: !uiState.trendOpen })}
                 >
-                    Trend
+                    {t("Trend")}
                     <KeyboardArrowRightIcon
                         fontSize='small'
                         sx={{
@@ -383,26 +385,27 @@ function RecordTrend() {
                     sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
                     onClick={() => setSettingsOpen(prev => !prev)}
                 >
-                    {settingsOpen ? 'Close' : 'Open'}
+                    {settingsOpen ? t("Close") : t("Open")}
                 </Button>
             </Box>
             <Collapse in={uiState.trendOpen}>
                 {settingsOpen && (
-                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
-                        <TextField select size='small' label='Group By' value={groupBy} onChange={e => setGroupBy(e.target.value)}>
-                            <MenuItem value='activity'>Activity</MenuItem>
-                            <MenuItem value='tag'>Tag</MenuItem>
-                            <MenuItem value='group'>Group</MenuItem>
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <TextField select size='small' label={t("Group By")} value={groupBy} onChange={e => setGroupBy(e.target.value)}>
+                            <MenuItem value='activity'>{t("Activity")}</MenuItem>
+                            <MenuItem value='tag'>{t("Tag")}</MenuItem>
+                            <MenuItem value='group'>{t("Group")}</MenuItem>
                         </TextField>
-                        <TextField select size='small' label='Date Range' value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
-                            <MenuItem value='30day'>30 Days</MenuItem>
-                            <MenuItem value='7day'>7 Days</MenuItem>
-                            <MenuItem value='7v30'>7d vs 30d</MenuItem>
+                        <TextField select size='small' label={t("Date Range")} value={selectedPeriod} onChange={e => { setSelectedPeriod(e.target.value); setIncPage(0); setDecPage(0); }}>
+                            <MenuItem value='30day'>{t("30 Days")}</MenuItem>
+                            <MenuItem value='7day'>{t("7 Days")}</MenuItem>
+                            <MenuItem value='7v30'>{t("7d vs 30d")}</MenuItem>
                         </TextField>
                         <TextField
                             select
                             size='small'
-                            label='Rows / Page'
+                            label={t("Rows / Page")}
+                            sx={{ minWidth: 144, flexShrink: 0 }}
                             value={String(rowsPerPage)}
                             onChange={e => {
                                 setRowsPerPage(Number(e.target.value));
@@ -428,9 +431,9 @@ function RecordTrend() {
                         >
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell>Increase Ranking</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>Total</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>Change</TableCell>
+                                    <TableCell>{t("Increase Ranking")}</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>{t("Total")}</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>{t("Change")}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -459,7 +462,7 @@ function RecordTrend() {
                                             <TableCell align='center' sx={{ width: 92 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7, t)}
                                                 </span>
                                             </TableCell>
                                             <TableCell
@@ -481,7 +484,7 @@ function RecordTrend() {
                                                 {formatDiff(diff, row.unit)}
                                                 {diff > 0 ? <TrendingUpIcon fontSize='inherit' /> : diff < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatRate(total, prev)}
+                                                    {formatRate(total, prev, t)}
                                                 </span>
                                             </TableCell>
                                         </TableRow>
@@ -498,7 +501,7 @@ function RecordTrend() {
                             rowsPerPageOptions={[rowsPerPage]}
                             labelRowsPerPage=""
                             labelDisplayedRows={({ from, to, count }) =>
-                                `${from}-${to} of ${count !== -1 ? count : `${to}+`}`
+                                t("{from}–{to} of {count}", { from, to, count: count !== -1 ? count : `${to}+` })
                             }
                             sx={paginationSx}
                         />
@@ -514,9 +517,9 @@ function RecordTrend() {
                         >
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
-                                    <TableCell>Decrease Ranking</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>Total</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>Change</TableCell>
+                                    <TableCell>{t("Decrease Ranking")}</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>{t("Total")}</TableCell>
+                                    <TableCell align='center' sx={{ width: 92 }}>{t("Change")}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -545,7 +548,7 @@ function RecordTrend() {
                                             <TableCell align='center' sx={{ width: 92 }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7)}
+                                                    {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7, t)}
                                                 </span>
                                             </TableCell>
                                             <TableCell
@@ -567,7 +570,7 @@ function RecordTrend() {
                                                 {formatDiff(diff, row.unit)}
                                                 {diff > 0 ? <TrendingUpIcon fontSize='inherit' /> : diff < 0 ? <TrendingDownIcon fontSize='inherit' /> : null}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
-                                                    {formatRate(total, prev)}
+                                                    {formatRate(total, prev, t)}
                                                 </span>
                                             </TableCell>
                                         </TableRow>
@@ -584,7 +587,7 @@ function RecordTrend() {
                             rowsPerPageOptions={[rowsPerPage]}
                             labelRowsPerPage=""
                             labelDisplayedRows={({ from, to, count }) =>
-                                `${from}-${to} of ${count !== -1 ? count : `${to}+`}`
+                                t("{from}–{to} of {count}", { from, to, count: count !== -1 ? count : `${to}+` })
                             }
                             sx={paginationSx}
                         />

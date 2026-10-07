@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
@@ -14,6 +15,7 @@ import { updateDiscordPresence } from '../services/api';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const Stopwatch = forwardRef((props, ref) => {
+    const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
     const { records } = useRecords();
@@ -96,7 +98,7 @@ const Stopwatch = forwardRef((props, ref) => {
     // 現在の開始時刻の表示（currentStartTime を利用）
     const formattedStartTime = displayStartTime
         ? DateTime.fromMillis(displayStartTime).toFormat("HH:mm")
-        : "Undefined";
+        : t("Undefined");
 
     // 時間をフォーマットする関数
     const formatTime = (ms) => {
@@ -149,8 +151,8 @@ const Stopwatch = forwardRef((props, ref) => {
     const total7Display = total7d + runningMinutes;
     const total30Display = total30d + runningMinutes;
 
-    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} /7d`;
-    const totalLabel30 = `${Math.floor(total30Display / 60)}:${String((total30Display % 60).toFixed(0)).padStart(2, '0')} /30d`;
+    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} / ${t("{count} days", { count: 7 })}`;
+    const totalLabel30 = `${Math.floor(total30Display / 60)}:${String((total30Display % 60).toFixed(0)).padStart(2, '0')} / ${t("{count} days", { count: 30 })}`;
 
     const diff7 = Math.round(total7Display - prev7d);
     const diff30 = Math.round(total30Display - prev30d);
@@ -285,13 +287,13 @@ const Stopwatch = forwardRef((props, ref) => {
                                 </Box>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                <Typography variant="body1">Start: {formattedStartTime}</Typography>
+                                <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                                 <IconButton onClick={handleOpenPicker} size='small'>
                                     <CalendarMonthIcon fontSize='small' />
                                 </IconButton>
-                                <Button size="small" sx={{ minWidth: 0, px: 0.5 }} onClick={handleFillPrevEnd}>Fill</Button>
+                                <Button size="small" sx={{ minWidth: 0, px: 0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
                                 <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
                                 <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
                                 <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
@@ -357,11 +359,11 @@ const Stopwatch = forwardRef((props, ref) => {
                                 </Box>
                             </Box>
                             <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                                <Typography variant="body1">Start: {formattedStartTime}</Typography>
+                                <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
                                 <IconButton onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
                                     <CalendarMonthIcon fontSize='small' />
                                 </IconButton>
-                                <Button size="small" sx={{ minWidth: 0, px: 0.5, m: -0.5 }} onClick={handleFillPrevEnd}>Fill</Button>
+                                <Button size="small" sx={{ minWidth: 0, px: 0.5, m: -0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
                                 <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
                                 <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
                                 <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
@@ -399,7 +401,7 @@ const Stopwatch = forwardRef((props, ref) => {
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label="Details"
+                                label={t("Details")}
                                 size="small"
                                 onPaste={(event) => pasteDetails(event, setMemo)}
                                 fullWidth

@@ -1,8 +1,10 @@
+import { useI18n } from '../i18n/I18nContext';
 import React from 'react';
 import { Tooltip } from '@mui/material';
 import { DateTime } from 'luxon';
 
 const CustomEventWrapper = ({ event, children }) => {
+    const { t } = useI18n();
     // 開始・終了時刻をフォーマット
     let tooltipContent;
     if(event.allDay) {
@@ -15,8 +17,8 @@ const CustomEventWrapper = ({ event, children }) => {
         tooltipContent = (
             <div>
                 <div><strong>{event.title}</strong></div>
-                <div>開始: {start}</div>
-                <div>終了: {end}</div>
+                <div>{t("Start")}: {start}</div>
+                <div>{t("End")}: {end}</div>
             </div>
         );
     }

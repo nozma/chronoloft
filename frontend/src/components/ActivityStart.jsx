@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import {
     Button,
     Box,
@@ -95,6 +96,7 @@ function ActivityStart({
     subSelectedActivity,
     subStopwatchVisible,
 }) {
+    const { t } = useI18n();
     const { groups, excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { state, dispatch } = useUI();
@@ -278,7 +280,7 @@ function ActivityStart({
                             sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                             onClick={() => dispatch({ type: 'SET_GROUP_OPEN', payload: !state.groupOpen })}
                         >
-                            Group
+                            {t("Group")}
                             <KeyboardArrowRightIcon
                                 fontSize='small'
                                 sx={{
@@ -304,13 +306,13 @@ function ActivityStart({
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                                     <ToggleButton
                                         value=""
-                                        aria-label="All"
+                                        aria-label={t("All")}
                                         size="small"
                                         selected={groupFilter === ''}
                                         onClick={() => handleGroupFilterChange('')}
                                         sx={{ minHeight: 30, py: 0.25, px: 1 }}
                                     >
-                                        All
+                                        {t("All")}
                                     </ToggleButton>
                                     {selectableGroups.map((group) => (
                                         <ToggleButton
@@ -338,11 +340,11 @@ function ActivityStart({
                                         }
                                         handleGroupFilterChange(newGroupFilter);
                                     }}
-                                    aria-label="Group filter"
+                                    aria-label={t("Group filter")}
                                     sx={{ mb: 1, mr: 1 }}
                                 >
-                                    <ToggleButton value="" aria-label="All">
-                                        All
+                                    <ToggleButton value="" aria-label={t("All")}>
+                                        {t("All")}
                                     </ToggleButton>
                                     {selectableGroups.map((group) => (
                                         <ToggleButton key={group.id} value={group.name} aria-label={group.name}>
@@ -377,7 +379,7 @@ function ActivityStart({
                             sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                             onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
                         >
-                            Tag
+                            {t("Tag")}
                             <KeyboardArrowRightIcon
                                 fontSize='small'
                                 sx={{
@@ -426,10 +428,10 @@ function ActivityStart({
                             >
                                 <ToggleButton
                                     value=""
-                                    aria-label="All"
+                                    aria-label={t("All")}
                                     sx={isTwoColumnLayout ? { minHeight: 30, py: 0.25, px: 1, fontSize: '0.78rem' } : {}}
                                 >
-                                    All
+                                    {t("All")}
                                 </ToggleButton>
                                 {groupTags.map(tagName => (
                                     <ToggleButton
@@ -467,7 +469,7 @@ function ActivityStart({
                                 sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                                 onClick={() => dispatch({ type: 'SET_ACTIVITY_OPEN', payload: !state.activityOpen })}
                             >
-                                Activity (Click to start recording)
+                                {t("Activity (Click to start recording)")}
                                 <KeyboardArrowRightIcon
                                     fontSize='small'
                                     sx={{
@@ -553,7 +555,7 @@ function ActivityStart({
                                             return next;
                                         })}
                                     >
-                                        More Items
+                                        {t("More Items")}
                                         <KeyboardArrowRightIcon
                                             fontSize='small'
                                             sx={{
@@ -604,7 +606,7 @@ function ActivityStart({
                                                 }}
                                                 onClick={() => setShowArchive((prev) => !prev)}
                                             >
-                                                Archive
+                                                {t("Archive")}
                                                 <KeyboardArrowRightIcon
                                                     fontSize='small'
                                                     sx={{
@@ -657,7 +659,7 @@ function ActivityStart({
                                         onClick={handleStartSubStopwatch}
                                         disabled={contextTargetActivity?.unit === 'count'}
                                     >
-                                        Start Sub Stopwatch
+                                        {t("Start Sub Stopwatch")}
                                     </MenuItem>
                                 </Menu>
                             </Box>

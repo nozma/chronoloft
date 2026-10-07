@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -15,6 +16,7 @@ import { useGroups } from '../contexts/GroupContext';
 import { useTags } from '../contexts/TagContext';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupId, defaultTags }) {
+    const { t } = useI18n();
     const { groups } = useGroups();
     const { tags } = useTags();
     const theme = useTheme();
@@ -49,7 +51,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
 
     const handleSubmit = () => {
         if (!name || !groupId) {
-            alert("Group と Name は必須です。");
+            alert(t("Group and name are required."));
             return;
         }
         const tagIds = selectedTags.map(t => t.id);
@@ -75,19 +77,19 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
             <DialogContent>
                 <TextField
                     margin="dense"
-                    label="State"
+                    label={t("State")}
                     fullWidth
                     select
                     value={String(isActive)}
                     onChange={(e) => setIsActive(e.target.value)}
                 >
-                    <MenuItem key="true" value="true" >Active</MenuItem>
-                    <MenuItem key="false" value="false" >Inactive</MenuItem>
+                    <MenuItem key="true" value="true" >{t("Active")}</MenuItem>
+                    <MenuItem key="false" value="false" >{t("Inactive")}</MenuItem>
                 </TextField>
                 <TextField
                     select
                     margin="dense"
-                    label="Group"
+                    label={t("Group")}
                     fullWidth
                     value={groupId}
                     onChange={(e) => setGroupId(e.target.value)}
@@ -101,7 +103,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                 <TextField
                     autoFocus
                     margin="dense"
-                    label="Name"
+                    label={t("Name")}
                     fullWidth
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -109,17 +111,17 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                 <TextField
                     select
                     margin="dense"
-                    label="Unit"
+                    label={t("Unit")}
                     fullWidth
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
                 >
-                    <MenuItem value="count">回</MenuItem>
-                    <MenuItem value="minutes">分</MenuItem>
+                    <MenuItem value="count">{t("Times")}</MenuItem>
+                    <MenuItem value="minutes">{t("Minutes")}</MenuItem>
                 </TextField>
                 <TextField
                     margin="dense"
-                    label="Asset Key"
+                    label={t("Asset Key")}
                     fullWidth
                     value={assetKey}
                     onChange={(e) => setAssetKey(e.target.value)}
@@ -151,15 +153,15 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                         })
                     }
                     renderInput={(params) => (
-                        <TextField {...params} variant="outlined" label="Tags" placeholder="Select multiple tags" />
+                        <TextField {...params} variant="outlined" label={t("Tags")} placeholder={t("Select multiple tags")} />
                     )}
                     sx={{ mt: 2 }}
                 />
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
+                <Button onClick={onClose}>{t("Cancel")}</Button>
                 <Button onClick={handleSubmit} variant="contained" color="primary">
-                    Submit
+                    {t("Submit")}
                 </Button>
             </DialogActions>
         </Dialog>

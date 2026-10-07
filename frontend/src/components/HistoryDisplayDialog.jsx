@@ -1,3 +1,4 @@
+import { useI18n } from '../i18n/I18nContext';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -26,6 +27,7 @@ const DEFAULT_VISIBILITY = {
 };
 
 function HistoryDisplayDialog({ open, onClose }) {
+    const { t } = useI18n();
     const { state: uiState, dispatch: uiDispatch } = useUI();
 
     const [tmpShowChart, setTmpShowChart] = useState(uiState.showChart);
@@ -36,11 +38,11 @@ function HistoryDisplayDialog({ open, onClose }) {
     const [tmpOrder, setTmpOrder] = useState(uiState.historyOrder);
 
     const labelMap = {
-        chart: 'Chart',
-        heatmap: 'Heatmap',
-        trend: 'Trend',
-        calendar: 'Calendar',
-        records: 'Records',
+        chart: t("Chart"),
+        heatmap: t("Heatmap"),
+        trend: t("Trend"),
+        calendar: t("Calendar"),
+        records: t("Records"),
     };
 
     const visibilityMap = {
@@ -91,7 +93,7 @@ function HistoryDisplayDialog({ open, onClose }) {
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm">
-            <DialogTitle>History Items</DialogTitle>
+            <DialogTitle>{t("History Items")}</DialogTitle>
 
             <DialogContent dividers>
                 <Stack spacing={1}>
@@ -119,10 +121,10 @@ function HistoryDisplayDialog({ open, onClose }) {
 
             <DialogActions>
                 <Button onClick={handleReset} color="inherit" sx={{ mr: 'auto', textTransform: 'none' }}>
-                    Reset to Defaults
+                    {t("Reset to Defaults")}
                 </Button>
                 <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
-                    <Button onClick={onClose}>Cancel</Button>
+                    <Button onClick={onClose}>{t("Cancel")}</Button>
                     <Button
                         variant="contained"
                         onClick={() => {
@@ -140,7 +142,7 @@ function HistoryDisplayDialog({ open, onClose }) {
                             onClose();
                         }}
                     >
-                        Apply
+                        {t("Apply")}
                     </Button>
                 </Box>
             </DialogActions>
