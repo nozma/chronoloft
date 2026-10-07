@@ -1,8 +1,7 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
-    DialogTitle,
     DialogContent,
     DialogActions,
     Button,
@@ -140,7 +139,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                             const { key, ...other } = tagProps;
                             return (
                                 <Chip
-                                    key={option.id}
+                                    key={option.id ?? key}
                                     {...other}
                                     label={option.name}
                                     style={{

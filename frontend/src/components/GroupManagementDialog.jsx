@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Button, TextField, Table, TableHead, TableRow, TableCell, TableBody,

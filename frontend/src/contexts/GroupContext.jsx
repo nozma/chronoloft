@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { fetchActivityGroups } from '../services/api';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 

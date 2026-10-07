@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 // AddRecordDialog.jsx
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
     Autocomplete,
     Dialog,

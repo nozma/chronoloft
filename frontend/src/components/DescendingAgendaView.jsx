@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import addClass from 'dom-helpers/addClass';
 import removeClass from 'dom-helpers/removeClass';
 import width from 'dom-helpers/width';

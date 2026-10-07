@@ -208,17 +208,6 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         setSubStopwatchVisible(true);
     };
 
-    // 回数ダイアログでのレコード作成
-    const handleRecordCreated = async (recordData) => {
-        try {
-            await createRecord(recordData);
-            dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-            onRecordUpdate();
-            await refreshActivities();
-        } catch (err) {
-            console.error("Failed to create record:", err);
-        }
-    };
 
     // 完了時ハンドラ
     const handleStopwatchComplete = async (minutes, memo) => {

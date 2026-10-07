@@ -1,5 +1,5 @@
 import { normalizeDetails } from '../utils/recordDetails';
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import {
     fetchRecords as apiFetchRecords,

@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -9,7 +9,6 @@ import {
     FormControlLabel,
     Switch,
     Stack,
-    Divider,
     Box,
     IconButton,
 } from '@mui/material';

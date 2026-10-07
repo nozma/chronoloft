@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
-import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import { useGroups } from '../contexts/GroupContext';
@@ -12,7 +12,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
-const SubStopwatch = forwardRef((props, ref) => {
+const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
     const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();

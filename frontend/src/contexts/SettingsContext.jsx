@@ -1,5 +1,5 @@
 import { detectLanguage, resolveLanguage } from '../i18n/translate.js';
-import React, { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 // ───────── 既定値定義（リセット用に公開する） ─────────

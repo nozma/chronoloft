@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Typography, IconButton } from '@mui/material';
 import RecordList from './RecordList';
 import RecordHeatmap from './RecordHeatmap';

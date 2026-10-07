@@ -34,7 +34,7 @@ function RecordHeatmap() {
     const [settingsOpen, setSettingsOpen] = useLocalStorageState('heatmap.settingsOpen', false);
     const { state: recordListState, dispatch: recordListDispatch } = useRecordListState();
     const { filterCriteria } = recordListState;
-    const { groups, excludedGroupIds } = useGroups();
+    const { excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { activeActivity } = useActiveActivity();
     const [filteredRecords, setFilteredRecords] = useState([]);
@@ -373,7 +373,7 @@ function RecordHeatmap() {
                                         less: t("Less"),
                                         more: t("More")
                                     },
-                                    totalCount: `${totalCountLabel}　${totalCountLabel30}　${totalCountLabel7}`
+                                    totalCount: `${totalCountLabel}\u3000${totalCountLabel30}\u3000${totalCountLabel7}`
                                 }}
                                 renderBlock={(block, activity) => {
                                     let tooltipText;

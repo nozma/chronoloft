@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -95,7 +95,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         setSelectedActivityId(null);
     };
 
-    const processRowUpdate = async (newRow, oldRow) => {
+    const processRowUpdate = async (newRow) => {
         try {
             await modifyActivity(newRow.id, newRow);
             return newRow;
