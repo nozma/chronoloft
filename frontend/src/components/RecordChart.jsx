@@ -943,7 +943,7 @@ function RecordChart() {
                             <MenuItem value="group">Group</MenuItem>
                             <MenuItem value="tag">Tag</MenuItem>
                             <MenuItem value="activity">Activity</MenuItem>
-                            <MenuItem value="activityMemo">Activity + Memo</MenuItem>
+                            <MenuItem value="activityMemo">Activity + Details</MenuItem>
                         </TextField>
                         {/* 集計単位の手動切替 */}
                         <TextField

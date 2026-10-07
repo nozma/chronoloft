@@ -324,7 +324,7 @@ function CustomToolbar({ label, onNavigate, onView, view, calendarMode, setCalen
                         <MenuItem value="group">Group</MenuItem>
                         <MenuItem value="tag">Tag</MenuItem>
                         <MenuItem value="activity">Activity</MenuItem>
-                        <MenuItem value="activityMemo">Activity + Memo</MenuItem>
+                        <MenuItem value="activityMemo">Activity + Details</MenuItem>
                     </TextField>
                 )}
                 {/* 表示モード切り替え */}

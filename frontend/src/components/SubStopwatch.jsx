@@ -1,3 +1,4 @@
+import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
@@ -8,7 +9,7 @@ import { useRecords } from '../contexts/RecordContext';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
-import { getRecentMemoOptions } from '../utils/recentMemoOptions';
+import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const SubStopwatch = forwardRef((props, ref) => {
     const isInlineMode = Boolean(props.inlineMode);
@@ -165,16 +166,18 @@ const SubStopwatch = forwardRef((props, ref) => {
                     <Autocomplete
                         freeSolo
                         options={memoOptions}
+                        filterOptions={filterRecentMemoOptions}
                         inputValue={memo ?? ''}
-                        onInputChange={(event, newValue) => setMemo(newValue)}
-                        onChange={(event, newValue) => setMemo(newValue ?? '')}
+                        onInputChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
+                        onChange={(event, newValue) => setMemo(normalizeDetails(newValue))}
                         forcePopupIcon={false}
                         disableClearable
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label="Memo"
-                                multiline
+                                label="Details"
+                                size="small"
+                                onPaste={(event) => pasteDetails(event, setMemo)}
                                 fullWidth
                             />
                         )}

@@ -1,3 +1,4 @@
+import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { useState, useRef, useMemo } from 'react';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
@@ -147,26 +148,30 @@ function RecordList() {
         },
         {
             field: 'memo',
-            headerName: 'memo',
+            headerName: 'Details',
             width: 200,
             editable: true,
             renderCell: (params) => (
                 <Typography
                     variant='body2'
-                    sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                    noWrap
+                    title={normalizeDetails(params.value)}
                 >
-                    {params.value}
+                    {normalizeDetails(params.value)}
                 </Typography>
             ),
             renderEditCell: (params) => (
                 <TextField
-                    multiline
+                    size="small"
+                    onPaste={(event) => pasteDetails(event, (value) =>
+                        params.api.setEditCellValue({ id: params.id, field: params.field, value }, event)
+                    )}
                     fullWidth
                     autoFocus
-                    value={params.value || ''}
+                    value={normalizeDetails(params.value)}
                     onChange={(e) =>
                         params.api.setEditCellValue(
-                            { id: params.id, field: params.field, value: e.target.value },
+                            { id: params.id, field: params.field, value: normalizeDetails(e.target.value) },
                             e
                         )
                     }
