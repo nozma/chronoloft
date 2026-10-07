@@ -72,7 +72,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             const hh = Math.floor(totalSeconds / 3600);
             const mm = Math.floor((totalSeconds % 3600) / 60);
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `(${formattedTime}) ${selectedActivity.name} - Chronoloft`;
+            document.title = `${formattedTime} ${selectedActivity.name} - Chronoloft`;
         }
         // 2) メインとサブ両方動いている
         else if (stopwatchVisible && selectedActivity && subStopwatchVisible && subSelectedActivity) {
@@ -80,7 +80,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             const hh = Math.floor(totalSeconds / 3600);
             const mm = Math.floor((totalSeconds % 3600) / 60);
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `(${formattedTime}) ${selectedActivity.name} (${subSelectedActivity.name}) - Chronoloft`;
+            document.title = `${formattedTime} ${selectedActivity.name} (${subSelectedActivity.name}) - Chronoloft`;
         }
         // 3) サブだけ動いている
         else if (!stopwatchVisible && subStopwatchVisible && subSelectedActivity) {
