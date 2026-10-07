@@ -226,7 +226,7 @@ function aggregateEventsForMonth(events, { sortBy = 'value', groupBy = 'activity
         id: `${agg.groupKey}-${agg.start.toDateString()}`,
         groupKey: agg.groupKey,
         activityName: agg.activityName,
-        title: `(${Math.floor(agg.totalValue / 60)}:${String(Math.round(agg.totalValue % 60)).padStart(2, '0')}) ${agg.activityName}`,
+        title: `${Math.floor(agg.totalValue / 60)}:${String(Math.round(agg.totalValue % 60)).padStart(2, '0')} ${agg.activityName}`,
         // All-day event for the aggregated day
         start: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate()),
         end: new Date(agg.start.getFullYear(), agg.start.getMonth(), agg.start.getDate() + 1),
@@ -419,7 +419,7 @@ function RecordCalendar() {
                 activityName: rec.activity_name,
                 activityGroup: rec.activity_group,
                 value: rec.value,
-                title: `${rec.activity_name} (${formattedTime})`,
+                title: `${formattedTime} ${rec.activity_name}`,
                 start: startDT.toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
