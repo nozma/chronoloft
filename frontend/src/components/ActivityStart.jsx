@@ -171,7 +171,7 @@ function ActivityStart({
     // 表示するActivityを設定を反映して絞り込む
     // 期間フィルタ
     const activeActivities = filteredActivities.filter(act => Boolean(act.is_active));
-    const inactiveActivities = filteredActivities.filter(act => !Boolean(act.is_active));
+    const inactiveActivities = filteredActivities.filter(act => !act.is_active);
 
     let recentWithinRange;
     if (recentDays === 'all') {

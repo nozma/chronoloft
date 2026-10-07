@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography, Link, IconButton } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 

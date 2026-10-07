@@ -5,7 +5,6 @@ import { createTranslator, resolveLanguage } from './translate.js';
 const I18nContext = createContext();
 
 // 他の Context と同様に任意の子要素を受け取る。
-// eslint-disable-next-line react/prop-types
 export function I18nProvider({ children }) {
     const { language: savedLanguage } = useSettings();
     const language = resolveLanguage(savedLanguage);

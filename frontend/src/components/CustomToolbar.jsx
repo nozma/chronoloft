@@ -1,5 +1,4 @@
 import { useI18n } from '../i18n/I18nContext';
-import React from 'react';
 import { 
     GridToolbarContainer, 
     GridToolbarColumnsButton,

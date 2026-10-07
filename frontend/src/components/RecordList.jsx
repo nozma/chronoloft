@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
-import React, { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
 import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
