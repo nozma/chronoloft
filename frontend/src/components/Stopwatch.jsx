@@ -14,7 +14,7 @@ import SyncIcon from '@mui/icons-material/Sync';
 import { updateDiscordPresence } from '../services/api';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
-const Stopwatch = forwardRef((props, ref) => {
+const Stopwatch = forwardRef(function Stopwatch(props, ref) {
     const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
@@ -29,7 +29,6 @@ const Stopwatch = forwardRef((props, ref) => {
         reset,
         cancel,
         updateStartTime,
-        currentStartTime,
         displayStartTime,
         memo,
         setMemo,
@@ -170,12 +169,14 @@ const Stopwatch = forwardRef((props, ref) => {
         [records, props.activityId]
     );
 
+    const { onTick } = props;
+
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
-        if (props.onTick) {
-            props.onTick(displayTime);
+        if (onTick) {
+            onTick(displayTime);
         }
-    }, [displayTime, props.onTick]);
+    }, [displayTime, onTick]);
 
     // 直近のレコード終了時刻を取得して editedStartTime にセット
     const handleFillPrevEnd = () => {

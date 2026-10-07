@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
@@ -40,7 +40,7 @@ function RecordFilter({ onFilterChange, records, sx = {}, compact = false, textF
             .filter(name => names.includes(name));
         const others = names.filter(name => !ordered.includes(name));
         return [...ordered, ...others];
-    }, [records, groupFilter, tagFilter, activityNameFilter, useActivities()]);
+    }, [records, groupFilter, tagFilter, activityNameFilter, activities]);
 
     // フィルター状態の変更を onFilterChange に通知
     useEffect(() => {

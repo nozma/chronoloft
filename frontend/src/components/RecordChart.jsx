@@ -1,5 +1,5 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useEffect, useMemo, useCallback, useState, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 import {
     Box,
@@ -364,7 +364,7 @@ function RecordChart() {
         if (!isAggregationManual) {
             setAggregationUnit(autoAggregationUnit);
         }
-    }, [autoAggregationUnit, isAggregationManual]);
+    }, [autoAggregationUnit, isAggregationManual, setAggregationUnit]);
 
     // 集計済みデータの作成
     const chartData = useMemo(() => {
@@ -420,7 +420,7 @@ function RecordChart() {
         return sortedEntries
             .filter(e => e.total >= threshold)
             .map(e => e.key);
-    }, [sortedEntries, itemLimit]);
+    }, [sortedEntries, sortedKeys, itemLimit]);
 
     // データの最大値を取得
     const maxValue = useMemo(() => {
@@ -578,18 +578,6 @@ function RecordChart() {
         };
     }, [colorScale, theme.palette.mode]);
 
-    // y軸のtickは最大値が120以上なら60の倍数にする
-    const domain = useMemo(() => {
-        return [
-            0,
-            (dataMax) => {
-                if (dataMax < 120) {
-                    return 'auto';
-                }
-                return Math.ceil(dataMax / 60) * 60;
-            },
-        ];
-    }, []);
 
     // Line Chartのラベル関連
     // 最も長いラベルの幅を計算する
@@ -670,7 +658,7 @@ function RecordChart() {
         const itemsPerRow = Math.max(1, Math.floor(chartWidth / itemWidth));
         const rows = Math.ceil(visibleKeys.length / itemsPerRow);
         return rows > 1 ? (rows - 1) * rowHeight : 0;
-    }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod, baseChartHeight]);
+    }, [chartType, visibleKeys.length, chartWidth, longestLabelWidth, selectedPeriod]);
     const chartHeight = baseChartHeight + legendExtraHeight;
     const tooltipActive = isChartPointerInside === false
         ? false
