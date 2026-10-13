@@ -55,6 +55,18 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         layoutMode,
     } = useSettings();
 
+    // OFFで開始した計測にも、設定ON時に現在の連携情報を用意する。
+    useEffect(() => {
+        if (!discordEnabled || !stopwatchVisible || !selectedActivity) return;
+        const group = groups.find(item => item.name === selectedActivity.group_name);
+        setDiscordData(group?.client_id ? {
+            group: selectedActivity.group_name,
+            activity_name: selectedActivity.name,
+            details: calculateTimeDetails(selectedActivity.id, records),
+            asset_key: selectedActivity.asset_key || 'default_image',
+        } : null);
+    }, [discordEnabled, stopwatchVisible, selectedActivity, groups, records]);
+
     // 確認モード時の一時保存データ
     const [pendingRecord, setPendingRecord] = useState(null);
     // 確認モードでダイアログを閉じたあとに開始したいアクティビティ

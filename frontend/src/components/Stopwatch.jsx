@@ -4,6 +4,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'reac
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
+import { useSettings } from '../contexts/SettingsContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useRecords } from '../contexts/RecordContext';
 import { DateTime } from 'luxon';
@@ -11,13 +12,13 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
-import { updateDiscordPresence } from '../services/api';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 const Stopwatch = forwardRef(function Stopwatch(props, ref) {
     const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
+    const { discordEnabled } = useSettings();
     const { records } = useRecords();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
@@ -32,8 +33,10 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
         displayStartTime,
         memo,
         setMemo,
-        isDiscordBusy
-    } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel });
+        isDiscordBusy,
+        refreshDiscord,
+        discordConnected
+    } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel, discordEnabled });
 
     useImperativeHandle(ref, () => ({
         complete,
@@ -410,19 +413,12 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                         )}
                     />
                     {/* Update Presence ボタン */}
-                    {props.discordData && (
+                    {discordEnabled && props.discordData && (
                         <IconButton
                             size="small"
-                            onClick={() => {
-                                const data = {
-                                    group: props.activityGroup,
-                                    activity_name: props.activityName,
-                                    details: memo,
-                                    asset_key: props.discordData?.asset_key || 'default_image',
-                                };
-                                updateDiscordPresence(data)
-                                    .catch(err => console.error('Failed to update presence:', err));
-                            }}
+                            onClick={refreshDiscord}
+                            color={discordConnected ? "primary" : "warning"}
+                            title={t(discordConnected ? "Discord connected — update status" : "Discord disconnected — retry connection")}
                             disabled={isDiscordBusy}
                             sx={{
                                 position: 'absolute',
