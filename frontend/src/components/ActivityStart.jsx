@@ -102,7 +102,7 @@ function ActivityStart({
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
-    const { recentDays, recentLimit, layoutMode } = useSettings();
+    const { recentDays, recentLimit, recentMinimum, layoutMode } = useSettings();
     const isTwoColumnLayout = layoutMode === 'two-column';
 
     const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
@@ -188,11 +188,17 @@ function ActivityStart({
     // 件数上限
     const limitCount =
         recentLimit === 'all'
-            ? recentWithinRange.length
+            ? activeActivities.length
             : Number(recentLimit);
 
     // 上限件数ぶんだけ recentActivities とし、残りを remainingActivities に回す
     const recentActivities = recentWithinRange.slice(0, limitCount);
+    // 期間内の件数が不足していれば、既存の使用日時順で期間外から補充する
+    const minimumCount = Math.min(Number(recentMinimum), limitCount);
+    if (recentActivities.length < minimumCount) {
+        const additionalActivities = activeActivities.filter(act => !recentActivities.includes(act));
+        recentActivities.push(...additionalActivities.slice(0, minimumCount - recentActivities.length));
+    }
     const remainingActivities = activeActivities.filter(
         act => !recentActivities.includes(act)
     );

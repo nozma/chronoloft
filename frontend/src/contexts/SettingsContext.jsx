@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
     layoutMode: 'one-column',
     recentDays: '14',
     recentLimit: '15',
+    recentMinimum: '1',
     discordEnabled: true,
     recordSaveMode: 'auto',
 };
@@ -40,6 +41,9 @@ export function SettingsProvider({ children }) {
     // 最近使用した項目として表示するアクティビティの件数の上限
     const [recentLimit, setRecentLimit] =
         useLocalStorageState('settings.recentLimit', DEFAULT_SETTINGS.recentLimit);
+    // 初期表示するアクティビティの最低件数
+    const [recentMinimum, setRecentMinimum] =
+        useLocalStorageState('settings.recentMinimum', DEFAULT_SETTINGS.recentMinimum);
     // ★ Discord 連係の有効/無効（既定: 有効）
     const [discordEnabled, setDiscordEnabled] =
         useLocalStorageState('settings.discordEnabled', DEFAULT_SETTINGS.discordEnabled);
@@ -57,10 +61,11 @@ export function SettingsProvider({ children }) {
             setAutoFilterOnSelect,
             recentDays, setRecentDays,
             recentLimit, setRecentLimit,
+            recentMinimum, setRecentMinimum,
             discordEnabled, setDiscordEnabled,
             recordSaveMode, setRecordSaveMode,
         }),
-        [language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setDiscordEnabled, setRecordSaveMode]
+        [language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setRecentMinimum, setDiscordEnabled, setRecordSaveMode]
     );
 
     return (

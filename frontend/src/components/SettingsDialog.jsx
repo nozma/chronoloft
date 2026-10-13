@@ -27,6 +27,7 @@ function SettingsDialog({ open, onClose }) {
         layoutMode, setLayoutMode,
         recentDays, setRecentDays,
         recentLimit, setRecentLimit,
+        recentMinimum, setRecentMinimum,
         discordEnabled, setDiscordEnabled,
         recordSaveMode, setRecordSaveMode,
     } = useSettings();
@@ -38,6 +39,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpLayoutMode, setTmpLayoutMode] = useState(layoutMode);
     const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
     const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
+    const [tmpRecentMinimum, setTmpRecentMinimum] = useState(recentMinimum);
     const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
     const [tmpRecordSaveMode, setTmpRecordSaveMode] = useState(recordSaveMode);
     // ダイアログを開くたびに最新値でリセット
@@ -49,10 +51,11 @@ function SettingsDialog({ open, onClose }) {
             setTmpLayoutMode(layoutMode);
             setTmpRecentDays(recentDays);
             setTmpRecentLimit(recentLimit);
+            setTmpRecentMinimum(recentLimit === 'all' ? recentMinimum : String(Math.min(Number(recentMinimum), Number(recentLimit))));
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
         }
-    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, discordEnabled, recordSaveMode]);
+    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode]);
 
     // リセット用ハンドラ
     const handleReset = () => {
@@ -63,6 +66,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpLayoutMode(DEFAULT_SETTINGS.layoutMode);
         setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
         setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
+        setTmpRecentMinimum(DEFAULT_SETTINGS.recentMinimum);
         setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
         setTmpRecordSaveMode(DEFAULT_SETTINGS.recordSaveMode);
     };
@@ -146,7 +150,14 @@ function SettingsDialog({ open, onClose }) {
                             <RadioGroup
                                 row
                                 value={tmpRecentLimit}
-                                onChange={(e) => setTmpRecentLimit(e.target.value)}
+                                onChange={(e) => {
+                                    const nextLimit = e.target.value;
+                                    setTmpRecentLimit(nextLimit);
+                                    // 上限を下げた場合は最低件数も上限以内に収める
+                                    if (nextLimit !== 'all' && Number(tmpRecentMinimum) > Number(nextLimit)) {
+                                        setTmpRecentMinimum(nextLimit);
+                                    }
+                                }}
                             >
                                 {['5', '15', '30', 'all'].map(v =>
                                     <FormControlLabel
@@ -154,6 +165,25 @@ function SettingsDialog({ open, onClose }) {
                                         value={v}
                                         control={<Radio />}
                                         label={v === 'all' ? t("Unlimited") : v}
+                                    />
+                                )}
+                            </RadioGroup>
+                        </FormControl>
+                        {/* 期間内の対象が少ない場合に補充する最低件数 */}
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">{t("Initial-Display Activities Minimum")}</FormLabel>
+                            <RadioGroup
+                                row
+                                value={tmpRecentMinimum}
+                                onChange={(e) => setTmpRecentMinimum(e.target.value)}
+                            >
+                                {['1', '5', '15', '30'].map(v =>
+                                    <FormControlLabel
+                                        key={v}
+                                        value={v}
+                                        control={<Radio />}
+                                        label={v}
+                                        disabled={tmpRecentLimit !== 'all' && Number(v) > Number(tmpRecentLimit)}
                                     />
                                 )}
                             </RadioGroup>
@@ -216,6 +246,7 @@ function SettingsDialog({ open, onClose }) {
                             setLayoutMode(tmpLayoutMode);
                             setRecentDays(tmpRecentDays);
                             setRecentLimit(tmpRecentLimit);
+                            setRecentMinimum(tmpRecentMinimum);
                             setDiscordEnabled(tmpDiscordEnabled);
                             setRecordSaveMode(tmpRecordSaveMode);
                             onClose();
