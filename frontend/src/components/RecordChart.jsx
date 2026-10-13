@@ -1,5 +1,6 @@
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import { getActivityMemoKey } from '../utils/recordChartGrouping';
+import { getDateAxisTicks, getTimeAxis } from '../utils/recordChartAxis';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import { changeStopwatchDetails } from '../utils/stopwatchDetails';
 import { updateRecord as apiUpdateRecord } from '../services/api';
@@ -408,6 +409,16 @@ function RecordChart() {
         return aggregated;
     }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType, periodStart, periodEnd, t]);
 
+    const barXAxisPadding = useMemo(() => {
+        // 棒幅は最短のデータ間隔から決まるため、両端にもその半分の期間を確保する。
+        let minInterval = Infinity;
+        for (let index = 1; index < chartData.length; index += 1) {
+            const interval = chartData[index].dateValue - chartData[index - 1].dateValue;
+            if (interval > 0) minInterval = Math.min(minInterval, interval);
+        }
+        return (Number.isFinite(minInterval) ? minInterval : 86400000) / 2;
+    }, [chartData]);
+
     // 描画された棒に実際に寄与する記録だけを編集対象にする。
     const openDetailsEditor = (key, date) => {
         if (chartType !== 'bar' || groupBy !== 'activityMemo') return;
@@ -529,6 +540,17 @@ function RecordChart() {
         return maxVal;
     }, [chartData, visibleKeys]);
 
+    const timeAxis = useMemo(() => {
+        // 積み上げ棒は各系列の最大値ではなく、棒全体の高さを上限に使う。
+        const maximum = chartType === 'bar'
+            ? chartData.reduce((maximum, row) => Math.max(
+                maximum,
+                visibleKeys.reduce((sum, key) => sum + (row[key] || 0), 0)
+            ), 0)
+            : maxValue;
+        return getTimeAxis(maximum);
+    }, [chartData, visibleKeys, chartType, maxValue]);
+
     // ツールチップ用の数値フォーマット
     const tooltipValueFormatter = (value) => {
         const roundedValue = Math.round(value);
@@ -541,10 +563,10 @@ function RecordChart() {
     };
     // y軸表示のフォーマット
     const yAxisTimeValueFormatter = (value) => {
-        const roundedValue = Math.round(value);
         if (aggregationUnit === 'time') {
-            if (maxValue < 120) return t("{count} minutes", { count: value }) // 最大値が2時間未満の場合はそのまま表示する
-            const hours = Math.floor(roundedValue / 60);
+            if (maxValue < 120 || value < 60) return t("{count} minutes", { count: value });
+            // 小数で時間を表し、端数を残しつつラベルを短くする。
+            const hours = Number((value / 60).toFixed(2));
             return t("{count} hours", { count: hours });
         }
         return value;
@@ -693,6 +715,13 @@ function RecordChart() {
 
         return Math.max(...visibleKeys.map(k => ctx.measureText(getSeriesLabel(k)).width)) + 12;
     }, [visibleKeys, getSeriesLabel]);
+
+    const dateAxisTicks = useMemo(() => getDateAxisTicks(
+        chartData[0]?.dateValue,
+        chartData[chartData.length - 1]?.dateValue,
+        chartWidth - 80 - (chartType === 'line' ? Math.max(32, longestLabelWidth) : 32),
+        xAxisUnit
+    ), [chartData, chartWidth, chartType, longestLabelWidth, xAxisUnit]);
 
     const oneDayLabelWidth = useMemo(() => {
         if (oneDayChartData.length === 0) return 160;
@@ -1136,7 +1165,7 @@ function RecordChart() {
                     ) : (
                         <ResponsiveContainer width="100%" height={chartHeight}>
                             {chartType === 'line' ? (
-                                <LineChart data={chartData} margin={{ left: 25, right: longestLabelWidth }}>
+                                <LineChart data={chartData} margin={{ top: 16, left: 25, right: Math.max(32, longestLabelWidth) }}>
                                     <CartesianGrid
                                         stroke={theme.palette.mode === 'dark' ? '#222' : '#eee'}
                                     />
@@ -1145,12 +1174,15 @@ function RecordChart() {
                                         dataKey='dateValue'
                                         scale='time'
                                         domain={['dataMin', 'dataMax']}
+                                        ticks={dateAxisTicks}
+                                        interval={0}
                                         tickFormatter={xAxisTickFormatter}
                                     />
                                     <YAxis
                                         tickCount={8}
                                         tickFormatter={yAxisTimeValueFormatter}
                                         domain={[0, dataMax => dataMax < 120 ? Math.ceil(dataMax / 5) * 5 : Math.ceil(dataMax / 60) * 60]}
+                                        {...(aggregationUnit === 'time' ? timeAxis : {})}
                                     />
                                     <Tooltip
                                         content={<CustomTooltip />}
@@ -1276,7 +1308,7 @@ function RecordChart() {
                                     data={selectedPeriod === '1d' ? oneDayChartData : chartData}
                                     margin={selectedPeriod === '1d'
                                         ? { top: 8, right: 24, bottom: 8, left: 20 }
-                                        : { left: 20 }
+                                        : { top: 16, right: 32, left: 20 }
                                     }
                                     layout={selectedPeriod === '1d' ? 'vertical' : 'horizontal'}
                                     barCategoryGap={selectedPeriod === '1d' ? '0%' : '10%'}
@@ -1315,9 +1347,11 @@ function RecordChart() {
                                             type="number"
                                             dataKey="dateValue"
                                             scale="time"
+                                            ticks={dateAxisTicks}
+                                            interval={0}
                                             domain={[
-                                                dataMin => dataMin - 86400000 / 2,
-                                                dataMax => dataMax + 86400000 / 2
+                                                dataMin => dataMin - barXAxisPadding,
+                                                dataMax => dataMax + barXAxisPadding
                                             ]}
                                             tickFormatter={xAxisTickFormatter}
                                         />
@@ -1331,6 +1365,7 @@ function RecordChart() {
                                                     ? Math.ceil(dataMax / 5) * 5
                                                     : Math.ceil(dataMax / 60) * 60
                                             ]}
+                                            {...(aggregationUnit === 'time' ? timeAxis : {})}
                                         />
                                     )}
                                     {selectedPeriod !== '1d' && (
