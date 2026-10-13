@@ -1,6 +1,4 @@
-import atexit
 import logging
-import os
 import time
 
 from pypresence import Presence
@@ -30,8 +28,7 @@ class DiscordRPCManager:
                 print("Discord RPC connected")
             except Exception as e:
                 # 接続失敗を接続済みと誤判定せず、次回の再接続を可能にする。
-                self.rpc = None
-                self.start_time = None
+                self.close(clear=False)
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
     def update_presence(self, state, large_text, details, large_image, application_name=None):
@@ -41,7 +38,7 @@ class DiscordRPCManager:
                     payload = Payload.set_activity(
                         state=state,
                         details=details,
-                        start=self.start_time,
+                        start=int(self.start_time) * 1000,
                         large_image=large_image,
                         large_text=large_text,
                         instance=True,
@@ -62,24 +59,32 @@ class DiscordRPCManager:
                         start=self.start_time,  # 接続開始時刻を利用
                     )
             except Exception as e:
+                self.close(clear=False)
                 logger.error("Failed to update Discord RPC: %s", e)
+                raise
 
-    def close(self):
-        if self.rpc:
+    def close(self, clear=True):
+        rpc, self.rpc = self.rpc, None
+        self.start_time = None
+        if rpc is None:
+            return
+        try:
+            if clear:
+                rpc.clear()
+        except Exception as e:
+            logger.error("Failed to clear Discord RPC: %s", e)
+        finally:
             try:
-                self.rpc.clear()
-                logger.info("Discord RPC disconnected")
+                rpc.close()
             except Exception as e:
-                logger.error("Error while closing Discord RPC: %s", e)
-            finally:
-                self.rpc = None
-    
+                logger.error("Failed to close Discord RPC: %s", e)
+                # 接続前の失敗などでライブラリの終了処理が中断してもループを解放する。
+                if getattr(rpc, 'loop', None) is not None and not rpc.loop.is_closed():
+                    rpc.loop.close()
+
     def is_connected(self):
-        """
-        実際に rpc オブジェクトが存在し、連携が切れていないかどうかを確認。
-        「切れていれば」基本的に self.rpc.update() で例外が起き、close()されているはずと判断。
-        """
-        return (self.rpc is not None)
+        # 通信失敗時には接続を破棄し、次の開始要求で再接続する。
+        return self.rpc is not None
 
 def get_discord_manager_for_group(group):
     global _instance

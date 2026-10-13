@@ -1,12 +1,26 @@
 from flask import Blueprint, request, jsonify, current_app
 from ..discord_presence_manager import get_discord_manager_for_group
-import os
+from functools import wraps
+from threading import RLock
 
 discord_bp = Blueprint('discord', __name__)
 
 DISCORD_MANAGERS = {}
+DISCORD_SESSIONS = {}
+_discord_lock = RLock()
+
+
+def serialized(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        # 同時要求による二重接続と通信ループの競合を防ぐ。
+        with _discord_lock:
+            return function(*args, **kwargs)
+    return wrapped
+
 
 @discord_bp.route('/api/discord_presence/start', methods=['POST'])
+@serialized
 def discord_presence_start():
     data = request.get_json()
     # 必要な情報（group, activity_name, details, asset_key）を取得
@@ -14,17 +28,27 @@ def discord_presence_start():
     activity_name = data.get('activity_name')
     details = data.get('details')
     asset_key = data.get('asset_key') or "default_image"
-    # すでに接続が存在していたら重複して開始しない
-    for grp, mgr in DISCORD_MANAGERS.items():
-        if mgr.is_connected():
+    session_id = data.get('session_id')
+    # 同じ計測からの要求だけ再接続・更新を許可する。
+    for grp, mgr in list(DISCORD_MANAGERS.items()):
+        if not mgr.is_connected():
+            del DISCORD_MANAGERS[grp]
+            DISCORD_SESSIONS.pop(grp, None)
+            continue
+        if mgr.is_connected() and not (grp == group and session_id and DISCORD_SESSIONS.get(grp) == session_id):
             return jsonify({'error': 'Another Discord session is active, cannot start a new one'}), 400
     manager = get_discord_manager_for_group(group)
     if not manager:
         return jsonify({'error': f'No CLIENT_ID for group {group}'}), 400
     try:
+        previous_manager = DISCORD_MANAGERS.get(group)
+        if previous_manager is not None and previous_manager is not manager:
+            previous_manager.close()
         manager.connect()
         if not manager.is_connected():
             return jsonify({'error': 'Failed to connect to Discord'}), 503
+        if data.get('start_time') is not None:
+            manager.start_time = float(data['start_time'])
         manager.update_presence(
             state=group,
             large_text=activity_name,
@@ -33,12 +57,14 @@ def discord_presence_start():
             application_name=activity_name
         )
         DISCORD_MANAGERS[group] = manager
+        DISCORD_SESSIONS[group] = session_id
         return jsonify({'message': 'Discord presence started'}), 200
     except Exception as e:
         current_app.logger.error("Error in discord_presence: %s", e, exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @discord_bp.route('/api/discord_presence/stop', methods=['POST'])
+@serialized
 def discord_presence_stop():
     data = request.get_json()
     group = data.get('group')
@@ -46,10 +72,13 @@ def discord_presence_stop():
         return jsonify({'error': 'Group is required'}), 400
 
     manager = DISCORD_MANAGERS.get(group)
+    if data.get('session_id') and DISCORD_SESSIONS.get(group) != data['session_id']:
+        return jsonify({'error': 'Discord session belongs to another stopwatch'}), 409
     if manager:
         try:
             manager.close()
             del DISCORD_MANAGERS[group]
+            DISCORD_SESSIONS.pop(group, None)
             return jsonify({'message': 'Discord presence stopped'}), 200
         except Exception as e:
             current_app.logger.error("Error in discord_presence: %s", e, exc_info=True)
@@ -57,6 +86,7 @@ def discord_presence_stop():
     return jsonify({'error': 'No manager found'}), 400
 
 @discord_bp.route('/api/discord_presence/status', methods=['GET'])
+@serialized
 def discord_presence_status():
     """
     現在Discordに接続中かどうかを返す簡易エンドポイント。
@@ -68,6 +98,7 @@ def discord_presence_status():
     return jsonify({'connected': False})
 
 @discord_bp.route('/api/discord_presence/update', methods=['POST'])
+@serialized
 def discord_presence_update():
     data = request.get_json()
     group = data.get('group')
@@ -76,6 +107,8 @@ def discord_presence_update():
     asset_key = data.get('asset_key') or "default_image"
 
     mgr = DISCORD_MANAGERS.get(group)
+    if data.get('session_id') and DISCORD_SESSIONS.get(group) != data['session_id']:
+        return jsonify({'error': 'Discord session belongs to another stopwatch'}), 409
     if not mgr or not mgr.is_connected():
         return jsonify({'error': 'No active Discord session'}), 400
 

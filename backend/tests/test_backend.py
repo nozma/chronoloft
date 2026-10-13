@@ -39,6 +39,9 @@ class DatabaseTestCase(unittest.TestCase):
         # モジュールの共有状態もテスト間で分離する。
         self.manager_patch = patch.object(discord_routes, 'DISCORD_MANAGERS', {})
         self.manager_patch.start()
+        self.sessions_patch = patch.object(discord_routes, 'DISCORD_SESSIONS', {})
+        self.sessions_patch.start()
+        self.addCleanup(self.sessions_patch.stop)
         self.addCleanup(self.manager_patch.stop)
         self.instance_patch = patch.object(rpc_module, '_instance', None)
         self.instance_patch.start()
@@ -200,6 +203,42 @@ class DiscordRouteTests(DatabaseTestCase):
             presence.return_value.connect.side_effect = None
             self.assertEqual(self.client.post('/api/discord_presence/start', json={'group': '学習'}).status_code, 200)
 
+    def test_same_session_can_refresh_but_other_session_cannot_stop_it(self):
+        data = {'group': '学習', 'session_id': 'first', 'start_time': 1234567890}
+        with patch.object(rpc_module, 'Presence') as presence:
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+            presence.return_value.connect.assert_called_once()
+            self.assertEqual(rpc_module._instance.start_time, 1234567890)
+            other = {**data, 'session_id': 'second'}
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=other).status_code, 400)
+            self.assertEqual(self.client.post('/api/discord_presence/stop', json=other).status_code, 409)
+            self.assertEqual(self.client.post('/api/discord_presence/update', json=other).status_code, 409)
+            self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': True})
+
+    def test_failed_update_reports_failure_and_next_start_reconnects(self):
+        data = {'group': '学習', 'session_id': 'first'}
+        with patch.object(rpc_module, 'Presence') as presence:
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+            presence.return_value.update.side_effect = RuntimeError('切断')
+            with self.assertLogs(level='ERROR'):
+                self.assertEqual(self.client.post('/api/discord_presence/update', json=data).status_code, 500)
+            self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': False})
+            presence.return_value.close.assert_called_once()
+            presence.return_value.update.side_effect = None
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+            self.assertEqual(presence.return_value.connect.call_count, 2)
+
+    def test_initial_update_failure_does_not_leave_connected_session(self):
+        data = {'group': '学習', 'session_id': 'first'}
+        with patch.object(rpc_module, 'Presence') as presence:
+            presence.return_value.update.side_effect = RuntimeError('切断')
+            with self.assertLogs(level='ERROR'):
+                self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 500)
+            self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': False})
+            presence.return_value.update.side_effect = None
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+
     def test_rejects_second_session(self):
         manager = Mock()
         manager.is_connected.return_value = True
@@ -264,18 +303,20 @@ class DiscordManagerTests(unittest.TestCase):
         self.assertEqual(activity['state'], '学習')
         self.assertEqual(activity['details'], '本A')
         self.assertEqual(activity['assets']['large_image'], 'book')
-        self.assertEqual(activity['timestamps']['start'], int(self.manager.start_time))
+        self.assertEqual(activity['timestamps']['start'], int(self.manager.start_time) * 1000)
 
     def test_update_without_connection_does_nothing(self):
         self.manager.update_presence('学習', '読書', '本A', 'book')
         self.factory.assert_not_called()
         self.assertFalse(self.manager.is_connected())
 
-    def test_update_failure_is_logged_without_crashing(self):
+    def test_update_failure_disconnects_and_propagates(self):
         self.manager.connect()
         self.rpc.update.side_effect = RuntimeError('切断')
-        with self.assertLogs(rpc_module.logger, level='ERROR'):
+        with self.assertLogs(rpc_module.logger, level='ERROR'), self.assertRaises(RuntimeError):
             self.manager.update_presence('学習', '読書', '本A', 'book')
+        self.assertFalse(self.manager.is_connected())
+        self.rpc.close.assert_called_once()
 
     def test_close_resets_connection_even_when_clear_fails(self):
         self.manager.connect()
@@ -285,6 +326,7 @@ class DiscordManagerTests(unittest.TestCase):
         self.assertFalse(self.manager.is_connected())
         self.manager.close()
         self.rpc.clear.assert_called_once_with()
+        self.rpc.close.assert_called_once_with()
 
     def test_close_and_reconnect(self):
         self.manager.connect()

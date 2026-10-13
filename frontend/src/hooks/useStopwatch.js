@@ -17,7 +17,7 @@ import { STOPWATCH_SYNC_EVENT } from '../contexts/RecordContext';
  * - Discord連携の開始・停止
  * - localStorageに計測状態を保存・復元
  */
-function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) {
+function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, discordEnabled = true }) {
     const { t } = useI18n();
 
     const [displayTime, setDisplayTime] = useState(0); // ストップウォッチの経過時間(ms)
@@ -26,6 +26,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     const [pausedStartTime, setPausedStartTime] = useState(null); // 一時停止時の開始時刻
     const [memo, setMemo] = useState(''); // メモ
     const [discordData, setDiscordData] = useState(initialDiscordData); // Discordデータ
+    const [discordConnected, setDiscordConnected] = useState(false);
     const [isDiscordBusy, setIsDiscordBusy] = useState(false); // DiscordAPI呼び出し中フラグ
 
     const sessionRef = useRef(null);
@@ -35,7 +36,13 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     memoRef.current = memo;
     const timerRef = useRef(null); // setIntervalのID保持
     const startRef = useRef(null); // 初期化時に最新の開始処理を参照する
-    const discordLockRef = useRef(false); // Discord連係処理のリクエストが走っているかのRef
+    const discordQueueRef = useRef(Promise.resolve());
+    const discordGenerationRef = useRef(0);
+    const connectedDataRef = useRef(null);
+    const presenceDetailsRef = useRef(null);
+    const pendingDiscordStartRef = useRef(null);
+    const discordEnabledRef = useRef(discordEnabled);
+    discordEnabledRef.current = discordEnabled;
 
     const notifyStopwatchSync = () => {
         if (typeof window === 'undefined') return;
@@ -180,38 +187,92 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData === undefined ? discordData : newDiscordData;
         setDiscordData(discordDataToUse);
-        await startDiscordIfNeeded(discordDataToUse);
+        presenceDetailsRef.current = null;
+        await startDiscordIfNeeded(discordDataToUse, now);
     };
 
-    const stopDiscordIfNeeded = async () => {
-        if (!discordData || discordLockRef.current) return;
-        setIsDiscordBusy(true);
-        discordLockRef.current = true;
-        try {
-            await stopDiscordPresence({ group: discordData.group });
-            console.log('Discord presence stopped');
-        } catch (error) {
-            console.error('Failed to stop Discord presence:', error);
-        } finally {
-            discordLockRef.current = false;
-            setIsDiscordBusy(false);
-        }
+    // 開始・停止を順に実行し、停止要求後に古い開始要求が復活することを防ぐ。
+    const enqueueDiscord = (operation) => {
+        const request = discordQueueRef.current.then(async () => {
+            setIsDiscordBusy(true);
+            try {
+                await operation();
+            } catch (error) {
+                setDiscordConnected(false);
+                console.error('Discord presence request failed:', error);
+            } finally {
+                setIsDiscordBusy(false);
+            }
+        });
+        discordQueueRef.current = request;
+        return request;
     };
 
-    const startDiscordIfNeeded = async (data) => {
-        if (!data || discordLockRef.current) return;
-        setIsDiscordBusy(true);
-        discordLockRef.current = true;
-        try {
-            await startDiscordPresence(data);
-            console.log('Discord presence started');
-        } catch (error) {
-            console.error('Failed to start Discord presence:', error);
-        } finally {
-            discordLockRef.current = false;
-            setIsDiscordBusy(false);
-        }
+    const stopDiscordIfNeeded = () => {
+        discordGenerationRef.current += 1;
+        pendingDiscordStartRef.current = null;
+        const data = connectedDataRef.current || discordData;
+        const sessionId = sessionRef.current;
+        return enqueueDiscord(async () => {
+            if (!data) return;
+            await stopDiscordPresence({ group: data.group, session_id: sessionId });
+            connectedDataRef.current = null;
+            setDiscordConnected(false);
+        });
     };
+
+    const startDiscordIfNeeded = (data, startTime = currentStartTime) => {
+        if (!discordEnabledRef.current || !data || startTime === null || stoppingRef.current) return Promise.resolve();
+        const generation = discordGenerationRef.current;
+        const sessionId = sessionRef.current;
+        const details = presenceDetailsRef.current ?? data.details;
+        const requestKey = JSON.stringify([sessionId, data, startTime, details]);
+        if (pendingDiscordStartRef.current?.key === requestKey) {
+            return pendingDiscordStartRef.current.promise;
+        }
+        const pending = { key: requestKey };
+        pending.promise = enqueueDiscord(async () => {
+            if (!discordEnabledRef.current || generation !== discordGenerationRef.current || stoppingRef.current) return;
+            await startDiscordPresence({
+                ...data,
+                details,
+                session_id: sessionId,
+                start_time: startTime / 1000,
+            });
+            connectedDataRef.current = data;
+            setDiscordConnected(discordEnabledRef.current);
+        }).finally(() => {
+            if (pendingDiscordStartRef.current === pending) pendingDiscordStartRef.current = null;
+        });
+        pendingDiscordStartRef.current = pending;
+        return pending.promise;
+    };
+
+    const refreshDiscord = () => {
+        presenceDetailsRef.current = memo;
+        return startDiscordIfNeeded(discordData);
+    };
+
+    useEffect(() => () => {
+        // 画面を切り替えた後に古い待機要求を実行しない。
+        discordGenerationRef.current += 1;
+        pendingDiscordStartRef.current = null;
+    }, []);
+
+    // 設定OFFでは待機中の開始要求も取り消し、進行中の通信の後に停止する。
+    useEffect(() => {
+        if (!discordEnabled) stopDiscordIfNeeded();
+    }, [discordEnabled]);
+
+    // 復元時と稼働中に接続を確認し、Discordやバックエンドの再起動から復帰する。
+    useEffect(() => {
+        if (!discordEnabled || !restored || currentStartTime === null || !discordData) return;
+        startDiscordIfNeeded(discordData, currentStartTime);
+        const interval = setInterval(() => {
+            startDiscordIfNeeded(discordData, currentStartTime);
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [restored, currentStartTime, discordData, discordEnabled]);
 
     // -----------------------------------------------
     // ストップウォッチ停止処理
@@ -262,6 +323,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     const pause = async () => {
         if (currentStartTime === null) return null;
+        stoppingRef.current = true;
         const startTime = Number(currentStartTime);
         if (!Number.isFinite(startTime)) return null;
         const elapsed = Date.now() - startTime;
@@ -283,6 +345,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
     // -----------------------------------------------
     const resume = async () => {
         if (currentStartTime !== null) return;
+        stoppingRef.current = false;
         if (pausedStartTime !== null) {
             const startTime = pausedStartTime;
             const nextDisplayTime = Date.now() - startTime;
@@ -295,7 +358,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
                 displayTime: nextDisplayTime,
                 memo
             });
-            await startDiscordIfNeeded(discordData);
+            await startDiscordIfNeeded(discordData, startTime);
             return;
         }
         const startTime = Date.now() - displayTime;
@@ -307,7 +370,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
             displayTime,
             memo
         });
-        await startDiscordIfNeeded(discordData);
+        await startDiscordIfNeeded(discordData, startTime);
     };
 
     // -----------------------------------------------
@@ -362,6 +425,8 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel }) 
         finishAndReset,    // 現在の計測を完了し、すぐ次を開始
         memo,              // メモ文字列
         setMemo,           // メモのsetter
+        refreshDiscord,
+        discordConnected,
         isDiscordBusy,     // DiscordAPIリクエスト送信中フラグ
     };
 }
