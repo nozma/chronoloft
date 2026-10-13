@@ -1,5 +1,13 @@
 export const messages = {
     "en": {
+        "The stopwatch changed. Close this dialog and open the bar again.": "The stopwatch changed. Close this dialog and open the bar again.",
+        "The record changed. Close this dialog and open the bar again.": "The record changed. Close this dialog and open the bar again.",
+        "Updated {success} items; {remaining} items remain. {reason}": "Updated {success} items; {remaining} items remain. {reason}",
+        "Edit Details": "Edit Details",
+        "Records to edit: {count}": "Records to edit: {count}",
+        "Records to edit: {count} (+{stopwatch})": "Records to edit: {count} (+{stopwatch})",
+        "Main Stopwatch": "Main Stopwatch",
+        "Main and Sub Stopwatches": "Main and Sub Stopwatches",
         "History": "History",
         "Settings": "Settings",
         "Reset UI Settings": "Reset UI Settings",
@@ -160,6 +168,14 @@ export const messages = {
         "{from}–{to} of {count}": "{from}–{to} of {count}"
     },
     "ja": {
+        "The stopwatch changed. Close this dialog and open the bar again.": "対象の計測または詳細が変わりました。画面を閉じて棒を開き直してください。",
+        "The record changed. Close this dialog and open the bar again.": "対象の記録が変わりました。画面を閉じて棒を開き直してください。",
+        "Updated {success} items; {remaining} items remain. {reason}": "{success}件更新済み・{remaining}件未更新です。{reason}",
+        "Edit Details": "詳細を編集",
+        "Records to edit: {count}": "編集対象の記録：{count}件",
+        "Records to edit: {count} (+{stopwatch})": "編集対象の記録：{count}件（＋{stopwatch}）",
+        "Main Stopwatch": "メインストップウォッチ",
+        "Main and Sub Stopwatches": "メイン・サブストップウォッチ",
         "History": "履歴",
         "Settings": "設定",
         "Reset UI Settings": "画面の設定をリセット",
