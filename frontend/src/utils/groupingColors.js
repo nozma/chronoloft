@@ -61,13 +61,13 @@ function getActivityMemoColorParts(key) {
     };
 }
 
-export function getGroupingColor(groupBy, key, themeMode) {
+export function getGroupingColor(groupBy, key, themeMode, activityMemoParts) {
     const normalizedKey = String(key);
     let colorKey = `${groupBy}:${normalizedKey}`;
     let hue = (hashColorKey(`hue:${colorKey}`) % 3600) / 10;
 
     if (groupBy === 'activityMemo') {
-        const { activityName, memo } = getActivityMemoColorParts(normalizedKey);
+        const { activityName, memo } = activityMemoParts ?? getActivityMemoColorParts(normalizedKey);
         const activityColorKey = `activity:${activityName}`;
         hue = (hashColorKey(`hue:${activityColorKey}`) % 3600) / 10;
         if (memo) {

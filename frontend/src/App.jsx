@@ -44,7 +44,10 @@ function App() {
                 breakpoints: {
                     values: {
                         xs: 0,
-                        md: 1100
+                        sm: 600,
+                        md: 1100,
+                        lg: 1200,
+                        xl: 1536,
                     },
                 },
             }, language === 'ja' ? jaJP : enUS, language === 'ja' ? gridJaJP : gridEnUS),

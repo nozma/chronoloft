@@ -75,6 +75,8 @@ const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
         tags: activity.tags || [],
         memo: normalizeDetails(stopwatchState.memo),
         is_live: true,
+        stopwatch_key: idPrefix === 'main' ? 'stopwatchState' : 'subStopwatchState',
+        session_id: stopwatchState.sessionId,
         is_paused: !(Number.isFinite(startTime) && startTime > 0),
     };
 };

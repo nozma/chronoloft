@@ -1,3 +1,8 @@
+import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
+import { getActivityMemoKey } from '../utils/recordChartGrouping';
+import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
+import { changeStopwatchDetails } from '../utils/stopwatchDetails';
+import { updateRecord as apiUpdateRecord } from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -6,9 +11,10 @@ import {
     Typography,
     Collapse,
     TextField,
+    Autocomplete,
     MenuItem,
     IconButton,
-    Button
+    Button, Dialog, DialogTitle, DialogContent, DialogActions, Alert
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 import {
@@ -102,9 +108,7 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
                 groupKeys.push(t("No Tag"));
             }
         } else if (groupBy === 'activityMemo') {
-            // Activity 名と memo を連結して 1 つのキーにする
-            const memoPart = record.memo ? ` / ${record.memo}` : '';
-            groupKeys.push((record.activity_name || t("Unknown Activity")) + memoPart);
+            groupKeys.push(getActivityMemoKey(record));
         }
 
         const addValueToGroupKeys = (periodKey, value) => {
@@ -216,7 +220,16 @@ function getPeriodRange(period, offset = 0) {
 function RecordChart() {
     const { t, language } = useI18n();
     // コンテキストから必要なデータを取得
-    const { recordsWithLive: records } = useRecords();
+    const { recordsWithLive: records, records: savedRecords, refreshRecords } = useRecords();
+    const [detailsEdit, setDetailsEdit] = useState(null);
+    const [detailsValue, setDetailsValue] = useState('');
+    const [detailsError, setDetailsError] = useState('');
+    const [detailsSaving, setDetailsSaving] = useState(false);
+    const detailsActivityId = detailsEdit?.targets[0]?.activity_id;
+    const detailsMemoOptions = useMemo(
+        () => getRecentMemoOptions(savedRecords, detailsActivityId),
+        [savedRecords, detailsActivityId]
+    );
     const { excludedGroupIds } = useGroups();
     const { excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
@@ -395,6 +408,85 @@ function RecordChart() {
         return aggregated;
     }, [filteredRecords, xAxisUnit, groupBy, aggregationUnit, chartType, periodStart, periodEnd, t]);
 
+    // 描画された棒に実際に寄与する記録だけを編集対象にする。
+    const openDetailsEditor = (key, date) => {
+        if (chartType !== 'bar' || groupBy !== 'activityMemo') return;
+        const targets = filteredRecords.filter(record => {
+            if (getActivityMemoKey(record) !== key) return false;
+            if (aggregationUnit === 'time') {
+                if (record.unit !== 'minutes') return false;
+                let contributes = false;
+                forEachLocalDayMinuteSegment(record, start => {
+                    if (!date || formatPeriodKey(start, xAxisUnit) === date) contributes = true;
+                }, { clipStart: periodStart, clipEnd: periodEnd.endOf('day') });
+                return contributes;
+            }
+            return ['minutes', 'count'].includes(record.unit) &&
+                (!date || formatPeriodKey(DateTime.fromISO(record.created_at, { zone: 'utc' }).toLocal(), xAxisUnit) === date);
+        });
+        if (!targets.length) return;
+        const startLabel = periodStart.toFormat('yyyy-MM-dd');
+        const endLabel = periodEnd.toFormat('yyyy-MM-dd');
+        let periodLabel = date || (startLabel === endLabel ? startLabel : `${startLabel} – ${endLabel}`);
+        if (date && xAxisUnit === 'week') {
+            const weekStart = DateTime.fromFormat(date, "kkkk-'W'WW").setLocale(language);
+            if (weekStart.isValid) {
+                const weekEnd = weekStart.plus({ days: 6 });
+                if (language === 'ja') {
+                    const endFormat = weekStart.year === weekEnd.year ? 'M月d日' : 'yyyy年M月d日';
+                    periodLabel = `${weekStart.toFormat('yyyy年M月d日')} ～ ${weekEnd.toFormat(endFormat)}`;
+                } else {
+                    periodLabel = `${weekStart.toFormat('MMM d, yyyy')} – ${weekEnd.toFormat('MMM d, yyyy')}`;
+                }
+            }
+        } else if (date && xAxisUnit === 'month') {
+            const month = DateTime.fromFormat(date, 'yyyy-MM').setLocale(language);
+            if (month.isValid) periodLabel = month.toFormat(language === 'ja' ? 'yyyy年M月' : 'MMMM yyyy');
+        }
+        setDetailsEdit({ label: getSeriesLabel(key), date, periodLabel, targets });
+        setDetailsValue(targets[0].memo || '');
+        setDetailsError('');
+    };
+
+    const saveChartDetails = async () => {
+        if (!detailsEdit || detailsSaving) return;
+        const targets = detailsEdit.targets;
+        const nextMemo = normalizeDetails(detailsValue);
+        const remaining = [...targets];
+        setDetailsSaving(true);
+        setDetailsError('');
+        try {
+            // API送信前と計測への適用直前に、計測の切り替え・詳細変更を確認する。
+            if (targets.some(record => record.is_live && !changeStopwatchDetails(record, nextMemo, true))) {
+                throw new Error(t("The stopwatch changed. Close this dialog and open the bar again."));
+            }
+            for (const record of targets) {
+                if (record.is_live) continue;
+                const current = records.find(item => item.id === record.id);
+                if (!current || current.activity_id !== record.activity_id || current.memo !== record.memo) {
+                    throw new Error(t("The record changed. Close this dialog and open the bar again."));
+                }
+                if (record.memo !== nextMemo) await apiUpdateRecord(record.id, { memo: nextMemo });
+                remaining.splice(remaining.indexOf(record), 1);
+            }
+            for (const record of targets.filter(item => item.is_live)) {
+                if (!changeStopwatchDetails(record, nextMemo)) {
+                    throw new Error(t("The stopwatch changed. Close this dialog and open the bar again."));
+                }
+                remaining.splice(remaining.indexOf(record), 1);
+            }
+            setDetailsEdit(null);
+        } catch (error) {
+            setDetailsEdit(previous => ({ ...previous, targets: remaining }));
+            setDetailsError(t("Updated {success} items; {remaining} items remain. {reason}", {
+                success: targets.length - remaining.length, remaining: remaining.length, reason: error.message,
+            }));
+        } finally {
+            await refreshRecords();
+            setDetailsSaving(false);
+        }
+    };
+
     // 表示範囲の累積合計値で降順ソートしたエントリ
     const sortedEntries = useMemo(() => {
         const totals = {};
@@ -473,11 +565,17 @@ function RecordChart() {
         filteredRecords.forEach(record => {
             const activityLabel = record.activity_name || t("Unknown Activity");
             const memoLabel = record.memo || '';
-            const key = activityLabel + (memoLabel ? ` / ${memoLabel}` : '');
-            labels.set(key, { activityLabel, memoLabel });
+            const key = getActivityMemoKey(record);
+            const displayLabel = activityLabel + (memoLabel ? ` / ${memoLabel}` : '');
+            labels.set(key, { activityLabel, memoLabel, displayLabel });
         });
         return labels;
     }, [filteredRecords, t]);
+
+    const getSeriesLabel = useCallback(
+        key => groupBy === 'activityMemo' ? activityMemoLabels.get(key)?.displayLabel ?? key : key,
+        [groupBy, activityMemoLabels]
+    );
 
     const oneDayChartData = useMemo(() => {
         if (selectedPeriod !== '1d') return [];
@@ -490,7 +588,7 @@ function RecordChart() {
                 const axisLabel = labelParts?.activityLabel ?? key;
                 return {
                     key,
-                    itemLabel: key,
+                    itemLabel: labelParts?.displayLabel ?? key,
                     axisLabel,
                     memoLabel: labelParts?.memoLabel ?? '',
                     displayLabel: `${axisLabel} (${oneDayLabelValueFormatter(total)})`,
@@ -566,8 +664,13 @@ function RecordChart() {
     const theme = useTheme();
     // Groupingと項目名から、表示順に依存しない共通色を割り当てる
     const colorScale = useCallback(
-        (key) => getGroupingColor(groupBy, key, theme.palette.mode),
-        [groupBy, theme.palette.mode]
+        (key) => {
+            const parts = groupBy === 'activityMemo' ? activityMemoLabels.get(key) : undefined;
+            return getGroupingColor(groupBy, getSeriesLabel(key), theme.palette.mode, parts && {
+                activityName: parts.activityLabel, memo: parts.memoLabel,
+            });
+        },
+        [groupBy, theme.palette.mode, activityMemoLabels, getSeriesLabel]
     );
 
     const oneDayBarColor = useCallback((key) => {
@@ -588,8 +691,8 @@ function RecordChart() {
         const ctx = canvas.getContext('2d');
         ctx.font = '12px sans-serif';
 
-        return Math.max(...visibleKeys.map(k => ctx.measureText(k).width)) + 12;
-    }, [visibleKeys]);
+        return Math.max(...visibleKeys.map(k => ctx.measureText(getSeriesLabel(k)).width)) + 12;
+    }, [visibleKeys, getSeriesLabel]);
 
     const oneDayLabelWidth = useMemo(() => {
         if (oneDayChartData.length === 0) return 160;
@@ -771,7 +874,7 @@ function RecordChart() {
                                 }}
                             />
                             <Typography variant="body2" sx={{ fontSize: 12 }}>
-                                {entry.name}
+                                {getSeriesLabel(entry.dataKey ?? entry.name)}
                             </Typography>
                         </Box>
                         <Typography variant="body2" sx={{ fontWeight: 'bold', fontSize: 12 }}>
@@ -782,6 +885,19 @@ function RecordChart() {
             </Box>
         );
     };
+
+    const editRecordCount = detailsEdit?.targets.filter(item => !item.is_live).length || 0;
+    const editStopwatchKeys = new Set(detailsEdit?.targets.filter(item => item.is_live).map(item => item.stopwatch_key));
+    const editStopwatchLabel = editStopwatchKeys.has('stopwatchState')
+        ? editStopwatchKeys.has('subStopwatchState')
+            ? t("Main and Sub Stopwatches")
+            : t("Main Stopwatch")
+        : editStopwatchKeys.has('subStopwatchState') ? t("Sub Stopwatch") : '';
+    const editTargetLabel = editRecordCount > 0
+        ? editStopwatchLabel
+            ? t("Records to edit: {count} (+{stopwatch})", { count: editRecordCount, stopwatch: editStopwatchLabel })
+            : t("Records to edit: {count}", { count: editRecordCount })
+        : editStopwatchLabel;
 
     return (
         <Box
@@ -1136,7 +1252,7 @@ function RecordChart() {
                                                                 alignmentBaseline="middle"
                                                                 textAnchor="start"
                                                             >
-                                                                {label.key}
+                                                                {getSeriesLabel(label.key)}
                                                             </text>
                                                         </g>
                                                     ))}
@@ -1149,6 +1265,7 @@ function RecordChart() {
                                             key={key}
                                             type="stepAfter"
                                             dataKey={key}
+                                            name={getSeriesLabel(key)}
                                             stroke={colorScale(key)}
                                             dot={false}
                                         />
@@ -1226,6 +1343,8 @@ function RecordChart() {
                                     {selectedPeriod === '1d' ? (
                                         <Bar
                                             dataKey="value"
+                                            onDoubleClick={entry => openDetailsEditor(entry.payload.key)}
+                                            cursor={groupBy === 'activityMemo' ? 'pointer' : undefined}
                                             barSize={oneDayBarSize}
                                             isAnimationActive={false}
                                         >
@@ -1259,6 +1378,9 @@ function RecordChart() {
                                             <Bar
                                                 key={key}
                                                 dataKey={key}
+                                                name={getSeriesLabel(key)}
+                                                onDoubleClick={entry => openDetailsEditor(key, entry.payload.date)}
+                                                cursor={groupBy === 'activityMemo' ? 'pointer' : undefined}
                                                 stackId="a"
                                                 fill={colorScale(key)}
                                             />
@@ -1270,6 +1392,35 @@ function RecordChart() {
                     )}
                 </Box>
             </Collapse>
+            <Dialog open={Boolean(detailsEdit)} onClose={() => !detailsSaving && setDetailsEdit(null)} fullWidth maxWidth="sm">
+                <DialogTitle>{t("Edit Details")}</DialogTitle>
+                <DialogContent>
+                    <Typography>{detailsEdit?.label}</Typography>
+                    <Typography variant="body2">{detailsEdit?.periodLabel}</Typography>
+                    <Typography variant="body2">{editTargetLabel}</Typography>
+                    <Autocomplete
+                        freeSolo
+                        options={detailsMemoOptions}
+                        filterOptions={filterRecentMemoOptions}
+                        inputValue={detailsValue}
+                        onInputChange={(event, value) => setDetailsValue(normalizeDetails(value))}
+                        onChange={(event, value) => setDetailsValue(normalizeDetails(value))}
+                        forcePopupIcon={false}
+                        disableClearable
+                        disabled={detailsSaving}
+                        renderInput={params => (
+                            <TextField {...params} autoFocus fullWidth margin="normal" label={t("Details")}
+                                onPaste={event => pasteDetails(event, setDetailsValue)} />
+                        )}
+                    />
+                    {detailsError && <Alert severity="error">{detailsError}</Alert>}
+                </DialogContent>
+                <DialogActions>
+                    <Button disabled={detailsSaving} onClick={() => setDetailsEdit(null)}>{t("Cancel")}</Button>
+                    <Button disabled={detailsSaving || !detailsEdit?.targets.length}
+                        onClick={saveChartDetails}>{t("Update")}</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
