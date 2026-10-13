@@ -15,7 +15,10 @@
         "start:no_webview:lan": "concurrently \"npm run dev:backend:no_webview\" \"npm run dev:frontend:lan\"",
         "build:frontend": "cd frontend && npm run build",
         "build:pyinstaller": "pyinstaller main.py -y --distpath dist --clean --add-data \"frontend/dist:frontend/dist\" --add-data \"backend/migrations:backend/migrations\" --add-data \"LICENSE:.\" --windowed -n Chronoloft --hidden-import logging.config",
-        "build": "npm run build:frontend && npm run build:pyinstaller"
+        "build": "npm run build:frontend && npm run build:pyinstaller",
+        "test": "npm run test:frontend && npm run test:backend",
+        "test:frontend": "cd frontend && npm test",
+        "test:backend": "cd backend && venv/bin/python -m unittest discover -s tests -v"
     },
     "devDependencies": {
         "concurrently": "^7.0.0",
