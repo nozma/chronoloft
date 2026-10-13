@@ -29,6 +29,9 @@ class DiscordRPCManager:
                 self.start_time = time.time()  # 接続成功時に開始時刻を記録
                 print("Discord RPC connected")
             except Exception as e:
+                # 接続失敗を接続済みと誤判定せず、次回の再接続を可能にする。
+                self.rpc = None
+                self.start_time = None
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
     def update_presence(self, state, large_text, details, large_image, application_name=None):

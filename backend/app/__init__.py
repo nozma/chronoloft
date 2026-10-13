@@ -40,7 +40,7 @@ def get_os_db_path():
 # ====================================
 # Flaskアプリ生成
 # ====================================
-def create_app():
+def create_app(test_config=None):
     # ログ設定
     logging.basicConfig(
         level=logging.INFO,
@@ -63,15 +63,23 @@ def create_app():
         template_folder=frontend_dist
     )
 
-    # DBパスは OS推奨ディレクトリに強制配置
-    db_path = get_os_db_path()
+    # テストはメモリ内DBに限定し、通常のDBパスの取得も行わない。
+    if test_config is not None:
+        if test_config.get('TESTING') is not True or test_config.get('SQLALCHEMY_DATABASE_URI') != 'sqlite:///:memory:':
+            raise ValueError('テスト設定には TESTING=True とメモリ内SQLite DBが必要です')
+        database_uri = 'sqlite:///:memory:'
+    else:
+        database_uri = 'sqlite:///' + os.path.abspath(get_os_db_path())
 
     # SECRET_KEY は都度ランダム生成 (再起動で変わる)
     app.config.from_mapping(
         SECRET_KEY=secrets.token_hex(16),
-        SQLALCHEMY_DATABASE_URI='sqlite:///' + os.path.abspath(db_path),
+        SQLALCHEMY_DATABASE_URI=database_uri,
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
+
+    if test_config is not None:
+        app.config.update(test_config)
 
     # instanceフォルダ（Flaskのinstance_path）を作成
     try:

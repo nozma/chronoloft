@@ -23,6 +23,8 @@ def discord_presence_start():
         return jsonify({'error': f'No CLIENT_ID for group {group}'}), 400
     try:
         manager.connect()
+        if not manager.is_connected():
+            return jsonify({'error': 'Failed to connect to Discord'}), 503
         manager.update_presence(
             state=group,
             large_text=activity_name,
