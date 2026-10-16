@@ -34,6 +34,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
     const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
     const [mainDisplayTime, setMainDisplayTime] = useState(0);
+    const [mainMemo, setMainMemo] = useState('');
 
     const stopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
@@ -79,7 +80,8 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             const hh = Math.floor(totalSeconds / 3600);
             const mm = Math.floor((totalSeconds % 3600) / 60);
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `${formattedTime} ${selectedActivity.name} - Chronoloft`;
+            const details = mainMemo.trim();
+            document.title = `${formattedTime} ${selectedActivity.name}${details ? `｜${details}` : ''} - Chronoloft`;
         }
         else {
             document.title = 'Chronoloft';
@@ -87,7 +89,8 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
     }, [
         stopwatchVisible,
         selectedActivity,
-        mainDisplayTime
+        mainDisplayTime,
+        mainMemo
     ]);
 
     // 「記録作成」ハンドラ
@@ -283,6 +286,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 activityName={selectedActivity.name}
                                 activityGroup={selectedActivity.group_name}
                                 onTick={(time) => setMainDisplayTime(time)}
+                                onMemoChange={setMainMemo}
                             />
                         )}
                     </Box>
