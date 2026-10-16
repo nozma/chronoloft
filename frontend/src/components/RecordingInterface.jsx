@@ -10,7 +10,6 @@ import useLocalStorageState from '../hooks/useLocalStorageState';
 import ActivityStart from './ActivityStart';
 import AddRecordDialog from './AddRecordDialog';
 import Stopwatch from './Stopwatch';
-import SubStopwatch from './SubStopwatch';
 import { calculateTimeDetails } from '../utils/timeUtils';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
@@ -36,12 +35,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
     const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
     const [mainDisplayTime, setMainDisplayTime] = useState(0);
 
-    // サブStopwatch
-    const [subStopwatchVisible, setSubStopwatchVisible] = useLocalStorageState('subStopwatchVisible', false);
-    const [subSelectedActivity, setSubSelectedActivity] = useLocalStorageState('subSelectedActivity', null);
-
     const stopwatchRef = useRef(null);
-    const subStopwatchRef = useRef(null);
     const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
 
     // ダイアログの初期日時を保持
@@ -79,8 +73,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
 
     // タイトル更新
     useEffect(() => {
-        // 1) メインだけ動いている
-        if (stopwatchVisible && selectedActivity && !subStopwatchVisible) {
+        if (stopwatchVisible && selectedActivity) {
             // 経過時間をフォーマット
             const totalSeconds = Math.floor(mainDisplayTime / 1000);
             const hh = Math.floor(totalSeconds / 3600);
@@ -88,27 +81,12 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
             document.title = `${formattedTime} ${selectedActivity.name} - Chronoloft`;
         }
-        // 2) メインとサブ両方動いている
-        else if (stopwatchVisible && selectedActivity && subStopwatchVisible && subSelectedActivity) {
-            const totalSeconds = Math.floor(mainDisplayTime / 1000);
-            const hh = Math.floor(totalSeconds / 3600);
-            const mm = Math.floor((totalSeconds % 3600) / 60);
-            const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            document.title = `${formattedTime} ${selectedActivity.name} (${subSelectedActivity.name}) - Chronoloft`;
-        }
-        // 3) サブだけ動いている
-        else if (!stopwatchVisible && subStopwatchVisible && subSelectedActivity) {
-            document.title = `(${subSelectedActivity.name}) - Chronoloft`;
-        }
-        // 4) 何も動いていない
         else {
             document.title = 'Chronoloft';
         }
     }, [
         stopwatchVisible,
-        subStopwatchVisible,
         selectedActivity,
-        subSelectedActivity,
         mainDisplayTime
     ]);
 
@@ -207,20 +185,6 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         }
     };
 
-    // SubStopwatch用ハンドラ
-    const handleStartSubStopwatch = async (activity) => {
-        if (!activity || activity.unit === 'count') return;
-
-        if (subStopwatchVisible && subSelectedActivity && subSelectedActivity.id !== activity.id && subStopwatchRef.current) {
-            const { minutes, memo } = await subStopwatchRef.current.finishAndReset();
-            await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo: memo });
-            onRecordUpdate();
-        }
-        setSubSelectedActivity(activity);
-        setSubStopwatchVisible(true);
-    };
-
-
     // 完了時ハンドラ
     const handleStopwatchComplete = async (minutes, memo) => {
         if (recordSaveMode === 'auto') {
@@ -261,8 +225,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
 
     const isTwoColumnLayout = layoutMode === 'two-column';
     const showMainStopwatch = stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes';
-    const showSubStopwatch = subStopwatchVisible && subSelectedActivity && subSelectedActivity.unit === 'minutes';
-    const hasStopwatchDisplay = showMainStopwatch || showSubStopwatch;
+    const hasStopwatchDisplay = showMainStopwatch;
     const shouldRenderRecordDialog =
         state.recordDialogOpen &&
         recordDialogActivity &&
@@ -320,26 +283,6 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 activityName={selectedActivity.name}
                                 activityGroup={selectedActivity.group_name}
                                 onTick={(time) => setMainDisplayTime(time)}
-                            />
-                        )}
-                        {showSubStopwatch && (
-                        <SubStopwatch
-                            ref={subStopwatchRef}
-                            inlineMode={isTwoColumnLayout}
-                            onComplete={async (minutes, memo) => {
-                                await createRecord({ activity_id: subSelectedActivity.id, value: minutes, memo });
-                                onRecordUpdate();
-                                await refreshActivities();
-                                    localStorage.removeItem('subStopwatchState');
-                                    setSubStopwatchVisible(false);
-                                }}
-                                onCancel={() => {
-                                    localStorage.removeItem('subStopwatchState');
-                                    setSubStopwatchVisible(false);
-                                }}
-                                activityName={subSelectedActivity.name}
-                                activityGroup={subSelectedActivity.group_name}
-                                activityId={subSelectedActivity.id}
                             />
                         )}
                     </Box>
@@ -444,10 +387,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                 activities={activities}
                 onStart={handleStartRecordFromSelect}
                 stopwatchVisible={stopwatchVisible}
-                onStartSubStopwatch={handleStartSubStopwatch}
                 selectedActivity={selectedActivity}
-                subSelectedActivity={subSelectedActivity}
-                subStopwatchVisible={subStopwatchVisible}
             />
             </Box>
             {/* ダイアログ（回数＋確認モード共通） */}

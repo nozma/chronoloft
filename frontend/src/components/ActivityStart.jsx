@@ -6,8 +6,6 @@ import {
     ToggleButton,
     Typography,
     Collapse,
-    Menu,
-    MenuItem,
     Tooltip
 } from '@mui/material';
 import ToggleButtonGroup, {
@@ -91,10 +89,7 @@ function ActivityStart({
     activities,
     onStart,
     stopwatchVisible,
-    onStartSubStopwatch,
     selectedActivity,
-    subSelectedActivity,
-    subStopwatchVisible,
 }) {
     const { t } = useI18n();
     const { groups, excludedGroupIds } = useGroups();
@@ -105,8 +100,6 @@ function ActivityStart({
     const { recentDays, recentLimit, recentMinimum, layoutMode } = useSettings();
     const isTwoColumnLayout = layoutMode === 'two-column';
 
-    const [contextMenuAnchor, setContextMenuAnchor] = useState(null);
-    const [contextTargetActivity, setContextTargetActivity] = useState(null);
     const [showRemaining, setShowRemaining] = useState(false);
     const [showArchive, setShowArchive] = useState(false);
 
@@ -219,25 +212,6 @@ function ActivityStart({
             borderLeft: '1px solid transparent',
         },
     }));
-
-    // 右クリック用ハンドラ
-    const handleContextMenu = (event, activity) => {
-        event.preventDefault();
-        setContextMenuAnchor(event.currentTarget);
-        setContextTargetActivity(activity);
-    };
-
-    const handleCloseContextMenu = () => {
-        setContextMenuAnchor(null);
-        setContextTargetActivity(null);
-    };
-
-    const handleStartSubStopwatch = () => {
-        handleCloseContextMenu();
-        if (contextTargetActivity && onStartSubStopwatch) {
-            onStartSubStopwatch(contextTargetActivity);
-        }
-    };
 
     const handleGroupFilterChange = (newGroupFilter) => {
         setFilterState(prev => ({
@@ -505,7 +479,6 @@ function ActivityStart({
                                             color="primary"
                                             size={isTwoColumnLayout ? 'small' : 'medium'}
                                             onClick={() => onStart(activity)}
-                                            onContextMenu={(e) => handleContextMenu(e, activity)}
                                             sx={{
                                                 display: 'flex',
                                                 textTransform: 'none',
@@ -582,7 +555,6 @@ function ActivityStart({
                                                     color="primary"
                                                     size={isTwoColumnLayout ? 'small' : 'medium'}
                                                     onClick={() => onStart(activity)}
-                                                    onContextMenu={(e) => handleContextMenu(e, activity)}
                                                     sx={{
                                                         display: 'flex',
                                                         textTransform: 'none',
@@ -631,7 +603,6 @@ function ActivityStart({
                                                             color="primary"
                                                             size={isTwoColumnLayout ? 'small' : 'medium'}
                                                             onClick={() => onStart(activity)}
-                                                            onContextMenu={(e) => handleContextMenu(e, activity)}
                                                             sx={{
                                                                 display: 'flex',
                                                                 textTransform: 'none',
@@ -656,18 +627,6 @@ function ActivityStart({
                                         </>
                                     )}
                                 </Collapse>
-                                <Menu
-                                    open={Boolean(contextMenuAnchor)}
-                                    anchorEl={contextMenuAnchor}
-                                    onClose={handleCloseContextMenu}
-                                >
-                                    <MenuItem
-                                        onClick={handleStartSubStopwatch}
-                                        disabled={contextTargetActivity?.unit === 'count'}
-                                    >
-                                        {t("Start Sub Stopwatch")}
-                                    </MenuItem>
-                                </Menu>
                             </Box>
                         </Collapse>
                     </>
@@ -677,7 +636,6 @@ function ActivityStart({
                     onClose={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: false })}
                     runningActivityIds={[
                         ...(stopwatchVisible && selectedActivity ? [selectedActivity.id] : []),
-                        ...(subStopwatchVisible && subSelectedActivity ? [subSelectedActivity.id] : []),
                     ]}
                 />
                 </Box>
