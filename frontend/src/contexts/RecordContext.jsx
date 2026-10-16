@@ -85,14 +85,10 @@ const buildLiveRecords = () => {
     const now = Date.now();
     const mainState = safeParseLocalStorage('stopwatchState');
     const mainActivity = safeParseLocalStorage('selectedActivity');
-    const subState = safeParseLocalStorage('subStopwatchState');
-    const subActivity = safeParseLocalStorage('subSelectedActivity');
 
     const live = [];
     const mainRecord = buildLiveRecord({ activity: mainActivity, stopwatchState: mainState, now, idPrefix: 'main' });
     if (mainRecord) live.push(mainRecord);
-    const subRecord = buildLiveRecord({ activity: subActivity, stopwatchState: subState, now, idPrefix: 'sub' });
-    if (subRecord) live.push(subRecord);
     return live;
 };
 
