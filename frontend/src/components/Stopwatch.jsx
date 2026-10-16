@@ -172,7 +172,12 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
         [records, props.activityId]
     );
 
-    const { onTick } = props;
+    const { onTick, onMemoChange } = props;
+
+    // 詳細の入力・復元・リセットをタイトルバーへ反映する
+    useEffect(() => {
+        onMemoChange?.(memo ?? '');
+    }, [memo, onMemoChange]);
 
     // ストップウォッチ起動中にタイトルバーを変更するため、onTickを呼び出す
     useEffect(() => {
