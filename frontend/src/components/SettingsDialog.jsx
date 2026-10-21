@@ -1,7 +1,8 @@
 import { LanSettings } from './LanAccess';
 import { useI18n } from '../i18n/I18nContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
+    Alert,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -21,6 +22,12 @@ import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 
 function SettingsDialog({ open, onClose }) {
     const { t } = useI18n();
+    const lanSettings = useRef(null);
+    const applyingRef = useRef(false);
+    const [applying, setApplying] = useState(false);
+    const [lanReady, setLanReady] = useState(false);
+    const [saveError, setSaveError] = useState('');
+    const handleClose = () => { if (!applyingRef.current) onClose(); };
     const {
         isMobile,
         language: savedLanguage, setLanguage,
@@ -47,6 +54,7 @@ function SettingsDialog({ open, onClose }) {
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open) {
+            setSaveError('');
             setTmpLanguage(savedLanguage);
             setTmpAutoFilter(autoFilterOnSelect);
             setTmpThemeMode(themeMode);
@@ -74,12 +82,11 @@ function SettingsDialog({ open, onClose }) {
     };
 
     return (
-        <Dialog fullScreen={isMobile} open={open} onClose={onClose} maxWidth="sm">
+        <Dialog fullScreen={isMobile} open={open} onClose={handleClose} maxWidth="sm">
             <DialogTitle>{t("Settings")}</DialogTitle>
 
             <DialogContent dividers>
-                <Stack spacing={3} divider={<Divider flexItem />}>
-                    <LanSettings />
+                <Stack component="fieldset" disabled={applying} sx={{ border: 0, m: 0, p: 0, minWidth: 0 }} spacing={3} divider={<Divider flexItem />}>
                     <FormControl component="fieldset">
                         <FormLabel component="legend">{t("Language")}</FormLabel>
                         <RadioGroup row value={tmpLanguage} onChange={e => setTmpLanguage(e.target.value)}>
@@ -222,12 +229,15 @@ function SettingsDialog({ open, onClose }) {
                             </RadioGroup>
                         </FormControl>
                     </Stack>
+                    {open && <LanSettings ref={lanSettings} disabled={applying} onReadyChange={setLanReady} />}
                 </Stack>
             </DialogContent>
 
+            {saveError && <Alert severity="error" sx={{ mx: 3, mt: 1 }}>{saveError}</Alert>}
             <DialogActions>
                 {/* Reset = 既定値に選択状態を戻す */}
                 <Button
+                    disabled={applying}
                     onClick={handleReset}
                     color="inherit"
                     sx={{ mr: 'auto', textTransform: 'none' }}
@@ -237,22 +247,35 @@ function SettingsDialog({ open, onClose }) {
 
                 <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
                     {/* Cancel = 変更を捨てて閉じるだけ */}
-                    <Button onClick={onClose}>{t("Cancel")}</Button>
+                    <Button disabled={applying} onClick={handleClose}>{t("Cancel")}</Button>
 
                     {/* Apply = Context に書き戻して閉じる */}
                     <Button
                         variant="contained"
-                        onClick={() => {
-                            setLanguage(tmpLanguage);
-                            setAutoFilterOnSelect(tmpAutoFilter);
-                            setThemeMode(tmpThemeMode);
-                            setLayoutMode(tmpLayoutMode);
-                            setRecentDays(tmpRecentDays);
-                            setRecentLimit(tmpRecentLimit);
-                            setRecentMinimum(tmpRecentMinimum);
-                            setDiscordEnabled(tmpDiscordEnabled);
-                            setRecordSaveMode(tmpRecordSaveMode);
-                            onClose();
+                        disabled={applying || !lanReady}
+                        onClick={async () => {
+                            if (applyingRef.current) return;
+                            applyingRef.current = true;
+                            setApplying(true);
+                            setSaveError('');
+                            try {
+                                await lanSettings.current.save();
+                                setLanguage(tmpLanguage);
+                                setAutoFilterOnSelect(tmpAutoFilter);
+                                setThemeMode(tmpThemeMode);
+                                setLayoutMode(tmpLayoutMode);
+                                setRecentDays(tmpRecentDays);
+                                setRecentLimit(tmpRecentLimit);
+                                setRecentMinimum(tmpRecentMinimum);
+                                setDiscordEnabled(tmpDiscordEnabled);
+                                setRecordSaveMode(tmpRecordSaveMode);
+                                onClose();
+                            } catch (error) {
+                                setSaveError(error.message || '設定を保存できませんでした。');
+                            } finally {
+                                applyingRef.current = false;
+                                setApplying(false);
+                            }
                         }}
                     >
                         {t("Apply")}

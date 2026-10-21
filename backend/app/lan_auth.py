@@ -9,7 +9,7 @@ import threading
 import time
 from urllib.parse import urlsplit
 
-from flask import jsonify, request
+from flask import g, jsonify, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
 IDLE_SECONDS = 7 * 24 * 60 * 60
@@ -53,6 +53,9 @@ def install_lan_auth(app, data_dir):
     @app.before_request
     def protect():
         is_local = local()
+        g.chronoloft_local = is_local
+        if request.path.startswith('/api/discord_presence/') and not is_local:
+            return jsonify(error='Discord連携は起動PC自身の計測だけが対象です。'), 403
         if not is_local and not settings()[0]:
             return jsonify(error='LANアクセスは無効です。'), 403
         if request.path.startswith('/api/'):

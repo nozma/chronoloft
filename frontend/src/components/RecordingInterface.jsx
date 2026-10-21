@@ -1,298 +1,42 @@
 import { useI18n } from '../i18n/I18nContext';
-import React, { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
 import { useUI } from '../contexts/UIContext';
-import { useActiveActivity } from '../contexts/ActiveActivityContext';
-import { useFilter } from '../contexts/FilterContext';
 import { useActivities } from '../contexts/ActivityContext';
-import useLocalStorageState from '../hooks/useLocalStorageState';
-
+import { useRecords } from '../contexts/RecordContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { useSharedStopwatches } from '../services/stopwatches';
 import ActivityStart from './ActivityStart';
 import AddRecordDialog from './AddRecordDialog';
-import Stopwatch from './Stopwatch';
-import { calculateTimeDetails } from '../utils/timeUtils';
-import { useRecords } from '../contexts/RecordContext';
-import { useGroups } from '../contexts/GroupContext';
-import { useSettings } from '../contexts/SettingsContext';
-import { DateTime } from 'luxon';
+import SharedStopwatches from './SharedStopwatches';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SettingsDialog from './SettingsDialog';
 import { clearUiSettings } from '../utils/storageReset';
 
 function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
     const { t } = useI18n();
-    const { state, dispatch } = useUI();
-    const { setActiveActivity } = useActiveActivity();
-    const { setFilterState } = useFilter();
-    const { activities } = useActivities();
-    const { refreshActivities } = useActivities();
-    const { records, refreshRecords: onRecordUpdate, createRecord } = useRecords();
-    const { groups } = useGroups();
-
-    // メインStopwatch
-    const [stopwatchVisible, setStopwatchVisible] = useLocalStorageState('stopwatchVisible', false);
-    const [selectedActivity, setSelectedActivity] = useLocalStorageState('selectedActivity', null);
-    const [discordData, setDiscordData] = useLocalStorageState('discordData', null);
-    const [mainDisplayTime, setMainDisplayTime] = useState(0);
-    const [mainMemo, setMainMemo] = useState('');
-
-    const stopwatchRef = useRef(null);
-    const [recordDialogActivity, setRecordDialogActivity] = React.useState(null);
-
-    // ダイアログの初期日時を保持
-    const [recordDialogInitialDate, setRecordDialogInitialDate] = useState(null);
-
-    // 設定項目
-    const {
-        autoFilterOnSelect,
-        discordEnabled,
-        recordSaveMode,
-        isMobile,
-        isTwoColumnLayout,
-    } = useSettings();
-
-    // OFFで開始した計測にも、設定ON時に現在の連携情報を用意する。
-    useEffect(() => {
-        if (!discordEnabled || !stopwatchVisible || !selectedActivity) return;
-        const group = groups.find(item => item.name === selectedActivity.group_name);
-        setDiscordData(group?.client_id ? {
-            group: selectedActivity.group_name,
-            activity_name: selectedActivity.name,
-            details: calculateTimeDetails(selectedActivity.id, records),
-            asset_key: selectedActivity.asset_key || 'default_image',
-        } : null);
-    }, [discordEnabled, stopwatchVisible, selectedActivity, groups, records]);
-
-    // 確認モード時の一時保存データ
-    const [pendingRecord, setPendingRecord] = useState(null);
-    // 確認モードでダイアログを閉じたあとに開始したいアクティビティ
-    const [nextActivity, setNextActivity] = useState(null);
-    // Submit経由の閉じ方か判定するためのRef
-    const dialogSubmitRef = useRef(false);
+    const { dispatch } = useUI();
+    const { activities, refreshActivities } = useActivities();
+    const { createRecord } = useRecords();
+    const { isTwoColumnLayout } = useSettings();
+    const shared = useSharedStopwatches();
+    const controller = useRef(null);
+    const [countActivity, setCountActivity] = useState(null);
     const [anchorEl, setAnchorEl] = useState(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const menuOpen = Boolean(anchorEl);
-
-    // タイトル更新
-    useEffect(() => {
-        if (stopwatchVisible && selectedActivity) {
-            // 経過時間をフォーマット
-            const totalSeconds = Math.floor(mainDisplayTime / 1000);
-            const hh = Math.floor(totalSeconds / 3600);
-            const mm = Math.floor((totalSeconds % 3600) / 60);
-            const formattedTime = `${hh}:${String(mm).padStart(2, '0')}`;
-            const details = mainMemo.trim();
-            document.title = `${formattedTime} ${selectedActivity.name}${details ? `｜${details}` : ''} - Chronoloft`;
-        }
-        else {
-            document.title = 'Chronoloft';
-        }
-    }, [
-        stopwatchVisible,
-        selectedActivity,
-        mainDisplayTime,
-        mainMemo
-    ]);
-
-    // 「記録作成」ハンドラ
-    const handleStartRecordFromSelect = async (activity) => {
-        if (!activity) return;
-        if (stopwatchRef.current?.isDiscordBusy) return; // Discordリクエスト中は操作を受け付けない
-
-        // ストップウォッチが動いていない場合、Discord接続中か確認し、接続中ならストップウォッチを開始しない
-        // （別のウィンドウでストップウォッチが動作していると考えられるため）
-        // ただし、groupにclient_idが設定されていない場合、Discord連係が無効の場合は接続をしないので判定を行わない
-        const groupData = groups.find(g => g.name === activity.group_name);
-        if (groupData && groupData.client_id !== "" && discordEnabled) {
-            if (!stopwatchVisible) {
-                try {
-                    const presenceRes = await fetch('/api/discord_presence/status');
-                    const presenceData = await presenceRes.json();
-                    if (presenceData.connected) {
-                        alert(t("Discord presence is active. Skipping stopwatch start."));
-                        return;
-                    }
-                } catch (e) {
-                    console.error("Failed to check Discord presence:", e);
-                }
-            }
-        }
-
-
-        if (activity.unit === 'minutes') {
-            // minutes -> ストップウォッチ
-            if (stopwatchVisible && selectedActivity && selectedActivity.id !== activity.id && stopwatchRef.current) {
-                if (recordSaveMode === 'confirm') {
-                    const snapshot = await stopwatchRef.current.pause?.();
-                    if (snapshot) {
-                        // 確認モードならダイアログ表示＆次のアクティビティを予約
-                        setPendingRecord({ minutes: snapshot.minutes, memo: snapshot.memo, activity: selectedActivity });
-                        setRecordDialogActivity(selectedActivity);
-                        setRecordDialogInitialDate(DateTime.local().toISO());
-                        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-                        setNextActivity(activity);
-                        return;
-                    }
-                }
-
-                // 既に別ストップウォッチが動いている -> 一旦finishAndReset
-                const details = calculateTimeDetails(activity.id, records);
-                const nextGroup = groups.find(g => g.name === activity.group_name);
-                const newDiscordData = (discordEnabled && nextGroup?.client_id) // 連係有効かつClient IDのあるグループは連係データを組み立てる
-                    ? {
-                        group: activity.group_name,
-                        activity_name: activity.name,
-                        details,
-                        asset_key: activity.asset_key || "default_image"
-                    }
-                    : null;
-                const { minutes, memo } = await stopwatchRef.current.finishAndReset(newDiscordData);
-
-                // auto モード: 既存レコードを作成
-                await createRecord({ activity_id: selectedActivity.id, value: minutes, memo });
-                onRecordUpdate();
-            }
-            // 新しいActivityを選択
-            setSelectedActivity(activity);
-            setActiveActivity(activity);
-
-            // 自動フィルタ設定がONの場合、アクティビティフィルタを自動で切り替える
-            if (autoFilterOnSelect) {
-                setFilterState(prev => ({
-                    ...prev,
-                    activityNameFilter: activity.name,
-                }));
-            }
-
-            // Discord presence用データ
-            const details = calculateTimeDetails(activity.id, records);
-            const groupInfo = groups.find(g => g.name === activity.group_name);
-            setDiscordData(
-                // Discord連係が有効で、Client IDが設定されている場合のみ設定
-                discordEnabled && groupInfo?.client_id
-                    ? {
-                        group: activity.group_name,
-                        activity_name: activity.name,
-                        details,
-                        asset_key: activity.asset_key || "default_image"
-                    }
-                    : null // nullの場合はDiscord連係は動作しない
-            );
-
-            setStopwatchVisible(true);
-
-        } else if (activity.unit === 'count') {
-            // 回数 -> レコードダイアログ
-            setRecordDialogActivity(activity);
-            setRecordDialogInitialDate(DateTime.local().toISO());
-            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-        }
-    };
-
-    // 完了時ハンドラ
-    const handleStopwatchComplete = async (minutes, memo) => {
-        if (recordSaveMode === 'auto') {
-            // 既存の自動レコード作成ロジック
-            await createRecord({
-                activity_id: selectedActivity.id,
-                value: minutes,
-                memo: memo
-            });
-            onRecordUpdate();
-            await refreshActivities();
-            localStorage.removeItem('stopwatchState');
-            setStopwatchVisible(false);
-            setActiveActivity(null);
-        } else {
-            // 確認モード：ダイアログを開く
-            setPendingRecord({ minutes, memo, activity: selectedActivity });
-            setRecordDialogActivity(selectedActivity);
-            setRecordDialogInitialDate(DateTime.local().toISO());
-            dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-        }
-    };
-
-    const handleStopwatchConfirmComplete = (minutes, memo) => {
-        setPendingRecord({ minutes, memo, activity: selectedActivity });
-        setRecordDialogActivity(selectedActivity);
-        setRecordDialogInitialDate(DateTime.local().toISO());
-        dispatch({ type: 'SET_RECORD_DIALOG', payload: true });
-    };
-
-    useEffect(() => {
-        // localStorage から復元した UI 状態だけが残っている場合はダイアログを閉じる
-        if (state.recordDialogOpen && !recordDialogActivity && !pendingRecord) {
-            dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-            setRecordDialogInitialDate(null);
-        }
-    }, [state.recordDialogOpen, recordDialogActivity, pendingRecord, dispatch]);
-
-    const showMainStopwatch = stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes';
-    const hasStopwatchDisplay = showMainStopwatch;
-    const shouldRenderRecordDialog =
-        state.recordDialogOpen &&
-        recordDialogActivity &&
-        (recordDialogActivity.unit === 'count' || pendingRecord);
+    const main = shared.items.find(item => item.device_id === shared.device?.id && item.slot === 'main');
     const twoColumnFrameSx = {
-        p: 2,
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1,
-        backgroundColor: (theme) =>
-            theme.palette.mode === 'dark'
-                ? 'rgba(255,255,255,0.04)'
-                : 'rgba(0,0,0,0.02)',
+        p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1,
+        backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
     };
-    const twoColumnStopwatchFrameSx = {
-        ...twoColumnFrameSx,
-        p: 1,
-        pb: 0.5,
+    const handleStart = activity => {
+        if (activity.unit === 'minutes') controller.current?.start(activity);
+        else if (activity.unit === 'count') setCountActivity(activity);
     };
-
-    return (
-        <Box sx={{ mb: 2 }}>
-            {/* Stopwatch */}
-            {hasStopwatchDisplay && (
-                <Box
-                    sx={
-                        isTwoColumnLayout
-                            ? {
-                                position: 'sticky',
-                                top: 0,
-                                zIndex: (theme) => theme.zIndex.appBar + 1,
-                                width: '100%',
-                                mb: 2,
-                                backgroundColor: (theme) => theme.palette.background.default,
-                                pt: 0,
-                            }
-                            : {}
-                    }
-                >
-                    <Box sx={isTwoColumnLayout ? twoColumnStopwatchFrameSx : {}}>
-                        {showMainStopwatch && (
-                            <Stopwatch
-                                ref={stopwatchRef}
-                                onComplete={handleStopwatchComplete}
-                                onConfirmComplete={handleStopwatchConfirmComplete}
-                                recordSaveMode={recordSaveMode}
-                                inlineMode={isMobile || isTwoColumnLayout}
-                                onCancel={() => {
-                                    localStorage.removeItem('stopwatchState');
-                                    setStopwatchVisible(false);
-                                    setActiveActivity(null);
-                                }}
-                                discordData={discordData}
-                                activityId={selectedActivity.id}
-                                activityName={selectedActivity.name}
-                                activityGroup={selectedActivity.group_name}
-                                onTick={(time) => setMainDisplayTime(time)}
-                                onMemoChange={setMainMemo}
-                            />
-                        )}
-                    </Box>
-                </Box>
-            )}
-            <Box sx={isTwoColumnLayout ? twoColumnFrameSx : {}}>
+    return <Box sx={{ mb: 2 }}>
+        <SharedStopwatches ref={controller} />
+        <Box sx={isTwoColumnLayout ? twoColumnFrameSx : {}}>
             {/* Heading / Title */}
             {(showHeading || showSettingsMenu) && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, sm: 2 }, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
@@ -387,95 +131,12 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                     />
                 </>
             )}
-            <ActivityStart
-                activities={activities}
-                onStart={handleStartRecordFromSelect}
-                stopwatchVisible={stopwatchVisible}
-                selectedActivity={selectedActivity}
-            />
-            </Box>
-            {/* ダイアログ（回数＋確認モード共通） */}
-            {shouldRenderRecordDialog && (
-                <AddRecordDialog
-                    open={true}
-                    autoFocusMemo={Boolean(pendingRecord)}
-                    onClose={() => {
-                        dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-                        setRecordDialogInitialDate(null);
-                        if (dialogSubmitRef.current) {
-                            dialogSubmitRef.current = false;
-                            return;
-                        }
-                        // 確認モードでキャンセルした場合はストップウォッチを復帰
-                        if (pendingRecord) {
-                            setPendingRecord(null);
-                            stopwatchRef.current?.resume?.();
-                            setNextActivity(null);
-                            return;
-                        }
-                    }}
-                    onSubmit={async (recordData) => {
-                        dialogSubmitRef.current = true;
-                        const hadPendingRecord = Boolean(pendingRecord);
-                        const pendingNextActivity = nextActivity;
-                        // 確認モードの場合は pendingRecord をマージ
-                        if (pendingRecord) {
-                            recordData = {
-                                activity_id: pendingRecord.activity.id,
-                                value: pendingRecord.minutes,
-                                memo: pendingRecord.memo,
-                                ...recordData,
-                            };
-                        }
-                        await createRecord(recordData);
-                        onRecordUpdate();
-                        await refreshActivities();
-                        dispatch({ type: 'SET_RECORD_DIALOG', payload: false });
-                        setRecordDialogInitialDate(null);
-                        setPendingRecord(null);
-                        // ダイアログ送信後に予約した nextActivity があれば再開
-                        if (pendingNextActivity) {
-                            setSelectedActivity(pendingNextActivity);
-                            setActiveActivity(pendingNextActivity);
-                            if (autoFilterOnSelect) {
-                                setFilterState(prev => ({
-                                    ...prev,
-                                    activityNameFilter: pendingNextActivity.name,
-                                }));
-                            }
-                            const details2 = calculateTimeDetails(pendingNextActivity.id, records);
-                            const groupInfo2 = groups.find(g => g.name === pendingNextActivity.group_name);
-                            const newDiscordData = discordEnabled && groupInfo2?.client_id
-                                ? {
-                                    group: pendingNextActivity.group_name,
-                                    activity_name: pendingNextActivity.name,
-                                    details: details2,
-                                    asset_key: pendingNextActivity.asset_key || 'default_image'
-                                }
-                                : null;
-                            setDiscordData(newDiscordData);
-                            setStopwatchVisible(true);
-                            setNextActivity(null);
-                            if (stopwatchRef.current?.finishAndReset) {
-                                await stopwatchRef.current.finishAndReset(newDiscordData);
-                            }
-                            return;
-                        }
-                        if (hadPendingRecord && stopwatchRef.current?.reset) {
-                            await stopwatchRef.current.reset();
-                            setStopwatchVisible(false);
-                            setActiveActivity(null);
-                        }
-                    }}
-                    activity={recordDialogActivity}
-                    initialValue={pendingRecord?.minutes}
-                    initialMemo={pendingRecord?.memo}
-                    initialDate={recordDialogInitialDate}
-                    isEdit={false}
-                />
-            )}
+            <ActivityStart activities={activities} onStart={handleStart}
+                stopwatchVisible={Boolean(main)} selectedActivity={activities.find(item => item.id === main?.activity_id)} />
         </Box>
-    );
+        {countActivity && <AddRecordDialog open activity={countActivity} onClose={() => setCountActivity(null)}
+            onSubmit={async data => { await createRecord(data); await refreshActivities(); }} />}
+    </Box>;
 }
 
 export default RecordingInterface;

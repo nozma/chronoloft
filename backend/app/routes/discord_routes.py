@@ -21,8 +21,8 @@ def serialized(function):
 
 @discord_bp.route('/api/discord_presence/start', methods=['POST'])
 @serialized
-def discord_presence_start():
-    data = request.get_json()
+def discord_presence_start(data=None):
+    data = data if data is not None else request.get_json()
     # 必要な情報（group, activity_name, details, asset_key）を取得
     group = data.get('group')
     activity_name = data.get('activity_name')
@@ -46,7 +46,7 @@ def discord_presence_start():
             previous_manager.close()
         manager.connect()
         if not manager.is_connected():
-            return jsonify({'error': 'Failed to connect to Discord'}), 503
+            return jsonify({'error': manager.last_error or 'Failed to connect to Discord'}), 503
         if data.get('start_time') is not None:
             manager.start_time = float(data['start_time'])
         manager.update_presence(
@@ -65,8 +65,8 @@ def discord_presence_start():
 
 @discord_bp.route('/api/discord_presence/stop', methods=['POST'])
 @serialized
-def discord_presence_stop():
-    data = request.get_json()
+def discord_presence_stop(data=None):
+    data = data if data is not None else request.get_json()
     group = data.get('group')
     if not group:
         return jsonify({'error': 'Group is required'}), 400

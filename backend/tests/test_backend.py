@@ -306,6 +306,37 @@ class DiscordManagerTests(unittest.TestCase):
         self.assertEqual(activity['assets']['large_image'], 'book')
         self.assertEqual(activity['timestamps']['start'], int(self.manager.start_time) * 1000)
 
+    def test_empty_details_are_omitted_from_application_payload(self):
+        self.manager.connect()
+        for details in ('', None, '   '):
+            with self.subTest(details=details):
+                self.manager.update_presence('学習', '読書', details, 'book', application_name='読書')
+                activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
+                self.assertNotIn('details', activity)
+                self.assertEqual(activity['name'], '読書')
+                self.assertTrue(self.manager.is_connected())
+        self.manager.update_presence('学習', '読書', 'メモを追加', 'book', application_name='読書')
+        self.assertEqual(self.rpc.update.call_args.kwargs['payload_override']['args']['activity']['details'], 'メモを追加')
+        self.manager.update_presence('学習', '読書', '', 'book', application_name='読書')
+        self.assertNotIn('details', self.rpc.update.call_args.kwargs['payload_override']['args']['activity'])
+
+    def test_empty_details_use_none_for_standard_presence(self):
+        self.manager.connect()
+        self.manager.update_presence('学習', '読書', '', 'book')
+        self.assertIsNone(self.rpc.update.call_args.kwargs['details'])
+        self.assertTrue(self.manager.is_connected())
+
+    def test_discord_text_boundaries_do_not_change_saved_text(self):
+        self.manager.connect()
+        for text in ('A', 'あ', 'あ' * 128, 'あ' * 129, 'x' * 10000):
+            with self.subTest(length=len(text)):
+                self.manager.update_presence('学', '読', text, 'book', application_name='読')
+                activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
+                for value in (activity['state'], activity['details'], activity['name'], activity['assets']['large_text']):
+                    self.assertGreaterEqual(len(value), 2)
+                    self.assertLessEqual(len(value), 128)
+                self.assertEqual(activity['details'].rstrip(), text[:128])
+
     def test_update_without_connection_does_nothing(self):
         self.manager.update_presence('学習', '読書', '本A', 'book')
         self.factory.assert_not_called()
@@ -339,3 +370,21 @@ class DiscordManagerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class DiscordHandshakeTests(unittest.TestCase):
+    def test_unresponsive_handshake_times_out_and_next_attempt_can_succeed(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+
+        async def never_responds(_self):
+            await asyncio.Future()
+
+        # 実際のIPCには接続せず、応答しないDiscordを再現する。
+        presence = object.__new__(rpc_module.Presence)
+        with patch.object(rpc_module, 'DISCORD_HANDSHAKE_TIMEOUT', 0.01):
+            with patch.object(rpc_module.BasePresence, 'handshake', never_responds):
+                with self.assertRaises(TimeoutError):
+                    asyncio.run(presence.handshake())
+            with patch.object(rpc_module.BasePresence, 'handshake', AsyncMock(return_value='connected')):
+                self.assertEqual(asyncio.run(presence.handshake()), 'connected')
