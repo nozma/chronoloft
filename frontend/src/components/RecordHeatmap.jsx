@@ -41,8 +41,7 @@ function RecordHeatmap() {
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const { recordsWithLive: records } = useRecords();
     const { palette: { mode } } = useTheme();
-    const { layoutMode } = useSettings();
-    const isTwoColumnLayout = layoutMode === 'two-column';
+    const { isTwoColumnLayout } = useSettings();
     const groupFilter = filterCriteria?.groupFilter || '';
     const heatmapContainerRef = useRef(null);
     const [heatmapContainerWidth, setHeatmapContainerWidth] = useState(0);

@@ -47,7 +47,8 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         autoFilterOnSelect,
         discordEnabled,
         recordSaveMode,
-        layoutMode,
+        isMobile,
+        isTwoColumnLayout,
     } = useSettings();
 
     // OFFで開始した計測にも、設定ON時に現在の連携情報を用意する。
@@ -226,7 +227,6 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
         }
     }, [state.recordDialogOpen, recordDialogActivity, pendingRecord, dispatch]);
 
-    const isTwoColumnLayout = layoutMode === 'two-column';
     const showMainStopwatch = stopwatchVisible && selectedActivity && selectedActivity.unit === 'minutes';
     const hasStopwatchDisplay = showMainStopwatch;
     const shouldRenderRecordDialog =
@@ -275,7 +275,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
                                 onComplete={handleStopwatchComplete}
                                 onConfirmComplete={handleStopwatchConfirmComplete}
                                 recordSaveMode={recordSaveMode}
-                                inlineMode={isTwoColumnLayout}
+                                inlineMode={isMobile || isTwoColumnLayout}
                                 onCancel={() => {
                                     localStorage.removeItem('stopwatchState');
                                     setStopwatchVisible(false);
@@ -295,7 +295,7 @@ function RecordingInterface({ showSettingsMenu = true, showHeading = true }) {
             <Box sx={isTwoColumnLayout ? twoColumnFrameSx : {}}>
             {/* Heading / Title */}
             {(showHeading || showSettingsMenu) && (
-                <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, sm: 2 }, mb: 2, pb: 0.5, alignItems: 'center', borderBottom: '1px solid #333' }}>
                     {showHeading && (
                         <>
                             <Typography variant="h5" sx={{ mr: 2 }}>

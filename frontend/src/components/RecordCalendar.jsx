@@ -1,3 +1,4 @@
+import { useSettings } from '../contexts/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
@@ -353,7 +354,12 @@ function RecordCalendar() {
     const { activities, excludedActivityIds } = useActivities();
     const { filterState } = useFilter();
     const { groupFilter } = filterState;
-    const [currentView, setCurrentView] = useLocalStorageState('calendar.view', Views.WEEK);
+    const { isMobile } = useSettings();
+    const [desktopView, setDesktopView] = useLocalStorageState('calendar.view', Views.WEEK);
+    // スマートフォンの初期表示は日単位にし、PC側の表示設定を保持する。
+    const [mobileView, setMobileView] = useState(Views.DAY);
+    const currentView = isMobile ? mobileView : desktopView;
+    const setCurrentView = isMobile ? setMobileView : setDesktopView;
     const [currentDate, setCurrentDate] = useState(new Date());
     const { state: uiState, dispatch: uiDispatch } = useUI();
     const [recordToEdit, setRecordToEdit] = useState(null);

@@ -420,11 +420,12 @@ function RecordTrend() {
                     </Box>
                 )}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                    <Box sx={{ flex: 1, minWidth: { xs: 0, sm: 320 }, flexBasis: { xs: '100%', sm: 'auto' }, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                         <Table
                             size='small'
                             sx={(theme) => ({
                                 tableLayout: 'fixed',
+                                '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } },
                                 width: '100%',
                                 backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa'
                             })}
@@ -432,8 +433,8 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>{t("Increase Ranking")}</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>{t("Total")}</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>{t("Change")}</TableCell>
+                                    <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>{t("Total")}</TableCell>
+                                    <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>{t("Change")}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -459,7 +460,7 @@ function RecordTrend() {
                                             <TableCell sx={{ width: 'auto', verticalAlign: 'middle' }}>
                                                 <TruncatedTrendName text={row.name} />
                                             </TableCell>
-                                            <TableCell align='center' sx={{ width: 92 }}>
+                                            <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7, t)}
@@ -468,7 +469,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
-                                                    width: 92,
+                                                    width: { xs: 72, sm: 92 },
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'
@@ -506,11 +507,12 @@ function RecordTrend() {
                             sx={paginationSx}
                         />
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 320, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
+                    <Box sx={{ flex: 1, minWidth: { xs: 0, sm: 320 }, flexBasis: { xs: '100%', sm: 'auto' }, border: 1, borderColor: 'divider', borderRadius: 1, overflow: 'hidden' }}>
                         <Table
                             size='small'
                             sx={(theme) => ({
                                 tableLayout: 'fixed',
+                                '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } },
                                 width: '100%',
                                 backgroundColor: theme.palette.mode === 'dark' ? '#222' : '#fafafa'
                             })}
@@ -518,8 +520,8 @@ function RecordTrend() {
                             <TableHead sx={(theme) => ({ backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.04)' })}>
                                 <TableRow>
                                     <TableCell>{t("Decrease Ranking")}</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>{t("Total")}</TableCell>
-                                    <TableCell align='center' sx={{ width: 92 }}>{t("Change")}</TableCell>
+                                    <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>{t("Total")}</TableCell>
+                                    <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>{t("Change")}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -545,7 +547,7 @@ function RecordTrend() {
                                             <TableCell sx={{ width: 'auto', verticalAlign: 'middle' }}>
                                                 <TruncatedTrendName text={row.name} />
                                             </TableCell>
-                                            <TableCell align='center' sx={{ width: 92 }}>
+                                            <TableCell align='center' sx={{ width: { xs: 72, sm: 92 } }}>
                                                 {formatValue(total, row.unit)}
                                                 <span style={{ fontSize: '0.75rem', display: 'block', marginTop: -1 }}>
                                                     {formatDailyAverage(total, row.unit, selectedPeriod === '30day' ? 30 : 7, t)}
@@ -554,7 +556,7 @@ function RecordTrend() {
                                             <TableCell
                                                 align='center'
                                                 sx={(theme) => ({
-                                                    width: 92,
+                                                    width: { xs: 72, sm: 92 },
                                                     color:
                                                         diff > 0
                                                             ? theme.palette.mode === 'dark'

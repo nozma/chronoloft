@@ -1,3 +1,4 @@
+import { useSettings } from '../contexts/SettingsContext';
 import { useI18n } from '../i18n/I18nContext';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 // AddRecordDialog.jsx
@@ -33,6 +34,7 @@ function AddRecordDialog({
     autoFocusMemo = false
 }) {
     const { t } = useI18n();
+    const { isMobile } = useSettings();
     const { activities } = useActivities();
     const { records } = useRecords();
     const [selectedActivity, setSelectedActivity] = useState(activity);
@@ -221,6 +223,7 @@ function AddRecordDialog({
 
     return (
         <Dialog
+            fullScreen={isMobile}
             open={open}
             onClose={handleClose}
             onKeyDown={handleKeyDown}
@@ -247,13 +250,13 @@ function AddRecordDialog({
 
                 {selectedActivity?.unit === 'count' && (
                     <>
-                        <Box display="flex" alignItems="center" mb={1}>
+                        <Box display="flex" alignItems="center" flexWrap="wrap" mb={1}>
                             <TextField
                                 label={t("Count")}
                                 type="number"
                                 value={value}
                                 onChange={(e) => setValue(e.target.value)}
-                                sx={{ flex: 1 }}
+                                sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                 margin="dense"
                             />
                             <IconButton size="small" onClick={() => adjustCount(-5)}>
@@ -306,13 +309,13 @@ function AddRecordDialog({
                     <>
                         {/* 開始時刻入力＋ボタン群 */}
                         <Box mb={1.5}>
-                            <Box display="flex" alignItems="center">
+                            <Box display="flex" alignItems="center" flexWrap="wrap">
                                 <TextField
                                     label={t("Start time")}
                                     type="datetime-local"
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
-                                    sx={{ flex: 1 }}
+                                    sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
                                 />
                                 <Button size="small" onClick={fillStartWithPrevEnd}>
@@ -361,13 +364,13 @@ function AddRecordDialog({
 
                         {/* 終了時刻入力＋ボタン群 */}
                         <Box mb={1}>
-                            <Box display="flex" alignItems="center">
+                            <Box display="flex" alignItems="center" flexWrap="wrap">
                                 <TextField
                                     label={t("End time")}
                                     type="datetime-local"
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
-                                    sx={{ flex: 1 }}
+                                    sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
                                 />
                                 <Button size="small" onClick={fillEndWithNextStart}>
