@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import { webcrypto } from 'node:crypto';
 
 // DOMやDiscordを使わず、実際のフックを状態・副作用・通信の模擬環境で動かす。
 const source = readFileSync(new URL('../useStopwatch.js', import.meta.url), 'utf8')
@@ -9,7 +10,7 @@ const source = readFileSync(new URL('../useStopwatch.js', import.meta.url), 'utf
     .replace('export default useStopwatch;', 'globalThis.useStopwatch = useStopwatch;');
 const data = { group: 'study', activity_name: 'Reading', details: 'Book' };
 
-function setup({ saved, enabled = true, start = async () => {}, stop = async () => {} } = {}) {
+function setup({ saved, enabled = true, start = async () => {}, stop = async () => {}, cryptoApi } = {}) {
     const slots = [];
     const effects = [];
     const intervals = new Map();
@@ -52,7 +53,7 @@ function setup({ saved, enabled = true, start = async () => {}, stop = async () 
         },
         window: { dispatchEvent() {}, addEventListener() {}, removeEventListener() {} },
         CustomEvent: class {},
-        crypto: { randomUUID: () => `session-${++nextId}` },
+        crypto: cryptoApi ?? { randomUUID: () => `session-${++nextId}` },
         setInterval: (callback, ms) => { const id = ++nextId; intervals.set(id, { callback, ms }); return id; },
         clearInterval: id => intervals.delete(id),
         console: { log() {}, error() {} },
@@ -79,6 +80,32 @@ function setup({ saved, enabled = true, start = async () => {}, stop = async () 
         unmount() { for (const slot of slots) slot?.cleanup?.(); },
     };
 }
+
+test('LANのHTTP接続相当でrandomUUIDがなくても開始・切替・復元できる', async () => {
+    const calls = [];
+    const cryptoApi = { getRandomValues: bytes => webcrypto.getRandomValues(bytes) };
+    const app = setup({ cryptoApi, start: async value => calls.push(value) });
+    await app.flush();
+    assert.equal(app.hook.isRunning, true);
+    const first = calls[0].session_id;
+    assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    await app.hook.finishAndReset({ ...data, group: 'exercise' });
+    await app.flush();
+    const second = calls.at(-1).session_id;
+    assert.notEqual(second, first);
+    assert.equal(app.hook.isRunning, true);
+    app.unmount();
+
+    const restored = setup({
+        cryptoApi,
+        saved: { startTime: 1234567890000, displayTime: 0, sessionId: second },
+        start: async value => calls.push(value),
+    });
+    await restored.flush();
+    assert.equal(calls.at(-1).session_id, second);
+    assert.equal(restored.hook.isRunning, true);
+    restored.unmount();
+});
 
 test('稼働中の計測を復元し、同じセッションと開始時刻で連携を再開する', async () => {
     const calls = [];

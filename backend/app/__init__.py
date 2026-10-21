@@ -4,7 +4,6 @@ import sys
 import logging
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
 from flask_migrate import Migrate
 from sqlalchemy import MetaData
 from platformdirs import PlatformDirs
@@ -88,8 +87,11 @@ def create_app(test_config=None):
         pass
 
     # CORSとDBを初期化
-    CORS(app)
     db.init_app(app)
+
+    # LAN認証は既存DBのマイグレーションとは独立して初期化する。
+    from .lan_auth import install_lan_auth
+    install_lan_auth(app, os.path.dirname(database_uri.removeprefix('sqlite:///')))
 
     # Flask-Migrate
     migrate = Migrate(app, db)
