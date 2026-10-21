@@ -18,7 +18,7 @@ import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import { createStopwatchDraft } from '../utils/stopwatchDraft';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
-import { elapsedMilliseconds, newStopwatchId, operateStopwatch, operateStopwatchWithDraft, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
+import { elapsedMilliseconds, newStopwatchId, operateStopwatch, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
 
 function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const { t } = useI18n();
@@ -56,7 +56,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     };
     const autoSave = useRef(null);
     autoSave.current = () => run(savedItem);
-    // 詳細の入力が落ち着いたら保存する。終了・切り替え時は待たずに保存する。
+    // 連打や詳細の入力が落ち着いたら一括保存する。終了・切り替え時は待たずに保存する。
     useEffect(() => {
         if (!own || !Object.keys(changes).length || busy) return;
         const timer = setTimeout(() => autoSave.current(), 600);
@@ -73,7 +73,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const canDiscord = own && item.is_local && item.discord_enabled && groups.some(group => group.name === item.activity_group && group.client_id);
     const displayedItem = own ? { ...item, ...changes } : item;
     const controller = {
-        displayTime: elapsedMilliseconds(item, now), displayStartTime: item.started_at,
+        displayTime: elapsedMilliseconds(displayedItem, now), displayStartTime: displayedItem.started_at,
         memo: own ? displayedItem.memo : memo, setMemo: editMemo,
         isDiscordBusy: busy, discordEnabled: canDiscord,
         discordConnected: item.discord_connected,
@@ -83,7 +83,10 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         }),
         cancel: () => { if (window.confirm(`${item.device_name} の「${item.activity_name}」をキャンセルしますか？`)) run(() => operateStopwatch(item, 'cancel')); },
         pause: () => openConfirm(item),
-        updateStartTime: value => run(async () => operateStopwatchWithDraft(savedItem, 'edit', { started_at: value })),
+        updateStartTime: value => {
+            if (!Number.isFinite(value) || value > Date.now()) throw new Error(t("Start time cannot be in the future"));
+            localDraft.current.update(item, { started_at: value });
+        },
     };
     const elapsed = Math.floor(elapsedMilliseconds(item, now) / 1000);
     const formattedTime = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor(elapsed / 60) % 60).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;

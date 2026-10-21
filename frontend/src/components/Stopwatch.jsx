@@ -46,8 +46,10 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     // Start Time 編集用状態
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [editedStartTime, setEditedStartTime] = React.useState("");
+    const startTimeRef = React.useRef(displayStartTime);
+    startTimeRef.current = displayStartTime;
 
-    // カレンダーアイコン押下時に DatePicker を表示
+    // 開始時刻の押下時に編集画面を表示
     const handleOpenPicker = (event) => {
         if (displayStartTime) {
             setEditedStartTime(DateTime.fromMillis(displayStartTime).toFormat("yyyy-MM-dd'T'HH:mm"));
@@ -74,20 +76,12 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     };
 
     const adjustStartTime = (delta) => {
-        let dt = DateTime.fromFormat(editedStartTime, "yyyy-MM-dd'T'HH:mm");
-        if (!dt.isValid) {
-            // 初期値がセットされていない場合は currentStartTime を基準にする
-            if (displayStartTime) {
-                dt = DateTime.fromMillis(displayStartTime);
-                setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
-            } else {
-                return; // 基準が無ければ何もしない
-            }
-        }
-        const newDt = dt.plus({ minutes: delta });
-        setEditedStartTime(newDt.toFormat("yyyy-MM-dd'T'HH:mm"));
+        if (startTimeRef.current == null) return;
+        const newDt = DateTime.fromMillis(startTimeRef.current).plus({ minutes: delta });
         try {
             updateStartTime(newDt.toMillis());
+            startTimeRef.current = newDt.toMillis();
+            setEditedStartTime(newDt.toFormat("yyyy-MM-dd'T'HH:mm"));
         } catch (error) {
             alert(error.message);
         }
