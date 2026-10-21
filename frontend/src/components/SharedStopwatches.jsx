@@ -60,7 +60,6 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         cancel: () => { if (window.confirm(`${item.device_name} の「${item.activity_name}」をキャンセルしますか？`)) run(() => operateStopwatch(item, 'cancel')); },
         pause: () => openConfirm(item),
         updateStartTime: value => run(async () => operateStopwatchWithDraft(savedItem, 'edit', { started_at: value })),
-        refreshDiscord: () => run(async () => operateStopwatchWithDraft(savedItem, 'edit')),
     };
     const elapsed = Math.floor(elapsedMilliseconds(item, now) / 1000);
     const formattedTime = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor(elapsed / 60) % 60).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
@@ -86,7 +85,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
                 </Box>
                 <Stack spacing={0.5} alignItems="flex-end" sx={{ gridColumn: 2, gridRow: '1 / span 2' }}>
                     <Typography sx={{ fontSize: '1.5rem', fontVariantNumeric: 'tabular-nums', lineHeight: 1.5, whiteSpace: 'nowrap', textAlign: 'right' }}>{formattedTime}</Typography>
-                    <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'flex-end', mr: -0.5 }}>
+                    <Stack direction="row" spacing={0} sx={{ justifyContent: 'flex-end' }}>
                         <IconButton size="small" color="primary" aria-label="終了・保存" title="終了・保存" disabled={busy || showEditor || item.status === 'confirming'} onClick={controller.complete}>
                             <CheckCircleIcon fontSize="medium" />
                         </IconButton>
