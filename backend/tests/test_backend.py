@@ -23,6 +23,7 @@ class DatabaseTestCase(unittest.TestCase):
         self.presence_guard.start()
         self.addCleanup(self.presence_guard.stop)
         self.app = create_app(TEST_CONFIG)
+        self.addCleanup(self.app.extensions['lan_auth_db'].close)
         self.context = self.app.app_context()
         self.context.push()
         self.addCleanup(self.context.pop)

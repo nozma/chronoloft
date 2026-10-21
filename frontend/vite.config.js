@@ -19,6 +19,14 @@ export default defineConfig({
                 target: 'http://127.0.0.1:5000',
                 changeOrigin: true,
                 secure: false,
+                // LAN端末を起動元PCとして扱わないよう接続元を転送する。
+                configure: proxy => {
+                    proxy.on('proxyReq', (proxyReq, req) => {
+                        const address = req.socket.remoteAddress || '';
+                        proxyReq.setHeader('X-Chronoloft-Remote', address.replace(/^::ffff:/, ''));
+                        proxyReq.setHeader('X-Chronoloft-Host', req.headers.host);
+                    });
+                },
             },
         },
     },

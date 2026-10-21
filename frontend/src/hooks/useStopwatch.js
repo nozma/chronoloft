@@ -5,6 +5,16 @@ import { useState, useEffect, useRef } from 'react';
 import { startDiscordPresence, stopDiscordPresence } from '../services/api';
 import { STOPWATCH_SYNC_EVENT } from '../contexts/RecordContext';
 
+function createSessionId() {
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    // LAN内のHTTP接続ではrandomUUIDが使えないため、乱数からUUIDを生成する。
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 /**
  * useStopwatch
  *
@@ -30,7 +40,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
     const [isDiscordBusy, setIsDiscordBusy] = useState(false); // DiscordAPI呼び出し中フラグ
 
     const sessionRef = useRef(null);
-    if (sessionRef.current === null) sessionRef.current = crypto.randomUUID();
+    if (sessionRef.current === null) sessionRef.current = createSessionId();
     const stoppingRef = useRef(false);
     const memoRef = useRef(memo);
     memoRef.current = memo;
@@ -172,7 +182,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
         if (!force && currentStartTime !== null) return;
 
         stoppingRef.current = false;
-        sessionRef.current = crypto.randomUUID();
+        sessionRef.current = createSessionId();
         const now = Date.now();
         setCurrentStartTime(now);
         setPausedStartTime(null);

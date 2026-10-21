@@ -30,7 +30,7 @@ def find_free_port(preferred_port=5180):
     # まず preferred_port で bind してみる
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        s.bind(('127.0.0.1', preferred_port))
+        s.bind(('0.0.0.0', preferred_port))
         # もし bind に成功すれば、ここで使うポートが確定
         port = s.getsockname()[1]
         s.close()
@@ -41,7 +41,7 @@ def find_free_port(preferred_port=5180):
         s.close()
 
         s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind(('127.0.0.1', 0))
+        s2.bind(('0.0.0.0', 0))
         port = s2.getsockname()[1]
         s2.close()
         return port
@@ -50,7 +50,9 @@ def run_flask(port):
     app = create_app()
     apply_all_migrations(app)
     print(app.instance_path)
-    app.run(host='127.0.0.1', port=port)
+    # LAN設定がオフの場合、認証処理が外部端末からの全アクセスを拒否する。
+    app.config['LAN_PORT'] = port
+    app.run(host='0.0.0.0', port=port)
     
 class ApiBridge:
     def __init__(self, app_url):

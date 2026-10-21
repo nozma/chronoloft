@@ -1,3 +1,4 @@
+import { LanSettings } from './LanAccess';
 import { useI18n } from '../i18n/I18nContext';
 import { useState, useEffect } from 'react';
 import {
@@ -77,6 +78,7 @@ function SettingsDialog({ open, onClose }) {
 
             <DialogContent dividers>
                 <Stack spacing={3} divider={<Divider flexItem />}>
+                    <LanSettings />
                     <FormControl component="fieldset">
                         <FormLabel component="legend">{t("Language")}</FormLabel>
                         <RadioGroup row value={tmpLanguage} onChange={e => setTmpLanguage(e.target.value)}>
