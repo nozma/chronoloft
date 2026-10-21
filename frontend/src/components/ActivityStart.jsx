@@ -246,12 +246,21 @@ function ActivityStart({
         }
         : {};
 
+    const sectionSx = (theme) => ({
+        px: 1.25,
+        py: 0.75,
+        borderRadius: 1.5,
+        minWidth: 0,
+        backgroundColor: theme.palette.mode === 'dark'
+            ? 'rgba(255,255,255,0.06)'
+            : 'rgba(0,0,0,0.03)',
+    });
 
     return (
         <>
-            <Box sx={{ mb: isTwoColumnLayout ? 0 : 3, display: 'flex', flexDirection: 'column', gap: isTwoColumnLayout ? 1.5 : 0 }}>
+            <Box sx={{ mb: isTwoColumnLayout ? 0 : 3, display: 'flex', flexDirection: 'column', gap: 1 }}>
                 {/* グループフィルタ */}
-                <Box>
+                <Box sx={sectionSx}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography
                             variant='caption'
@@ -269,7 +278,7 @@ function ActivityStart({
                                 }}
                             />
                         </Typography>
-                        {isTwoColumnLayout && !state.activityDialogOpen && (
+                        {!state.activityDialogOpen && (
                             <IconButton
                                 size="small"
                                 onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
@@ -333,24 +342,13 @@ function ActivityStart({
                                     ))}
                                 </ToggleButtonGroup>
                             )}
-                            {!isTwoColumnLayout && !state.activityDialogOpen && (
-                                <IconButton
-                                    onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
-                                    sx={{
-                                        opacity: { xs: 1, sm: 0 },
-                                        transition: 'opacity 0.2s',
-                                        '&:hover': { opacity: 1 },
-                                    }}>
-                                    <SettingsIcon />
-                                </IconButton>
-                            )}
                             <GroupManagementDialog open={state.groupDialogOpen} onClose={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: false })} />
                         </Box>
                     </Collapse>
                 </Box>
 
                 {/* タグフィルタ */}
-                <Box>
+                <Box sx={sectionSx}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography
                             variant='caption'
@@ -368,7 +366,7 @@ function ActivityStart({
                                 }}
                             />
                         </Typography>
-                        {isTwoColumnLayout && !state.activityDialogOpen && (
+                        {!state.activityDialogOpen && (
                             <IconButton
                                 size="small"
                                 onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
@@ -421,24 +419,13 @@ function ActivityStart({
                                         {tagName}
                                     </ToggleButton>
                                 ))}
-                                {!isTwoColumnLayout && !state.activityDialogOpen && (
-                                    <IconButton
-                                        onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                                        sx={{
-                                            opacity: { xs: 1, sm: 0 },
-                                            transition: 'opacity 0.2s',
-                                            '&:hover': { opacity: 1 },
-                                        }}>
-                                        <SettingsIcon />
-                                    </IconButton>
-                                )}
                             </StyledToggleButtonGroup>
                             <TagManagementDialog open={state.tagDialogOpen} onClose={() => dispatch({ type: 'SET_TAG_DIALOG', payload: false })} />
                         </Box>
                     </Collapse>
                 </Box>
                 {/* アクティビティ表示 */}
-                <Box>
+                <Box sx={sectionSx}>
                 {!state.activityDialogOpen && (
                     <>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -458,15 +445,13 @@ function ActivityStart({
                                     }}
                                 />
                             </Typography>
-                            {isTwoColumnLayout && (
-                                <IconButton
-                                    size="small"
-                                    onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
-                                    sx={{ color: '#cccccc' }}
-                                >
-                                    <SettingsIcon fontSize="small" />
-                                </IconButton>
-                            )}
+                            <IconButton
+                                size="small"
+                                onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
+                                sx={{ color: '#cccccc' }}
+                            >
+                                <SettingsIcon fontSize="small" />
+                            </IconButton>
                         </Box>
                         <Collapse in={state.activityOpen}>
                             <Box>
@@ -501,19 +486,6 @@ function ActivityStart({
                                             <TruncatedActivityLabel text={activity.name} sx={activityNameLabelSx} />
                                         </Button>
                                     ))}
-                                    {/* 設定アイコンの表示 */}
-                                    {!isTwoColumnLayout && !state.activityDialogOpen && (
-                                        <IconButton
-                                            variant="contained" onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
-                                            sx={{
-                                                opacity: { xs: 1, sm: 0 },
-                                                transition: 'opacity 0.3s',
-                                                '&:hover': { opacity: 1 },
-                                            }}
-                                        >
-                                            <SettingsIcon />
-                                        </IconButton>
-                                    )}
                                 </Box>
                                 {/* 残りの項目を表示するUI */}
                                 {(remainingActivities.length > 0 || inactiveActivities.length > 0) && (

@@ -112,7 +112,6 @@ function App() {
                                                         sx={isTwoColumnLayout ? twoColumnSidebarSx : { minWidth: 0 }}
                                                     >
                                                         <RecordingInterface
-                                                            showSettingsMenu={!isTwoColumnLayout}
                                                             showHeading={!isTwoColumnLayout}
                                                         />
                                                     </Box>

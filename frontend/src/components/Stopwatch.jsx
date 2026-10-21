@@ -5,20 +5,18 @@ import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover }
 import getIconForGroup from '../utils/getIconForGroup';
 import useStopwatch from '../hooks/useStopwatch';
 import { useSettings } from '../contexts/SettingsContext';
+import { alpha } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useRecords } from '../contexts/RecordContext';
 import { DateTime } from 'luxon';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import SyncIcon from '@mui/icons-material/Sync';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
 export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
-    const discordEnabled = props.controller.discordEnabled;
     const { records } = useRecords();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
@@ -33,9 +31,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         displayStartTime,
         memo,
         setMemo,
-        isDiscordBusy,
-        refreshDiscord,
-        discordConnected
+        isDiscordBusy
     } = props.controller;
 
     useImperativeHandle(ref, () => ({
@@ -122,51 +118,6 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         complete(memo);
     };
 
-    // 7日/30日累積時間と1つ前の期間の累積時間を計算
-    const { total7d, total30d, prev7d, prev30d } = useMemo(() => {
-        const now = new Date();
-        const past30 = new Date(now);
-        past30.setDate(now.getDate() - 30);
-        const past7 = new Date(now);
-        past7.setDate(now.getDate() - 7);
-        const prev30Start = new Date(past30);
-        prev30Start.setDate(prev30Start.getDate() - 30);
-        const prev7Start = new Date(past7);
-        prev7Start.setDate(prev7Start.getDate() - 7);
-
-        let sum7 = 0;
-        let sum30 = 0;
-        let prevSum7 = 0;
-        let prevSum30 = 0;
-        for (const rec of records) {
-            if (rec.activity_id !== props.activityId) continue;
-            const created = new Date(rec.created_at);
-            if (created >= past30) sum30 += rec.value;
-            if (created >= past7) sum7 += rec.value;
-            if (created >= prev7Start && created < past7) prevSum7 += rec.value;
-            if (created >= prev30Start && created < past30) prevSum30 += rec.value;
-        }
-        return { total7d: sum7, total30d: sum30, prev7d: prevSum7, prev30d: prevSum30 };
-    }, [records, props.activityId]);
-
-    const runningMinutes = displayTime / 60000;
-    const total7Display = total7d + runningMinutes;
-    const total30Display = total30d + runningMinutes;
-
-    const totalLabel7 = `${Math.floor(total7Display / 60)}:${String((total7Display % 60).toFixed(0)).padStart(2, '0')} / ${t("{count} days", { count: 7 })}`;
-    const totalLabel30 = `${Math.floor(total30Display / 60)}:${String((total30Display % 60).toFixed(0)).padStart(2, '0')} / ${t("{count} days", { count: 30 })}`;
-
-    const diff7 = Math.round(total7Display - prev7d);
-    const diff30 = Math.round(total30Display - prev30d);
-    const formatDiff = (min) => {
-        const sign = min > 0 ? '+' : min < 0 ? '-' : '';
-        const abs = Math.abs(min);
-        const h = Math.floor(abs / 60);
-        const m = Math.floor(abs % 60);
-        return `${sign}${h}:${String(m).padStart(2, '0')}`;
-    };
-    const diffLabel7 = formatDiff(diff7);
-    const diffLabel30 = formatDiff(diff30);
     const memoOptions = useMemo(
         () => getRecentMemoOptions(records, props.activityId),
         [records, props.activityId]
@@ -214,11 +165,73 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         }
     };
 
+    const shortcutSx = {
+        minWidth: { xs: 36, sm: 28 },
+        minHeight: { xs: 40, sm: 0 },
+        px: { xs: 0.75, sm: 0.75 },
+        py: { xs: 0.75, sm: 0.25 },
+        fontSize: { xs: '0.875rem', sm: '0.75rem' },
+        lineHeight: 1.75,
+        textTransform: 'none',
+        fontVariantNumeric: 'tabular-nums',
+        borderRadius: 1.5,
+        fontWeight: 500,
+        bgcolor: 'action.hover',
+        transition: 'background-color 0.15s',
+        '@media (hover: hover) and (pointer: fine)': {
+            '&:hover': { bgcolor: 'action.selected' },
+        },
+    };
+    const startTimeControls = <>
+        <Button
+            size="small"
+            color="inherit"
+            disabled={isDiscordBusy}
+            onClick={handleOpenPicker}
+            aria-label={`開始時刻を変更: ${formattedStartTime}`}
+            aria-haspopup="dialog"
+            aria-expanded={Boolean(anchorEl)}
+            title="開始時刻を変更"
+            sx={{ minWidth: 0, minHeight: { xs: 40, sm: 0 }, px: { xs: 1, sm: 0.5 }, py: { xs: 0.75, sm: 0.25 }, mr: 0.5, color: 'text.secondary', fontSize: { xs: '0.875rem', sm: '0.75rem' }, textTransform: 'none' }}
+        >
+            {t("Start")}: {formattedStartTime}
+        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+            <Button variant="text" color="primary" size="small" disabled={isDiscordBusy} sx={theme => ({
+                ...shortcutSx,
+                px: 1,
+                fontWeight: 600,
+                bgcolor: alpha(theme.palette.primary.main, 0.12),
+                '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
+                },
+            })} title="直前の記録の終了時刻に合わせる" onClick={handleFillPrevEnd}>FILL</Button>
+            {[-5, -1, 1, 5].map(delta => (
+                <Button
+                    key={delta}
+                    variant="text"
+                    color="inherit"
+                    size="small"
+                    disabled={isDiscordBusy}
+                    sx={shortcutSx}
+                    aria-label={`開始時刻を${Math.abs(delta)}分${delta < 0 ? '早める' : '遅らせる'}`}
+                    onClick={() => adjustStartTime(delta)}
+                >
+                    {delta > 0 ? '+' : ''}{delta}
+                </Button>
+            ))}
+        </Box>
+    </>;
+
     return (
         <>
             <Box
                 sx={(theme) => ({
-                    display: 'flex',
+                    display: isInlineMode ? 'grid' : 'flex',
+                    gridTemplateColumns: isInlineMode ? 'minmax(0, 1fr) auto' : undefined,
+                    columnGap: isInlineMode ? 1 : undefined,
+                    rowGap: isInlineMode ? 1.25 : undefined,
+                    alignItems: isInlineMode ? 'center' : undefined,
                     flexDirection: isInlineMode ? 'column' : 'row',
                     position: isInlineMode ? 'relative' : 'fixed',
                     top: isInlineMode ? 'auto' : 0,
@@ -232,79 +245,29 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                     mb: 0,
                 })}
             >
-                <Box sx={isInlineMode ? { width: '100%' } : { flex: 1, width: '10%' }} >
-                    <Box sx={{ mb: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
+                <Box sx={isInlineMode ? { display: 'contents' } : { flex: 1, width: '10%' }} >
+                    <Box sx={{ gridColumn: isInlineMode ? 1 : undefined, gridRow: isInlineMode ? 1 : undefined, mb: 0.5, minWidth: 0, display: 'flex', justifyContent: isInlineMode ? 'flex-start' : 'center', alignItems: 'center', gap: 0.5, '& > svg': { flexShrink: 0 } }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}
-                        <Typography variant="h6" sx={{ overflowWrap: 'anywhere' }}>
+                        <Typography variant={isInlineMode ? "subtitle1" : "h6"} fontWeight={isInlineMode ? 600 : undefined} sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                             {props.activityName}
                         </Typography>
                     </Box>
                     {isInlineMode ? (
                         <>
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
-                                <Typography variant="h4" sx={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{formatTime(displayTime)}</Typography>
-                                {!props.confirming && <IconButton aria-label="終了・保存" title="終了・保存" color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
-                                    <CheckCircleIcon fontSize='medium' />
-                                </IconButton>}
-                                <IconButton aria-label="計測をキャンセル" title="計測をキャンセル" color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
-                                    <CancelIcon fontSize='medium' />
-                                </IconButton>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">{totalLabel7}</Typography>
-                                    <Typography
-                                        variant="caption"
-                                        sx={(theme) => ({
-                                            color:
-                                                diff7 > 0
-                                                    ? theme.palette.mode === 'dark'
-                                                        ? theme.palette.success.light
-                                                        : theme.palette.success.dark
-                                                    : diff7 < 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.error.light
-                                                            : theme.palette.error.dark
-                                                        : undefined,
-                                        })}
-                                    >
-                                        {diffLabel7}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2" color="text.secondary">{totalLabel30}</Typography>
-                                    <Typography
-                                        variant="caption"
-                                        sx={(theme) => ({
-                                            color:
-                                                diff30 > 0
-                                                    ? theme.palette.mode === 'dark'
-                                                        ? theme.palette.success.light
-                                                        : theme.palette.success.dark
-                                                    : diff30 < 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.error.light
-                                                            : theme.palette.error.dark
-                                                        : undefined,
-                                        })}
-                                    >
-                                        {diffLabel30}
-                                    </Typography>
+                            <Box sx={{ display: 'contents' }}>
+                                <Typography sx={{ gridColumn: 2, gridRow: 1, textAlign: 'right', fontSize: '1.5rem', fontVariantNumeric: 'tabular-nums', lineHeight: 1.5, whiteSpace: 'nowrap' }}>{formatTime(displayTime)}</Typography>
+                                <Box sx={{ gridColumn: 2, gridRow: 2, justifySelf: 'end', justifyContent: 'flex-end', display: 'flex', gap: 0 }}>
+                                    {!props.confirming && <IconButton aria-label="終了・保存" title="終了・保存" color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
+                                        <CheckCircleIcon fontSize='medium' />
+                                    </IconButton>}
+                                    <IconButton aria-label="計測をキャンセル" title="計測をキャンセル" color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
+                                        <CancelIcon fontSize='medium' />
+                                    </IconButton>
                                 </Box>
                             </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                                <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                                <IconButton aria-label="開始時刻を変更" title="開始時刻を変更" disabled={isDiscordBusy} onClick={handleOpenPicker} size='small'>
-                                    <CalendarMonthIcon fontSize='small' />
-                                </IconButton>
-                                <Button disabled={isDiscordBusy} size="small" sx={{ minWidth: 0, px: 0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
-                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
-                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
-                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
-                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(5)}>+5</IconButton>
+                            <Box sx={{ gridColumn: '1 / -1', gridRow: 3, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap', pt: 0.5 }}>
+                                {startTimeControls}
                             </Box>
                         </>
                     ) : (
@@ -318,63 +281,9 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                                 <IconButton aria-label="計測をキャンセル" title="計測をキャンセル" color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                                     <CancelIcon fontSize='medium' />
                                 </IconButton>
-                                <Box sx={{ ml: 1, display: 'flex', gap: 2 }}>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>{totalLabel7}</Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={(theme) => ({
-                                                lineHeight: 1,
-                                                mt: 0.5,
-                                                color:
-                                                    diff7 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : diff7 < 0
-                                                            ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : undefined,
-                                            })}
-                                        >
-                                            {diffLabel7}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>{totalLabel30}</Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={(theme) => ({
-                                                lineHeight: 1,
-                                                mt: 0.5,
-                                                color:
-                                                    diff30 > 0
-                                                        ? theme.palette.mode === 'dark'
-                                                            ? theme.palette.success.light
-                                                            : theme.palette.success.dark
-                                                        : diff30 < 0
-                                                            ? theme.palette.mode === 'dark'
-                                                                ? theme.palette.error.light
-                                                                : theme.palette.error.dark
-                                                            : undefined,
-                                            })}
-                                        >
-                                            {diffLabel30}
-                                        </Typography>
-                                    </Box>
-                                </Box>
                             </Box>
-                            <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
-                                <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
-                                <IconButton aria-label="開始時刻を変更" title="開始時刻を変更" disabled={isDiscordBusy} onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
-                                    <CalendarMonthIcon fontSize='small' />
-                                </IconButton>
-                                <Button size="small" sx={{ minWidth: 0, px: 0.5, m: -0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
-                                <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, m: -0.5, fontSize: '0.9rem' }} onClick={() => adjustStartTime(5)}>+5</IconButton>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
+                                {startTimeControls}
                             </Box>
                         </>
                     )}
@@ -395,9 +304,11 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                         </Box>
                     </Popover>
                 </Box>
-                <Box sx={isInlineMode ? { position: 'relative', width: '100%', mt: 1 } : { position: 'relative', flex: 1, mt: 1 }}>
+                <Box sx={isInlineMode ? { gridColumn: '1 / -1', gridRow: 2, minWidth: 0, mr: props.confirming ? 5.5 : 9.25 } : { position: 'relative', flex: 1, mt: 1 }}>
                     {/* メモ入力欄 */}
                     <Autocomplete
+                        fullWidth
+                        sx={{ minWidth: 0 }}
                         disabled={isDiscordBusy}
                         freeSolo
                         options={memoOptions}
@@ -417,27 +328,6 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                             />
                         )}
                     />
-                    {/* Update Presence ボタン */}
-                    {discordEnabled && props.discordData && (
-                        <IconButton
-                            size="small"
-                            onClick={refreshDiscord}
-                            color={discordConnected ? "primary" : "warning"}
-                            title={t(discordConnected ? "Discord connected — update status" : "Discord disconnected — retry connection")}
-                            disabled={isDiscordBusy}
-                            sx={{
-                                position: 'absolute',
-                                right: 4,
-                                bottom: 8,
-                                p: 0.5,
-                                bgcolor: 'background.paper',
-                                boxShadow: 1,
-                                '&:hover': { bgcolor: 'action.hover' },
-                            }}
-                        >
-                            <SyncIcon fontSize="small" />
-                        </IconButton>
-                    )}
                 </Box>
             </Box>
             {!isInlineMode && <Box sx={{ marginTop: 8 }} />}
