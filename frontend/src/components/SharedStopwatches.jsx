@@ -16,6 +16,7 @@ import getIconForGroup from '../utils/getIconForGroup';
 import { useFilter } from '../contexts/FilterContext';
 import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
+import { createStopwatchDraft } from '../utils/stopwatchDraft';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import { elapsedMilliseconds, newStopwatchId, operateStopwatch, operateStopwatchWithDraft, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
 
@@ -28,17 +29,39 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const [showEditor, setShowEditor] = useState(false);
     const [editing, setEditing] = useState(false);
     const draftBase = useRef(item);
+    const [, refreshDraft] = useState(0);
+    const localDraft = useRef(null);
+    if (!localDraft.current) {
+        localDraft.current = createStopwatchDraft(
+            (base, data) => operateStopwatch(base, 'edit', data),
+            () => refreshDraft(value => value + 1),
+        );
+    }
+    const changes = localDraft.current.changes;
     const editMemo = value => {
+        if (own) {
+            localDraft.current.update(item, { memo: value });
+            return;
+        }
         if (!editing && !showEditor) draftBase.current = item;
         setEditing(true);
         setMemo(value);
     };
     const savedItem = async () => {
+        if (own) return localDraft.current.flush(item);
         if (!editing) return item;
         const result = await operateStopwatch(draftBase.current, 'edit', { memo });
         setEditing(false);
         return result.item;
     };
+    const autoSave = useRef(null);
+    autoSave.current = () => run(savedItem);
+    // 詳細の入力が落ち着いたら保存する。終了・切り替え時は待たずに保存する。
+    useEffect(() => {
+        if (!own || !Object.keys(changes).length || busy) return;
+        const timer = setTimeout(() => autoSave.current(), 600);
+        return () => clearTimeout(timer);
+    }, [own, changes, busy]);
     useEffect(() => {
         const registry = drafts.current;
         registry[item.id] = savedItem;
@@ -48,9 +71,10 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const { recordSaveMode } = useSettings();
     const { groups } = useGroups();
     const canDiscord = own && item.is_local && item.discord_enabled && groups.some(group => group.name === item.activity_group && group.client_id);
+    const displayedItem = own ? { ...item, ...changes } : item;
     const controller = {
         displayTime: elapsedMilliseconds(item, now), displayStartTime: item.started_at,
-        memo, setMemo: editMemo,
+        memo: own ? displayedItem.memo : memo, setMemo: editMemo,
         isDiscordBusy: busy, discordEnabled: canDiscord,
         discordConnected: item.discord_connected,
         complete: () => run(async () => {
@@ -70,10 +94,6 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
             <StopwatchView inlineMode controller={controller} activityId={item.activity_id}
                 activityName={item.activity_name} activityGroup={item.activity_group}
                 discordData={canDiscord ? {} : null} recordSaveMode="auto" confirming={item.status === 'confirming'} />
-            {editing && <Stack direction="row" spacing={1} sx={{ px: 2, pb: 1.5 }}>
-                <Button size="small" variant="outlined" disabled={busy} onClick={() => run(savedItem)}>{t("Save Details")}</Button>
-                <Button size="small" disabled={busy} onClick={() => { setMemo(item.memo); setEditing(false); }}>取り消す</Button>
-            </Stack>}
         </> : <Box sx={{ p: 2 }}>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', columnGap: 2, rowGap: 0.5, alignItems: 'start' }}>
                 <Box sx={{ minWidth: 0 }}>
@@ -144,7 +164,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         </Box>}
         {item.status === 'confirming' && <Stack direction="row" alignItems="center" spacing={1} sx={{ px: 2, pb: 1.5, flexWrap: 'wrap' }}>
             <Button size="small" disabled={busy || showEditor} onClick={() => run(async () => openConfirm(await savedItem()))}>保存内容を確認</Button>
-            <Button size="small" disabled={busy || showEditor} onClick={() => run(() => operateStopwatch(item, 'resume'))}>計測に戻る</Button>
+            <Button size="small" disabled={busy || showEditor} onClick={() => run(async () => operateStopwatch(await savedItem(), 'resume'))}>計測に戻る</Button>
         </Stack>}
     </Box>;
 }
