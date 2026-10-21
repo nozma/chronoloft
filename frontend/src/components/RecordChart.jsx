@@ -468,7 +468,8 @@ function RecordChart() {
         setDetailsError('');
         try {
             // API送信前と計測への適用直前に、計測の切り替え・詳細変更を確認する。
-            if (targets.some(record => record.is_live && !changeStopwatchDetails(record, nextMemo, true))) {
+            const validations = await Promise.all(targets.filter(record => record.is_live).map(record => changeStopwatchDetails(record, nextMemo, true)));
+            if (validations.some(accepted => !accepted)) {
                 throw new Error(t("The stopwatch changed. Close this dialog and open the bar again."));
             }
             for (const record of targets) {
@@ -481,7 +482,7 @@ function RecordChart() {
                 remaining.splice(remaining.indexOf(record), 1);
             }
             for (const record of targets.filter(item => item.is_live)) {
-                if (!changeStopwatchDetails(record, nextMemo)) {
+                if (!await changeStopwatchDetails(record, nextMemo)) {
                     throw new Error(t("The stopwatch changed. Close this dialog and open the bar again."));
                 }
                 remaining.splice(remaining.indexOf(record), 1);

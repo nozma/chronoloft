@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Box, Button, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { Alert, Box, Button, Collapse, FormControl, FormControlLabel, FormLabel, Stack, Switch, TextField, Typography } from '@mui/material';
+
+import { saveDeviceAndLanSettings, useSharedStopwatches } from '../services/stopwatches';
 
 async function authRequest(path, options = {}) {
     const response = await fetch(path, {
@@ -11,43 +13,62 @@ async function authRequest(path, options = {}) {
     return data;
 }
 
-export function LanSettings() {
+export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyChange }, ref) {
+    const shared = useSharedStopwatches();
     const [settings, setSettings] = useState(null);
     const [enabled, setEnabled] = useState(false);
     const [password, setPassword] = useState('');
+    const [name, setName] = useState(shared.device?.name || '');
     const [message, setMessage] = useState('');
-    const [busy, setBusy] = useState(false);
+    const [loaded, setLoaded] = useState(false);
+    useEffect(() => { setName(shared.device?.name || ''); }, [shared.device?.name]);
     useEffect(() => {
-        authRequest('/api/auth/status').then(status => {
-            if (status.local) return authRequest('/api/lan/settings').then(data => {
-                setSettings(data);
-                setEnabled(data.enabled);
-            });
-        }).catch(error => setMessage(error.message));
+        let cancelled = false;
+        authRequest('/api/auth/status').then(async status => {
+            const data = status.local ? await authRequest('/api/lan/settings') : null;
+            if (cancelled) return;
+            setSettings(data);
+            setEnabled(data?.enabled || false);
+            setLoaded(true);
+        }).catch(error => { if (!cancelled) setMessage(error.message); });
+        return () => { cancelled = true; };
     }, []);
-    if (!settings) return message ? <Alert severity="error">{message}</Alert> : null;
-    return <Stack spacing={2}>
-        <Typography variant="h6">LANアクセス</Typography>
-        <FormControlLabel label="同じLAN内からのアクセスを許可" control={<Switch checked={enabled} onChange={e => setEnabled(e.target.checked)} />} />
-        <TextField label={settings.password_set ? '新しいパスワード（変更する場合のみ）' : 'LANアクセス用パスワード'} type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)} helperText="8〜256文字。他のサービスとは異なるパスワードを設定してください。" />
-        <Typography variant="body2">最後の利用から7日間ログインを保持します。パスワード変更・LANアクセス無効化で全端末がログアウトします。HTTP通信は暗号化されません。</Typography>
-        <Button disabled={busy} variant="outlined" onClick={async () => {
-            setBusy(true);
-            try {
-                const data = await authRequest('/api/lan/settings', { method: 'PUT', body: JSON.stringify({ enabled, password }) });
-                setSettings(data);
-                setPassword('');
-                setMessage('LAN設定を保存しました。');
-            } catch (error) { setMessage(error.message); }
-            finally { setBusy(false); }
-        }}>LAN設定を保存</Button>
-        {message && <Alert severity={message === 'LAN設定を保存しました。' ? 'success' : 'error'}>{message}</Alert>}
-        {settings.enabled && <Box>
-            <Typography variant="body2">別端末のブラウザで開くURL：</Typography>
-            {settings.urls.length ? settings.urls.map(url => <Typography key={url} sx={{ overflowWrap: 'anywhere' }}>{url}</Typography>) : <Typography variant="body2">起動PCのLAN内IPアドレスとポート番号でアクセスしてください。</Typography>}
-        </Box>}
-    </Stack>;
-}
+    useEffect(() => {
+        onReadyChange(loaded && shared.ready && !shared.busy);
+        return () => onReadyChange(false);
+    }, [loaded, shared.ready, shared.busy, onReadyChange]);
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+            if (!loaded) throw new Error('LAN設定の取得をお待ちください。');
+            const result = await saveDeviceAndLanSettings({ name, settings, enabled, password });
+            setSettings(result);
+            setPassword('');
+        },
+    }));
+    return <FormControl component="fieldset" fullWidth sx={{ minWidth: 0 }}>
+        <FormLabel component="legend">LANアクセス</FormLabel>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+            <Stack spacing={1}>
+                <Typography variant="body2" color="text.secondary">端末名は、ほかの端末からストップウォッチを見分けるために使います。</Typography>
+                <TextField label="この端末の名前" size="small" fullWidth value={name} disabled={disabled || !shared.device} inputProps={{ maxLength: 80 }} onChange={e => setName(e.target.value)} />
+            </Stack>
+            {settings && <Box>
+                <FormControlLabel label="同じLAN内からのアクセスを許可" control={<Switch checked={enabled} disabled={disabled} onChange={e => { setEnabled(e.target.checked); setMessage(''); }} />} />
+                <Collapse in={enabled}>
+                    <Stack spacing={1.5} sx={{ mt: 1 }}>
+                        <TextField size="small" fullWidth label={settings.password_set ? '新しいパスワード（変更する場合のみ）' : 'LANアクセス用パスワード'} type="password" autoComplete="new-password" disabled={disabled} value={password} onChange={e => setPassword(e.target.value)} helperText="8〜256文字。他のサービスとは異なるパスワードを設定してください。" />
+                        <Typography variant="body2" color="text.secondary">ログインは最後の利用から7日間保持されます。パスワード変更・LANアクセス無効化で全端末がログアウトします。HTTP通信は暗号化されません。</Typography>
+                    </Stack>
+                </Collapse>
+                {settings.enabled && <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>別端末のブラウザーで開くURL</Typography>
+                    {settings.urls.length ? settings.urls.map(url => <Typography variant="body2" key={url} sx={{ overflowWrap: 'anywhere' }}>{url}</Typography>) : <Typography variant="body2" color="text.secondary">起動PCのLAN内IPアドレスとポート番号でアクセスしてください。</Typography>}
+                </Box>}
+            </Box>}
+            {message && <Alert severity="error">{message}</Alert>}
+        </Stack>
+    </FormControl>;
+});
 
 export default function LanAccess({ children }) {
     const [status, setStatus] = useState(null);

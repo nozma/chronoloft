@@ -99,6 +99,8 @@ def create_app(test_config=None):
     # Blueprint登録
     from .routes import register_routes
     register_routes(app)
+    from .routes.stopwatch_routes import install_stopwatches
+    install_stopwatches(app)
 
     # エラーハンドラ
     @app.errorhandler(Exception)

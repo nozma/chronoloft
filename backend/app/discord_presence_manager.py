@@ -1,13 +1,30 @@
+import asyncio
 import logging
 import time
 
-from pypresence import Presence
+from pypresence import Presence as BasePresence
 from pypresence.payloads import Payload
 from pypresence.utils import remove_none
 from pypresence.types import StatusDisplayType
 
 from .models import ActivityGroup
 from . import db
+
+DISCORD_HANDSHAKE_TIMEOUT = 5
+
+
+class Presence(BasePresence):
+    """初回接続の応答待ちにも上限を設け、次回の再接続を可能にする。"""
+    async def handshake(self):
+        return await asyncio.wait_for(super().handshake(), timeout=DISCORD_HANDSHAKE_TIMEOUT)
+
+
+def presence_text(value):
+    # Discord表示だけを2〜128文字に整え、保存するメモや項目名は変更しない。
+    if not value or not value.strip():
+        return None
+    return value[:128].ljust(2)
+
 
 logger = logging.getLogger(__name__)
 # アプリ全体で常に1つのインスタンスのみを使用するためのグローバル変数
@@ -17,6 +34,7 @@ class DiscordRPCManager:
     def __init__(self, client_id):
         self.client_id = client_id
         self.rpc = None
+        self.last_error = None
         self.start_time = None  # 接続開始時刻を管理
 
     def connect(self):
@@ -25,15 +43,23 @@ class DiscordRPCManager:
                 self.rpc = Presence(self.client_id)
                 self.rpc.connect()
                 self.start_time = time.time()  # 接続成功時に開始時刻を記録
+                self.last_error = None
                 print("Discord RPC connected")
             except Exception as e:
                 # 接続失敗を接続済みと誤判定せず、次回の再接続を可能にする。
                 self.close(clear=False)
+                self.last_error = (f'Discordから{DISCORD_HANDSHAKE_TIMEOUT}秒以内に接続応答がありませんでした。'
+                                   if isinstance(e, TimeoutError) else str(e) or type(e).__name__)
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
     def update_presence(self, state, large_text, details, large_image, application_name=None):
         if self.rpc:
             try:
+                # Discordは空文字の詳細を拒否するため、未入力時は項目自体を省く。
+                details = presence_text(details)
+                state = presence_text(state)
+                large_text = presence_text(large_text)
+                application_name = presence_text(application_name)
                 if application_name:
                     payload = Payload.set_activity(
                         state=state,

@@ -1,3 +1,4 @@
+import { useSharedStopwatches, sharedLiveRecords } from '../services/stopwatches';
 import { normalizeDetails } from '../utils/recordDetails';
 import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { DateTime } from 'luxon';
@@ -16,82 +17,6 @@ const MERGE_WINDOW_MINUTES = 5;
 const MERGE_WINDOW_MS = MERGE_WINDOW_MINUTES * 60 * 1000;
 const MILLIS_PER_MINUTE = 60000;
 
-const safeParseLocalStorage = (key) => {
-    if (typeof window === 'undefined') return null;
-    try {
-        const raw = localStorage.getItem(key);
-        if (!raw) return null;
-        return JSON.parse(raw);
-    } catch (error) {
-        console.error(`Error parsing localStorage key "${key}":`, error);
-        return null;
-    }
-};
-
-const formatLiveCreatedAt = (now) => {
-    const iso = new Date(now).toISOString();
-    return iso.replace('Z', '');
-};
-
-const buildLiveRecord = ({ activity, stopwatchState, now, idPrefix }) => {
-    if (!activity || !stopwatchState) return null;
-    if (activity.unit && activity.unit !== 'minutes') return null;
-    const startTime = Number(stopwatchState.startTime);
-    const pausedStartTime = Number(stopwatchState.pausedStartTime);
-    const displayTime = Number(stopwatchState.displayTime);
-    let elapsedMs = null;
-    let createdAtMs = null;
-
-    if (Number.isFinite(startTime) && startTime > 0) {
-        elapsedMs = Math.max(0, now - startTime);
-        createdAtMs = now;
-    } else if (
-        Number.isFinite(pausedStartTime) &&
-        pausedStartTime > 0 &&
-        Number.isFinite(displayTime) &&
-        displayTime >= 0
-    ) {
-        elapsedMs = Math.max(0, displayTime);
-        createdAtMs = pausedStartTime + elapsedMs;
-    } else {
-        return null;
-    }
-
-    const minutes = elapsedMs / 60000;
-    const activityId = activity.id;
-    if (activityId === null || activityId === undefined) return null;
-
-    const activityGroupId = activity.group_id ?? activity.activity_group_id ?? null;
-    const activityGroup = activity.group_name ?? activity.activity_group ?? null;
-    return {
-        id: `live-${idPrefix}-${activityId}`,
-        activity_id: activityId,
-        value: minutes,
-        created_at: formatLiveCreatedAt(createdAtMs),
-        unit: 'minutes',
-        activity_name: activity.name,
-        activity_group: activityGroup,
-        activity_group_id: activityGroupId,
-        tags: activity.tags || [],
-        memo: normalizeDetails(stopwatchState.memo),
-        is_live: true,
-        stopwatch_key: idPrefix === 'main' ? 'stopwatchState' : 'subStopwatchState',
-        session_id: stopwatchState.sessionId,
-        is_paused: !(Number.isFinite(startTime) && startTime > 0),
-    };
-};
-
-const buildLiveRecords = () => {
-    const now = Date.now();
-    const mainState = safeParseLocalStorage('stopwatchState');
-    const mainActivity = safeParseLocalStorage('selectedActivity');
-
-    const live = [];
-    const mainRecord = buildLiveRecord({ activity: mainActivity, stopwatchState: mainState, now, idPrefix: 'main' });
-    if (mainRecord) live.push(mainRecord);
-    return live;
-};
-
 const areLiveRecordsEqual = (prev, next) => {
     if (prev.length !== next.length) return false;
     if (prev.length === 0) return true;
@@ -101,6 +26,7 @@ const areLiveRecordsEqual = (prev, next) => {
         if (prev[i].memo !== next[i].memo) return false;
         if (prev[i].created_at !== next[i].created_at) return false;
         if (prev[i].is_paused !== next[i].is_paused) return false;
+        if (prev[i].server_session?.revision !== next[i].server_session?.revision) return false;
     }
     return true;
 };
@@ -124,15 +50,7 @@ export function RecordProvider({ children }) {
     const { activities } = useActivities();
     const [records, setRecords] = useState([]);
     const [liveRecords, setLiveRecords] = useState([]);
-
-    const syncLiveRecords = () => {
-        const next = buildLiveRecords();
-        setLiveRecords((prev) => (areLiveRecordsEqual(prev, next) ? prev : next));
-    };
-
-    useEffect(() => {
-        refreshRecords();
-    }, []);
+    const shared = useSharedStopwatches();
 
     const refreshRecords = async () => {
         try {
@@ -201,6 +119,13 @@ export function RecordProvider({ children }) {
         await refreshRecords();
     };
 
+    useEffect(() => {
+        refreshRecords();
+        const changed = () => refreshRecords();
+        window.addEventListener('chronoloft:records-changed', changed);
+        return () => window.removeEventListener('chronoloft:records-changed', changed);
+    }, [shared.items]);
+
     const updateRecord = async (recordId, updateData) => {
         const payload = { ...updateData };
         if (Object.prototype.hasOwnProperty.call(payload, 'memo')) {
@@ -216,6 +141,10 @@ export function RecordProvider({ children }) {
     };
 
     useEffect(() => {
+        const syncLiveRecords = () => {
+            const next = sharedLiveRecords(shared.items, Date.now() + shared.offset);
+            setLiveRecords(previous => areLiveRecordsEqual(previous, next) ? previous : next);
+        };
         syncLiveRecords();
         const timer = setInterval(syncLiveRecords, LIVE_REFRESH_MS);
         const handleStopwatchSync = () => {
@@ -228,7 +157,7 @@ export function RecordProvider({ children }) {
             clearInterval(timer);
             window.removeEventListener(STOPWATCH_SYNC_EVENT, handleStopwatchSync);
         };
-    }, []);
+    }, [shared.items, shared.offset]);
 
     const recordsWithLive = useMemo(() => {
         if (liveRecords.length === 0) return records;

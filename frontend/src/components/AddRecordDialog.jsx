@@ -14,7 +14,8 @@ import {
     MenuItem,
     Box,
     IconButton,
-    Typography
+    Typography,
+    Alert
 } from '@mui/material';
 import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
@@ -31,6 +32,7 @@ function AddRecordDialog({
     initialMemo = '',
     isEdit = false,
     onDelete,
+    title,
     autoFocusMemo = false
 }) {
     const { t } = useI18n();
@@ -44,6 +46,9 @@ function AddRecordDialog({
     const [endTime, setEndTime] = useState('');     // minutes用: 終了日時
     const [memo, setMemo] = useState(normalizeDetails(initialMemo));
     const memoRef = useRef(null);
+    const submitting = useRef(false);
+    const [busy, setBusy] = useState(false);
+    const [submitError, setSubmitError] = useState('');
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
     const compatibleActivities = activities.filter(a => a.unit === activity.unit);
@@ -93,53 +98,64 @@ function AddRecordDialog({
     }, [open, autoFocusMemo]);
 
     // 保存時処理
-    const handleSubmit = () => {
-        if (!selectedActivity) return;
-        if (selectedActivity?.unit === 'count') { // 回数により記録するもの
-            const numValue = parseFloat(value);
-            if (isNaN(numValue) || numValue < 0) {
-                alert(t("Enter a valid count."));
-                return;
-            }
-            const dtLocal = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm");
-            if (!dtLocal.isValid) {
-                alert(t("Invalid date and time."));
-                return;
-            }
-            const dtUtc = dtLocal.toUTC().toISO();
+    const handleSubmit = async () => {
+        if (submitting.current) return;
+        submitting.current = true;
+        setBusy(true);
+        setSubmitError('');
+        try {
+            if (!selectedActivity) return;
+            if (selectedActivity?.unit === 'count') { // 回数により記録するもの
+                const numValue = parseFloat(value);
+                if (isNaN(numValue) || numValue < 0) {
+                    alert(t("Enter a valid count."));
+                    return;
+                }
+                const dtLocal = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm");
+                if (!dtLocal.isValid) {
+                    alert(t("Invalid date and time."));
+                    return;
+                }
+                const dtUtc = dtLocal.toUTC().toISO();
 
-            const recordData = {
-                activity_id: selectedActivity.id,
-                value: numValue,
-                created_at: dtUtc,
-                memo: memo,
-            };
-            onSubmit(recordData);
-        } else if (selectedActivity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
-            const startLocal = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
-            const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
+                const recordData = {
+                    activity_id: selectedActivity.id,
+                    value: numValue,
+                    created_at: dtUtc,
+                    memo: memo,
+                };
+                await onSubmit(recordData);
+            } else if (selectedActivity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
+                const startLocal = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
+                const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
-            if (!startLocal.isValid || !endLocal.isValid) {
-                alert(t("Invalid start or end time."));
-                return;
-            }
-            // バリデーション: 開始<=終了
-            if (startLocal > endLocal) {
-                alert(t("Start time must not be later than end time."));
-                return;
-            }
+                if (!startLocal.isValid || !endLocal.isValid) {
+                    alert(t("Invalid start or end time."));
+                    return;
+                }
+                // バリデーション: 開始<=終了
+                if (startLocal > endLocal) {
+                    alert(t("Start time must not be later than end time."));
+                    return;
+                }
 
-            const duration = endLocal.diff(startLocal, 'minutes').toObject().minutes ?? 0;
-            // DBに送るのは終了時刻と経過時間（分） {value: durationInMinutes, created_at: 終了時刻(UTC)}
-            const recordData = {
-                activity_id: selectedActivity.id,
-                value: duration,
-                created_at: endLocal.toUTC().toISO(),
-                memo: memo,
-            };
-            onSubmit(recordData);
+                const duration = endLocal.diff(startLocal, 'minutes').toObject().minutes ?? 0;
+                // DBに送るのは終了時刻と経過時間（分） {value: durationInMinutes, created_at: 終了時刻(UTC)}
+                const recordData = {
+                    activity_id: selectedActivity.id,
+                    value: duration,
+                    created_at: endLocal.toUTC().toISO(),
+                    memo: memo,
+                };
+                await onSubmit(recordData);
+            }
+            onClose();
+        } catch (error) {
+            setSubmitError(error.message || '保存に失敗しました。');
+        } finally {
+            submitting.current = false;
+            setBusy(false);
         }
-        onClose();
     };
 
     const handleDelete = async () => {
@@ -149,7 +165,7 @@ function AddRecordDialog({
     };
 
     const handleClose = () => {
-        onClose();
+        if (!submitting.current) onClose();
     };
 
     const handleKeyDown = (e) => {
@@ -182,7 +198,7 @@ function AddRecordDialog({
     // 「前のレコードの終了」を開始時刻にセット
     const fillStartWithPrevEnd = () => {
         // ① 終了時刻を基準に
-        const baseline = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm"); 
+        const baseline = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
         // ② 全レコードを終了時刻(created_at)降順ソート
         const sorted = [...records].sort(
@@ -228,8 +244,8 @@ function AddRecordDialog({
             onClose={handleClose}
             onKeyDown={handleKeyDown}
         >
-            <DialogTitle>{isEdit ? t("Edit") : t("Create")}</DialogTitle>
-            <DialogContent>
+            <DialogTitle>{title && <Typography component="span" display="block">{title}</Typography>}{isEdit ? t("Edit") : t("Create")}</DialogTitle>
+            <DialogContent>{submitError && <Alert severity="error">{submitError}</Alert>}
                 <TextField
                     select
                     label={t("Activity")}
@@ -448,8 +464,8 @@ function AddRecordDialog({
                         {t("Delete")}
                     </Button>
                 )}
-                <Button onClick={handleClose}>{t("Cancel")}</Button>
-                <Button onClick={handleSubmit} variant="contained" color="primary">
+                <Button disabled={busy} onClick={handleClose}>{t("Cancel")}</Button>
+                <Button disabled={busy} onClick={handleSubmit} variant="contained" color="primary">
                     {t("Submit")}
                 </Button>
             </DialogActions>

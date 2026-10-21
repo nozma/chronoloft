@@ -111,3 +111,26 @@ class Record(db.Model):
     def __repr__(self):
         return f"<Record id={self.id}>"
 
+
+
+class StopwatchDevice(db.Model):
+    """ブラウザー単位の端末。起動PC判定はサーバーが登録時に固定する。"""
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(80), nullable=False)
+    is_local = db.Column(db.Boolean, nullable=False)
+
+
+class StopwatchSession(db.Model):
+    """終了済みセッションも保持し、再送による二重保存・復活を防ぐ。"""
+    id = db.Column(db.String(36), primary_key=True)
+    device_id = db.Column(db.String(36), nullable=False, index=True)
+    slot = db.Column(db.String(8), nullable=False, default='main')
+    active_key = db.Column(db.String(48), nullable=True, unique=True)
+    activity_id = db.Column(db.Integer, nullable=False)
+    started_at = db.Column(db.Float, nullable=False)
+    paused_at = db.Column(db.Float, nullable=True)
+    memo = db.Column(db.Text, nullable=False, default='')
+    status = db.Column(db.String(12), nullable=False, default='running')
+    revision = db.Column(db.Integer, nullable=False, default=1)
+    discord_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    record_id = db.Column(db.Integer, nullable=True)

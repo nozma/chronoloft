@@ -14,11 +14,11 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import SyncIcon from '@mui/icons-material/Sync';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 
-const Stopwatch = forwardRef(function Stopwatch(props, ref) {
+export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const { t } = useI18n();
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
-    const { discordEnabled } = useSettings();
+    const discordEnabled = props.controller.discordEnabled;
     const { records } = useRecords();
     // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
     const {
@@ -36,7 +36,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
         isDiscordBusy,
         refreshDiscord,
         discordConnected
-    } = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel, discordEnabled });
+    } = props.controller;
 
     useImperativeHandle(ref, () => ({
         complete,
@@ -224,38 +224,36 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                     top: isInlineMode ? 'auto' : 0,
                     left: isInlineMode ? 'auto' : 0,
                     width: '100%',
-                    backgroundColor: theme.palette.mode === 'dark'
-                        ? '#222'  // ダークモード用
-                        : '#fafafa', // ライトモード用
+                    backgroundColor: isInlineMode ? 'transparent' : theme.palette.background.paper,
                     zIndex: isInlineMode ? 'auto' : 100,
-                    py: isInlineMode ? 0.5 : 1,
-                    px: isInlineMode ? 1 : 8,
+                    py: isInlineMode ? 1.5 : 1,
+                    px: isInlineMode ? 2 : 8,
                     borderRadius: isInlineMode ? 1 : 0,
-                    mb: isInlineMode ? 0.5 : 0,
+                    mb: 0,
                 })}
             >
                 <Box sx={isInlineMode ? { width: '100%' } : { flex: 1, width: '10%' }} >
                     <Box sx={{ mb: 0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}
-                        <Typography variant="h6" sx={{ mr: 2 }}>
+                        <Typography variant="h6" sx={{ overflowWrap: 'anywhere' }}>
                             {props.activityName}
                         </Typography>
                     </Box>
                     {isInlineMode ? (
                         <>
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5 }}>
-                                <Typography variant="h5">{formatTime(displayTime)}</Typography>
-                                <IconButton color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
+                                <Typography variant="h4" sx={{ fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{formatTime(displayTime)}</Typography>
+                                {!props.confirming && <IconButton aria-label="終了・保存" title="終了・保存" color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
                                     <CheckCircleIcon fontSize='medium' />
-                                </IconButton>
-                                <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
+                                </IconButton>}
+                                <IconButton aria-label="計測をキャンセル" title="計測をキャンセル" color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                                     <CancelIcon fontSize='medium' />
                                 </IconButton>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2" color="#999">{totalLabel7}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{totalLabel7}</Typography>
                                     <Typography
                                         variant="caption"
                                         sx={(theme) => ({
@@ -275,7 +273,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                                     </Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2" color="#999">{totalLabel30}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{totalLabel30}</Typography>
                                     <Typography
                                         variant="caption"
                                         sx={(theme) => ({
@@ -299,14 +297,14 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                                 <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                                <IconButton onClick={handleOpenPicker} size='small'>
+                                <IconButton aria-label="開始時刻を変更" title="開始時刻を変更" disabled={isDiscordBusy} onClick={handleOpenPicker} size='small'>
                                     <CalendarMonthIcon fontSize='small' />
                                 </IconButton>
-                                <Button size="small" sx={{ minWidth: 0, px: 0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
-                                <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
-                                <IconButton size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(5)}>+5</IconButton>
+                                <Button disabled={isDiscordBusy} size="small" sx={{ minWidth: 0, px: 0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
+                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-5)}>-5</IconButton>
+                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(-1)}>-1</IconButton>
+                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(1)}>+1</IconButton>
+                                <IconButton disabled={isDiscordBusy} size="small" sx={{ p: 0.75, fontSize: '0.9rem' }} onClick={() => adjustStartTime(5)}>+5</IconButton>
                             </Box>
                         </>
                     ) : (
@@ -314,15 +312,15 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                             {/* 経過時間と完了・キャンセルアイコン */}
                             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                 <Typography variant="h5" sx={{ mr: 1 }}>{formatTime(displayTime)}</Typography>
-                                <IconButton color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
+                                {!props.confirming && <IconButton aria-label="終了・保存" title="終了・保存" color="primary" size="small" onClick={handleCompleteClick} disabled={isDiscordBusy}>
                                     <CheckCircleIcon fontSize='medium' />
-                                </IconButton>
-                                <IconButton color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
+                                </IconButton>}
+                                <IconButton aria-label="計測をキャンセル" title="計測をキャンセル" color="error" size="small" onClick={cancel} disabled={isDiscordBusy}>
                                     <CancelIcon fontSize='medium' />
                                 </IconButton>
                                 <Box sx={{ ml: 1, display: 'flex', gap: 2 }}>
                                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel7}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>{totalLabel7}</Typography>
                                         <Typography
                                             variant="caption"
                                             sx={(theme) => ({
@@ -344,7 +342,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                        <Typography variant="body2" color="#999" sx={{ lineHeight: 1 }}>{totalLabel30}</Typography>
+                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1 }}>{totalLabel30}</Typography>
                                         <Typography
                                             variant="caption"
                                             sx={(theme) => ({
@@ -369,7 +367,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                             </Box>
                             <Box sx={{ m: -0.5, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1 }}>
                                 <Typography variant="body1">{t("Start")}: {formattedStartTime}</Typography>
-                                <IconButton onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
+                                <IconButton aria-label="開始時刻を変更" title="開始時刻を変更" disabled={isDiscordBusy} onClick={handleOpenPicker} sx={{ ml: -1 }} size='small'>
                                     <CalendarMonthIcon fontSize='small' />
                                 </IconButton>
                                 <Button size="small" sx={{ minWidth: 0, px: 0.5, m: -0.5 }} onClick={handleFillPrevEnd}>FILL</Button>
@@ -388,6 +386,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                     >
                         <Box sx={{ p: 1 }}>
                             <TextField
+                                disabled={isDiscordBusy}
                                 type="datetime-local"
                                 value={editedStartTime}
                                 onChange={(e) => handleChangeStartTime(e.target.value)}
@@ -399,6 +398,7 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
                 <Box sx={isInlineMode ? { position: 'relative', width: '100%', mt: 1 } : { position: 'relative', flex: 1, mt: 1 }}>
                     {/* メモ入力欄 */}
                     <Autocomplete
+                        disabled={isDiscordBusy}
                         freeSolo
                         options={memoOptions}
                         filterOptions={filterRecentMemoOptions}
@@ -443,6 +443,12 @@ const Stopwatch = forwardRef(function Stopwatch(props, ref) {
             {!isInlineMode && <Box sx={{ marginTop: 8 }} />}
         </>
     );
+});
+
+const Stopwatch = forwardRef(function Stopwatch(props, ref) {
+    const { discordEnabled } = useSettings();
+    const controller = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel, discordEnabled });
+    return <StopwatchView {...props} ref={ref} controller={{ ...controller, discordEnabled }} />;
 });
 
 export default Stopwatch;

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app
-from ..models import Activity, ActivityUnitType, Record, Tag
+from ..models import StopwatchSession, Activity, ActivityUnitType, Record, Tag
 from .. import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError 
@@ -83,6 +83,8 @@ def update_activity(activity_id):
     activity = Activity.query.get(activity_id)
     if activity is None:
         return jsonify({'error': 'Activity not found'}), 404
+    if StopwatchSession.query.filter_by(activity_id=activity_id).filter(StopwatchSession.status.in_(['running', 'confirming'])).first():
+        return jsonify(error='計測中のアクティビティは変更・削除できません。'), 409
 
     if 'name' in data:
         activity.name = data['name']
@@ -115,6 +117,8 @@ def delete_activity(activity_id):
     activity = Activity.query.get(activity_id)
     if activity is None:
         return jsonify({'error': 'Activity not found'}), 404
+    if StopwatchSession.query.filter_by(activity_id=activity_id).filter(StopwatchSession.status.in_(['running', 'confirming'])).first():
+        return jsonify(error='計測中のアクティビティは変更・削除できません。'), 409
     try:
         db.session.delete(activity)
         db.session.commit()
