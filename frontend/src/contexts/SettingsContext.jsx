@@ -1,5 +1,6 @@
 import { detectLanguage, resolveLanguage } from '../i18n/translate.js';
 import { createContext, useContext, useMemo } from 'react';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 // ───────── 既定値定義（リセット用に公開する） ─────────
@@ -52,12 +53,17 @@ export function SettingsProvider({ children }) {
         useLocalStorageState('settings.recordSaveMode', DEFAULT_SETTINGS.recordSaveMode);
 
 
+    // 保存済みの設定は維持し、狭い画面では常に1カラムで表示する。
+    const isMobile = useMediaQuery('(max-width: 599.95px)');
+    const isTwoColumnLayout = !isMobile && layoutMode === 'two-column';
+
     const value = useMemo(
         () => ({
             language, setLanguage,
             autoFilterOnSelect,
             themeMode, setThemeMode,
             layoutMode, setLayoutMode,
+            isMobile, isTwoColumnLayout,
             setAutoFilterOnSelect,
             recentDays, setRecentDays,
             recentLimit, setRecentLimit,
@@ -65,7 +71,7 @@ export function SettingsProvider({ children }) {
             discordEnabled, setDiscordEnabled,
             recordSaveMode, setRecordSaveMode,
         }),
-        [language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setRecentMinimum, setDiscordEnabled, setRecordSaveMode]
+        [isMobile, isTwoColumnLayout, language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setRecentMinimum, setDiscordEnabled, setRecordSaveMode]
     );
 
     return (

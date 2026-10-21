@@ -22,8 +22,7 @@ import { useSettings } from './contexts/SettingsContext';
 function App() {
     const { language } = useI18n();
     // カラーテーマ対応
-    const { themeMode, layoutMode } = useSettings();
-    const isTwoColumnLayout = layoutMode === 'two-column';
+    const { themeMode, isTwoColumnLayout } = useSettings();
     const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
     const resolvedMode =
         themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;
@@ -98,33 +97,31 @@ function App() {
                                         <ActiveActivityProvider>
                                             <div>
                                                 <AppHeader />
-                                                {isTwoColumnLayout ? (
+                                                <Box
+                                                    sx={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: isTwoColumnLayout
+                                                            ? '320px minmax(0, 1fr)'
+                                                            : 'minmax(0, 1fr)',
+                                                        gap: isTwoColumnLayout ? 2 : 0,
+                                                        alignItems: 'start',
+                                                    }}
+                                                >
                                                     <Box
-                                                        sx={{
-                                                            display: 'grid',
-                                                            gridTemplateColumns: '320px minmax(0, 1fr)',
-                                                            gap: 2,
-                                                            alignItems: 'start',
-                                                        }}
+                                                        component="aside"
+                                                        sx={isTwoColumnLayout ? twoColumnSidebarSx : { minWidth: 0 }}
                                                     >
-                                                        <Box
-                                                            component="aside"
-                                                            sx={twoColumnSidebarSx}
-                                                        >
-                                                            <RecordingInterface showSettingsMenu={false} showHeading={false} />
-                                                        </Box>
-                                                        <Box component="main" sx={{ minWidth: 0 }}>
-                                                            <Box sx={twoColumnPaneFrameSx}>
-                                                                <History />
-                                                            </Box>
+                                                        <RecordingInterface
+                                                            showSettingsMenu={!isTwoColumnLayout}
+                                                            showHeading={!isTwoColumnLayout}
+                                                        />
+                                                    </Box>
+                                                    <Box component="main" sx={{ minWidth: 0 }}>
+                                                        <Box sx={isTwoColumnLayout ? twoColumnPaneFrameSx : {}}>
+                                                            <History />
                                                         </Box>
                                                     </Box>
-                                                ) : (
-                                                    <>
-                                                        <RecordingInterface showSettingsMenu={true} />
-                                                        <History />
-                                                    </>
-                                                )}
+                                                </Box>
                                             </div>
                                         </ActiveActivityProvider>
                                     </FilterProvider>

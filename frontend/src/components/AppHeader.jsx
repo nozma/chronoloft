@@ -17,8 +17,8 @@ import { useSettings } from '../contexts/SettingsContext';
  */
 function AppHeader() {
     const { t } = useI18n();
-    const { layoutMode } = useSettings();
-    const showSettingsMenu = layoutMode === 'two-column';
+    const { isTwoColumnLayout } = useSettings();
+    const showSettingsMenu = isTwoColumnLayout;
     const [anchorEl, setAnchorEl] = useState(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const menuOpen = Boolean(anchorEl);
@@ -31,7 +31,9 @@ function AppHeader() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 mb: 2,
-                p: 2,
+                p: { xs: 1, sm: 2 },
+                flexWrap: 'wrap',
+                gap: 1,
                 borderColor: 'divider',
                 // ダークモードかライトモードかで背景色を切り替え
                 backgroundColor: (theme) =>
@@ -40,7 +42,7 @@ function AppHeader() {
                         : 'rgba(0,0,0,0.04)',      // ライト時背景
             }}
         >
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline' }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline', flexWrap: 'wrap', minWidth: 0 }}>
             <AppIcon style={{ width:32, height:32 }}/>
             <Typography variant="h5">Chronoloft</Typography>
             <Typography variant="caption" color="text.secondary">

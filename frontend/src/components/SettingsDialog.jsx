@@ -22,6 +22,7 @@ import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 function SettingsDialog({ open, onClose }) {
     const { t } = useI18n();
     const {
+        isMobile,
         language: savedLanguage, setLanguage,
         autoFilterOnSelect, setAutoFilterOnSelect,
         themeMode, setThemeMode,
@@ -73,7 +74,7 @@ function SettingsDialog({ open, onClose }) {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm">
+        <Dialog fullScreen={isMobile} open={open} onClose={onClose} maxWidth="sm">
             <DialogTitle>{t("Settings")}</DialogTitle>
 
             <DialogContent dividers>

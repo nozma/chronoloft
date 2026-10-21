@@ -97,8 +97,7 @@ function ActivityStart({
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
-    const { recentDays, recentLimit, recentMinimum, layoutMode } = useSettings();
-    const isTwoColumnLayout = layoutMode === 'two-column';
+    const { recentDays, recentLimit, recentMinimum, isMobile, isTwoColumnLayout } = useSettings();
 
     const [showRemaining, setShowRemaining] = useState(false);
     const [showArchive, setShowArchive] = useState(false);
@@ -282,7 +281,7 @@ function ActivityStart({
                     </Box>
                     <Collapse in={state.groupOpen}>
                         <Box>
-                            {isTwoColumnLayout ? (
+                            {isTwoColumnLayout || isMobile ? (
                                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                                     <ToggleButton
                                         value=""
@@ -338,7 +337,7 @@ function ActivityStart({
                                 <IconButton
                                     onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
                                     sx={{
-                                        opacity: 0,
+                                        opacity: { xs: 1, sm: 0 },
                                         transition: 'opacity 0.2s',
                                         '&:hover': { opacity: 1 },
                                     }}>
@@ -426,7 +425,7 @@ function ActivityStart({
                                     <IconButton
                                         onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
                                         sx={{
-                                            opacity: 0,
+                                            opacity: { xs: 1, sm: 0 },
                                             transition: 'opacity 0.2s',
                                             '&:hover': { opacity: 1 },
                                         }}>
@@ -507,7 +506,7 @@ function ActivityStart({
                                         <IconButton
                                             variant="contained" onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
                                             sx={{
-                                                opacity: 0,
+                                                opacity: { xs: 1, sm: 0 },
                                                 transition: 'opacity 0.3s',
                                                 '&:hover': { opacity: 1 },
                                             }}

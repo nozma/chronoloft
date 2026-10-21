@@ -26,7 +26,7 @@ function History() {
     return (
         <Box sx={{ mb: 2 }}>
             {/* Heading / Title */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 1, sm: 2 }, mb: 2, pb: 0.5, alignItems: 'baseline', borderBottom: '1px solid #333' }}>
                 <Typography variant="h5" sx={{ mr: 2 }}>
                     {t("History")}
                 </Typography>
