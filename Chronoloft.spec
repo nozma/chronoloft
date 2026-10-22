@@ -1,5 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import json
+from pathlib import Path
+
+# Finderと画面内のバージョンを、ルートのpackage.jsonに揃える。
+app_version = json.loads((Path(SPECPATH) / 'package.json').read_text(encoding='utf-8'))['version']
+
 
 a = Analysis(
     ['main.py'],
@@ -32,6 +38,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['frontend/Chronoloft.icns'],
 )
 coll = COLLECT(
     exe,
@@ -45,6 +52,8 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Chronoloft.app',
-    icon=None,
+    icon='frontend/Chronoloft.icns',
     bundle_identifier=None,
+    version=app_version,
+    info_plist={'CFBundleVersion': app_version},
 )
