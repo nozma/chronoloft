@@ -188,13 +188,12 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
             title="開始時刻を変更"
             sx={{ minWidth: 0, minHeight: { xs: 40, sm: 0 }, px: { xs: 1, sm: 0.5 }, py: { xs: 0.75, sm: 0.25 }, mr: 0.5, color: 'text.secondary', fontSize: { xs: '0.875rem', sm: '0.75rem' }, textTransform: 'none' }}
         >
-            {t("Start")}: {formattedStartTime}
+            {t("Start")} {formattedStartTime}
         </Button>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
             <Button variant="text" color="primary" size="small" disabled={isDiscordBusy} sx={theme => ({
                 ...shortcutSx,
                 px: 1,
-                fontWeight: 600,
                 bgcolor: alpha(theme.palette.primary.main, 0.12),
                 '@media (hover: hover) and (pointer: fine)': {
                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) },
@@ -243,7 +242,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                     <Box sx={{ gridColumn: isInlineMode ? 1 : undefined, gridRow: isInlineMode ? 1 : undefined, mb: 0.5, minWidth: 0, display: 'flex', justifyContent: isInlineMode ? 'flex-start' : 'center', alignItems: 'center', gap: 0.5, '& > svg': { flexShrink: 0 } }}>
                         {/* アクティビティ名・アイコン表示 */}
                         {getIconForGroup(props.activityGroup, groups)}
-                        <Typography variant={isInlineMode ? "subtitle1" : "h6"} fontWeight={isInlineMode ? 600 : undefined} sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                        <Typography variant="h6" fontWeight={500} sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                             {props.activityName}
                         </Typography>
                     </Box>

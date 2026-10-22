@@ -1,6 +1,7 @@
 import { useI18n } from '../i18n/I18nContext';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Alert, Autocomplete, Box, Button, Collapse, IconButton, Stack, TextField, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -92,21 +93,21 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const formattedTime = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor(elapsed / 60) % 60).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
     const startValue = timestamp => DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd'T'HH:mm:ss");
     const closeEditor = () => { setShowEditor(false); setEditing(false); setMemo(item.memo); };
-    return <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
+    return <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', ...(!own && { backgroundImage: theme => `linear-gradient(${alpha(theme.palette.text.primary, 0.035)}, ${alpha(theme.palette.text.primary, 0.035)})` }) }}>
         {own ? <>
             <StopwatchView inlineMode controller={controller} activityId={item.activity_id}
                 activityName={item.activity_name} activityGroup={item.activity_group}
                 discordData={canDiscord ? {} : null} recordSaveMode="auto" confirming={item.status === 'confirming'} />
-        </> : <Box sx={{ p: 2 }}>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', columnGap: 2, rowGap: 0.5, alignItems: 'start' }}>
+        </> : <Box sx={{ px: 2, pt: 2, pb: 1, position: 'relative' }}>
+            <Typography variant="caption" color="text.secondary" title={`${item.device_name}${item.slot === 'sub' ? ' · サブ' : ''}`} sx={{ position: 'absolute', top: 6, left: 16, right: 16, fontSize: '0.625rem', lineHeight: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.device_name}{item.slot === 'sub' ? ' · サブ' : ''}</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', columnGap: 2, rowGap: 0, alignItems: 'start' }}>
                 <Box sx={{ minWidth: 0 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{item.device_name}{item.slot === 'sub' ? ' · サブ' : ''}</Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0, '& > svg': { flexShrink: 0 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, minHeight: 36, '& > svg': { flexShrink: 0 } }}>
                         {getIconForGroup(item.activity_group, groups)}
-                        <Typography variant="subtitle1" fontWeight={600} sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{item.activity_name}</Typography>
+                        <Typography variant="h6" fontWeight={500} sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{item.activity_name}</Typography>
                     </Box>
                 </Box>
-                <Stack spacing={0.5} alignItems="flex-end" sx={{ gridColumn: 2, gridRow: '1 / span 2' }}>
+                <Stack spacing={0} alignItems="flex-end" sx={{ gridColumn: 2, gridRow: '1 / span 2' }}>
                     <Typography sx={{ fontSize: '1.5rem', fontVariantNumeric: 'tabular-nums', lineHeight: 1.5, whiteSpace: 'nowrap', textAlign: 'right' }}>{formattedTime}</Typography>
                     <Stack direction="row" spacing={0} sx={{ justifyContent: 'flex-end' }}>
                         <IconButton size="small" color="primary" aria-label="終了・保存" title="終了・保存" disabled={busy || showEditor || item.status === 'confirming'} onClick={controller.complete}>
@@ -127,7 +128,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
                 </Stack>
                 <Box sx={{ minWidth: 0 }}>
                     {!showEditor && item.memo && <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>{item.memo}</Typography>}
-                    <Typography variant="caption" color="text.secondary" display="block">開始 {DateTime.fromMillis(item.started_at).toFormat('M/d HH:mm')}{item.status === 'confirming' ? ' · 保存確認中' : ''}</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.875rem', sm: '0.75rem' } }}>開始 {DateTime.fromMillis(item.started_at).toFormat('HH:mm')}{item.status === 'confirming' ? ' · 保存確認中' : ''}</Typography>
                 </Box>
             </Box>
             <Collapse in={showEditor} unmountOnExit>
