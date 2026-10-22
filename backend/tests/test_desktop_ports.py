@@ -13,11 +13,11 @@ with patch.object(sys, 'path', [str(Path(__file__).resolve().parents[2]), *sys.p
 
 
 class DesktopPortTests(unittest.TestCase):
-    def listener(self):
+    def listener(self, host='0.0.0.0'):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.addCleanup(server.close)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server.bind(('0.0.0.0', 0))
+        server.bind((host, 0))
         server.listen()
         return server, server.getsockname()[1]
 
@@ -61,6 +61,13 @@ class DesktopPortTests(unittest.TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as replacement:
             replacement.bind(('0.0.0.0', alternate))
             replacement.listen()
+
+    def test_uses_another_port_when_localhost_listener_stays_in_use(self):
+        server, port = self.listener('127.0.0.1')
+        self.assertNotEqual(find_free_port(port), port)
+        with socket.create_connection(('127.0.0.1', port), timeout=2):
+            connection, _ = server.accept()
+            connection.close()
 
 
 if __name__ == '__main__':

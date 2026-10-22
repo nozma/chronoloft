@@ -31,12 +31,17 @@ def find_free_port(preferred_port=5180):
     deadline = time.monotonic() + 2.0
     while True:
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
-                if os.name == 'posix':
-                    # 実際のサーバーと同じ条件で、通信終了後のアドレスを再利用する。
-                    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                probe.bind(('0.0.0.0', preferred_port))
-                return probe.getsockname()[1]
+            port = preferred_port
+            # Macでは全アドレスへのbindだけだとlocalhost限定の待ち受けと競合しない。
+            # 画面の接続先も確認し、別のサービスを開いてしまうことを防ぐ。
+            for host in ('0.0.0.0', '127.0.0.1'):
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                    if os.name == 'posix':
+                        # 実際のサーバーと同じ条件で、通信終了後のアドレスを再利用する。
+                        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    probe.bind((host, port))
+                    port = probe.getsockname()[1]
+            return port
         except OSError as error:
             if error.errno != errno.EADDRINUSE:
                 raise
