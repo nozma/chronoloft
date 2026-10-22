@@ -44,7 +44,7 @@ function harness(saved = {}, local = true) {
             return { ok: true, json: async () => data };
         },
     });
-    vm.runInContext(source + '\nthis.api = { useSharedStopwatches, initialize, newStopwatchId, sharedLiveRecords, elapsedMilliseconds, operateStopwatch, operateStopwatchWithDraft, saveDeviceAndLanSettings, stopwatchRequest, refreshStopwatches, currentStopwatch, get: () => snapshot };', context);
+    vm.runInContext(source + '\nthis.api = { logoutDevice, useSharedStopwatches, initialize, newStopwatchId, sharedLiveRecords, elapsedMilliseconds, operateStopwatch, operateStopwatchWithDraft, saveDeviceAndLanSettings, stopwatchRequest, refreshStopwatches, currentStopwatch, get: () => snapshot };', context);
     return { api: context.api, storage, calls, items, poll: () => interval(), fail: value => { fail = value; }, intercept: value => { intercept = value; }, timeout: () => timeoutCallback() };
 }
 
@@ -238,4 +238,34 @@ test('適用で変更されたLAN設定と端末名を保存する', async () =>
     assert.deepEqual(JSON.parse(writes[0][1].body), { enabled: true, password: 'valid-password' });
     assert.equal(JSON.parse(writes[1][1].body).name, '作業PC');
     assert.equal(h.api.get().device.name, '作業PC');
+});
+
+
+test('ログアウトでは自端末の稼働中・確認中計測だけを破棄して認証を終了する', async () => {
+    const h = harness({}, false);
+    await h.api.initialize();
+    const device = h.api.get().device.id;
+    h.storage.set('stopwatchState', '以前の計測');
+    h.items.push({ id: 'main', device_id: device, revision: 2, status: 'running' },
+        { id: 'sub', device_id: device, revision: 3, status: 'confirming' },
+        { id: 'other', device_id: '別端末', revision: 1, status: 'running' });
+    await h.api.logoutDevice();
+    const operations = h.calls.filter(([path]) => path.endsWith('/cancel') || path === '/api/auth/logout');
+    assert.deepEqual(operations.map(([path]) => path), ['/api/stopwatches/main/cancel', '/api/stopwatches/sub/cancel', '/api/auth/logout']);
+    assert.equal(JSON.parse(operations[0][1].body).revision, 2);
+    assert.equal(h.storage.has('stopwatchState'), false);
+    assert.equal(h.api.get().ready, false);
+    assert.equal(h.api.get().items.length, 0);
+    assert.equal(h.storage.get('chronoloft-device-id'), device);
+});
+
+test('計測の破棄に失敗したらログアウトせず再試行できる', async () => {
+    const h = harness({}, false);
+    await h.api.initialize();
+    h.items.push({ id: 'main', device_id: h.api.get().device.id, revision: 1 });
+    h.fail(path => path.endsWith('/cancel'));
+    await assert.rejects(h.api.logoutDevice(), /接続できません/);
+    assert.equal(h.calls.some(([path]) => path === '/api/auth/logout'), false);
+    assert.equal(h.api.get().busy, false);
+    assert.equal(h.api.get().ready, true);
 });

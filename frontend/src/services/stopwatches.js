@@ -144,6 +144,30 @@ export async function stopwatchRequest(path, data, method) {
     } finally { publish({ busy: false }); }
 }
 
+export async function logoutDevice() {
+    if (snapshot.busy) throw new Error('操作の完了をお待ちください。');
+    if (!snapshot.ready || !snapshot.device) throw new Error('端末情報の取得をお待ちください。');
+    generation += 1;
+    publish({ busy: true });
+    try {
+        // 共有一覧を取り直し、この端末の計測だけを保存せず破棄する。
+        const data = await request('/api/stopwatches', undefined, 'GET');
+        for (const item of data.items.filter(item => item.device_id === snapshot.device.id)) {
+            await request(`/api/stopwatches/${item.id}/cancel`, { revision: item.revision });
+        }
+        await request('/api/auth/logout');
+        for (const key of ['stopwatchState', 'subStopwatchState', 'selectedActivity', 'subSelectedActivity', 'stopwatchVisible', 'subStopwatchVisible']) {
+            localStorage.removeItem(key);
+        }
+        // 再ログイン時に以前の共有状態を表示しない。
+        generation += 1;
+        publish({ items: [], device: null, ready: false, error: '', warning: '', migrationWarning: '' });
+    } catch (error) {
+        await refreshStopwatches().catch(() => {});
+        throw error;
+    } finally { publish({ busy: false }); }
+}
+
 export const currentStopwatch = id => snapshot.items.find(item => item.id === id);
 
 export const operateStopwatch = (item, action, data = {}) => stopwatchRequest(
