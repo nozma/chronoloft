@@ -1,8 +1,9 @@
 # main.py
+import errno
 import socket
+import sys
 import threading
 import time
-import webview
 import webbrowser
 from flask_migrate import upgrade
 from backend.app import create_app, db
@@ -24,27 +25,29 @@ def apply_all_migrations(app):
 
 def find_free_port(preferred_port=5180):
     """
-    1. preferred_port を試みて、空いていればそこを返す
-    2. 空いていなければ、OSにランダムな空きポートを割り当ててもらう
+    優先ポートを再利用し、直前のプロセスの終了を最大2秒待つ。
+    使用中のままなら、OSに空きポートを割り当ててもらう。
     """
-    # まず preferred_port で bind してみる
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(('0.0.0.0', preferred_port))
-        # もし bind に成功すれば、ここで使うポートが確定
-        port = s.getsockname()[1]
-        s.close()
-        return port
-    except OSError:
-        # bind 失敗 → 既に使われているなどの理由でbindできない
-        # 次は 0 を指定して OSにランダムポートを割り当ててもらう
-        s.close()
+    deadline = time.monotonic() + 2.0
+    while True:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+                if os.name == 'posix':
+                    # 実際のサーバーと同じ条件で、通信終了後のアドレスを再利用する。
+                    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                probe.bind(('0.0.0.0', preferred_port))
+                return probe.getsockname()[1]
+        except OSError as error:
+            if error.errno != errno.EADDRINUSE:
+                raise
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(0.1, remaining))
 
-        s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s2.bind(('0.0.0.0', 0))
-        port = s2.getsockname()[1]
-        s2.close()
-        return port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.bind(('0.0.0.0', 0))
+        return probe.getsockname()[1]
 
 def run_flask(port):
     app = create_app()
@@ -62,8 +65,44 @@ class ApiBridge:
         """外部ブラウザでself.app_urlを開く"""
         webbrowser.open(self.app_url)
 
+
+def configure_macos_window(window):
+    """Macでは画面を閉じても常駐し、Dockから同じ画面を再表示する。"""
+    if sys.platform != 'darwin':
+        return
+
+    from AppKit import NSApplication
+
+    app = NSApplication.sharedApplication()
+    native = window.native
+
+    # 元のデリゲートを継承し、終了メニューや他のウィンドウイベントを維持する。
+    class ChronoloftWindowDelegate(type(native.delegate())):
+        def windowShouldClose_(self, sender):
+            sender.orderOut_(None)
+            return False
+
+    class ChronoloftAppDelegate(type(app.delegate())):
+        def applicationShouldHandleReopen_hasVisibleWindows_(self, sender, has_visible_windows):
+            if native.isMiniaturized():
+                native.deminiaturize_(None)
+            native.makeKeyAndOrderFront_(None)
+            sender.activateIgnoringOtherApps_(True)
+            return False
+
+    # Cocoaのデリゲート参照は弱参照のため、画面と同じ寿命で保持する。
+    window._macos_delegates = (
+        ChronoloftWindowDelegate.alloc().init(),
+        ChronoloftAppDelegate.alloc().init(),
+    )
+    native.setDelegate_(window._macos_delegates[0])
+    app.setDelegate_(window._macos_delegates[1])
+
+
 if __name__ == '__main__':
-    # ランダムに空きポートを設定
+    import webview
+
+    # 5180を優先し、使用中の場合だけ別の空きポートを設定する。
     port = find_free_port()
     app_url = f"http://127.0.0.1:{port}"
 
@@ -77,11 +116,12 @@ if __name__ == '__main__':
 
     # PyWebViewでローカルのFlaskアプリを表示
     api = ApiBridge(app_url)
-    webview.create_window(
+    window = webview.create_window(
         title="Chronoloft",
         url=app_url,
         js_api=api,   # フロントエンドから呼び出すAPIを登録
         width=900,
         height=600,
     )
+    window.events.before_show += configure_macos_window
     webview.start()
