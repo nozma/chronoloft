@@ -1,7 +1,16 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
-import { Alert, Box, Button, Collapse, FormControl, FormControlLabel, FormLabel, Stack, Switch, TextField, Typography } from '@mui/material';
+import { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useState } from 'react';
+import { Alert, Box, Button, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Tooltip, FormControl, FormControlLabel, FormLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 
-import { saveDeviceAndLanSettings, useSharedStopwatches } from '../services/stopwatches';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { logoutDevice, saveDeviceAndLanSettings, useSharedStopwatches } from '../services/stopwatches';
+
+const LanAuthContext = createContext(null);
+
+export function LogoutButton() {
+    const auth = useContext(LanAuthContext);
+    if (!auth || auth.local) return null;
+    return <Tooltip title="ログアウト"><IconButton aria-label="ログアウト" onClick={auth.openLogout}><LogoutIcon /></IconButton></Tooltip>;
+}
 
 async function authRequest(path, options = {}) {
     const response = await fetch(path, {
@@ -72,6 +81,7 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
 
 export default function LanAccess({ children }) {
     const [status, setStatus] = useState(null);
+    const [logoutOpen, setLogoutOpen] = useState(false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [busy, setBusy] = useState(false);
@@ -103,13 +113,30 @@ export default function LanAccess({ children }) {
         return () => events.forEach(name => window.removeEventListener(name, renew, true));
     }, [status, check]);
     if (!status) return <Box sx={{ p: 4 }}>接続しています…</Box>;
-    if (status.authenticated) return <>
-        {!status.local && <Box sx={{ textAlign: 'right', p: 1 }}><Button onClick={async () => {
-            await authRequest('/api/auth/logout', { method: 'POST' });
-            setStatus({ authenticated: false });
-        }}>ログアウト</Button></Box>}
+    if (status.authenticated) return <LanAuthContext.Provider value={{ local: status.local, openLogout: () => { setError(''); setLogoutOpen(true); } }}>
         {children}
-    </>;
+        <Dialog open={logoutOpen} onClose={() => { if (!busy) setLogoutOpen(false); }} aria-labelledby="logout-title">
+            <DialogTitle id="logout-title">ログアウトしますか？</DialogTitle>
+            <DialogContent>
+                <DialogContentText>この端末のメイン・サブストップウォッチは停止し、計測時間やメモなどの内容を破棄します。記録には保存されません。</DialogContentText>
+                <DialogContentText sx={{ mt: 1 }}>必要な計測は、ログアウト前に保存してください。</DialogContentText>
+                {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+            </DialogContent>
+            <DialogActions>
+                <Button disabled={busy} onClick={() => setLogoutOpen(false)}>キャンセル</Button>
+                <Button color="error" disabled={busy} onClick={async () => {
+                    setBusy(true);
+                    setError('');
+                    try {
+                        await logoutDevice();
+                        setLogoutOpen(false);
+                        setStatus({ authenticated: false });
+                    } catch (err) { setError(err.message); }
+                    finally { setBusy(false); }
+                }}>{busy ? 'ログアウト中…' : '破棄してログアウト'}</Button>
+            </DialogActions>
+        </Dialog>
+    </LanAuthContext.Provider>;
     return <Box component="form" sx={{ maxWidth: 400, mx: 'auto', p: 4 }} onSubmit={async e => {
         e.preventDefault();
         setBusy(true);

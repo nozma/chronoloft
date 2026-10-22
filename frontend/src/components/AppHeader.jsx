@@ -2,6 +2,7 @@ import { useI18n } from '../i18n/I18nContext';
 // frontend/src/components/AppHeader.jsx
 import { useState } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
+import { LogoutButton } from './LanAccess';
 import OpenBrowserButton from './OpenBrowserButton';
 import AppIcon from '../../favicon.svg?react'
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -48,6 +49,7 @@ function AppHeader() {
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
                 <OpenBrowserButton />
+                <LogoutButton />
                 <IconButton aria-label={t("Settings")} onClick={(e) => setAnchorEl(e.currentTarget)}>
                     <MoreVertIcon />
                 </IconButton>
