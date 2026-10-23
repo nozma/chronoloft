@@ -11,7 +11,7 @@ from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from .. import db
-from ..models import Activity, ActivityUnitType, Record, StopwatchDevice, StopwatchSession
+from ..models import Activity, ActivityUnitType, LocalSetting, Record, StopwatchDevice, StopwatchSession
 from . import discord_routes
 
 stopwatch_bp = Blueprint('stopwatch', __name__)
@@ -135,6 +135,10 @@ def register_device(device_id):
     if not valid_id(device_id) or not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
         return jsonify(error='端末IDと1〜80文字の端末名が必要です。'), 400
     with _lock:
+        if g.chronoloft_local:
+            shared_name = db.session.get(LocalSetting, 'deviceName')
+            if shared_name:
+                name = shared_name.value
         item = db.session.get(StopwatchDevice, device_id)
         if item and item.is_local != g.chronoloft_local:
             return jsonify(error='接続先が変わりました。端末IDを再登録してください。'), 409

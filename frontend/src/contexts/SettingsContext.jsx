@@ -1,84 +1,28 @@
-import { detectLanguage, resolveLanguage } from '../i18n/translate.js';
-import { createContext, useContext, useMemo } from 'react';
+import { resolveLanguage } from '../i18n/translate.js';
+import { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import useLocalStorageState from '../hooks/useLocalStorageState';
+import { DEFAULT_SETTINGS, getSettingsSnapshot, saveSettings, subscribeSettings } from '../services/settings';
 
-// ───────── 既定値定義（リセット用に公開する） ─────────
-export const DEFAULT_SETTINGS = {
-    language: detectLanguage(),
-    autoFilterOnSelect: true,
-    themeMode: 'system',
-    layoutMode: 'one-column',
-    recentDays: '14',
-    recentLimit: '15',
-    recentMinimum: '1',
-    discordEnabled: true,
-    recordSaveMode: 'auto',
-};
+export { DEFAULT_SETTINGS };
 
 const SettingsContext = createContext();
 
-/**
- * SettingsProvider
- *   - autoFilterOnSelect: bool
- *   - setAutoFilterOnSelect: (bool) => void
- */
 export function SettingsProvider({ children }) {
-    // 表示言語をブラウザー内に保存する
-    const [storedLanguage, setLanguage] = useLocalStorageState('settings.language', DEFAULT_SETTINGS.language);
-    const language = resolveLanguage(storedLanguage);
-    // アクティビティ選択時に自動でアクティビティフィルタを切り替えるかどうかの設定
-    const [autoFilterOnSelect, setAutoFilterOnSelect] =
-        useLocalStorageState('settings.autoFilterOnSelect', DEFAULT_SETTINGS.autoFilterOnSelect);
-    // カラーテーマ設定
-    const [themeMode, setThemeMode] =
-        useLocalStorageState('settings.themeMode', DEFAULT_SETTINGS.themeMode);
-    // 画面レイアウト設定
-    const [layoutMode, setLayoutMode] =
-        useLocalStorageState('settings.layoutMode', DEFAULT_SETTINGS.layoutMode);
-    // 最近使用した項目として表示するアクティビティを決める日数のしきい値
-    const [recentDays, setRecentDays] =
-        useLocalStorageState('settings.recentDays', DEFAULT_SETTINGS.recentDays);
-    // 最近使用した項目として表示するアクティビティの件数の上限
-    const [recentLimit, setRecentLimit] =
-        useLocalStorageState('settings.recentLimit', DEFAULT_SETTINGS.recentLimit);
-    // 初期表示するアクティビティの最低件数
-    const [recentMinimum, setRecentMinimum] =
-        useLocalStorageState('settings.recentMinimum', DEFAULT_SETTINGS.recentMinimum);
-    // ★ Discord 連係の有効/無効（既定: 有効）
-    const [discordEnabled, setDiscordEnabled] =
-        useLocalStorageState('settings.discordEnabled', DEFAULT_SETTINGS.discordEnabled);
-    // ★ レコード保存モード
-    const [recordSaveMode, setRecordSaveMode] =
-        useLocalStorageState('settings.recordSaveMode', DEFAULT_SETTINGS.recordSaveMode);
-
-
-    // 保存済みの設定は維持し、狭い画面では常に1カラムで表示する。
+    const snapshot = useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
     const isMobile = useMediaQuery('(max-width: 599.95px)');
-    const isTwoColumnLayout = !isMobile && layoutMode === 'two-column';
+    const value = useMemo(() => ({
+        ...snapshot.settings,
+        language: resolveLanguage(snapshot.settings.language),
+        isMobile,
+        isTwoColumnLayout: !isMobile && snapshot.settings.layoutMode === 'two-column',
+        settingsError: snapshot.error,
+        saveSettings,
+    }), [snapshot, isMobile]);
 
-    const value = useMemo(
-        () => ({
-            language, setLanguage,
-            autoFilterOnSelect,
-            themeMode, setThemeMode,
-            layoutMode, setLayoutMode,
-            isMobile, isTwoColumnLayout,
-            setAutoFilterOnSelect,
-            recentDays, setRecentDays,
-            recentLimit, setRecentLimit,
-            recentMinimum, setRecentMinimum,
-            discordEnabled, setDiscordEnabled,
-            recordSaveMode, setRecordSaveMode,
-        }),
-        [isMobile, isTwoColumnLayout, language, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, setLanguage, setAutoFilterOnSelect, setThemeMode, setLayoutMode, setRecentDays, setRecentLimit, setRecentMinimum, setDiscordEnabled, setRecordSaveMode]
-    );
-
-    return (
-        <SettingsContext.Provider value={value}>
-            {children}
-        </SettingsContext.Provider>
-    );
+    // Discord連携などが初期値で動き始める前に、起動PCの共通設定を読み込む。
+    return <SettingsContext.Provider value={value}>
+        {snapshot.ready ? children : <div style={{ padding: 32 }}>設定を読み込んでいます…</div>}
+    </SettingsContext.Provider>;
 }
 
 export function useSettings() {

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { getSettingsSnapshot, loadSettings, saveSettings } from './settings';
 
 export function newStopwatchId() {
     const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -46,7 +47,9 @@ export async function refreshStopwatches() {
     const before = Date.now();
     const data = await request('/api/stopwatches', undefined, 'GET');
     if (version !== generation || sequence !== refreshSequence) return;
-    publish({ items: data.items, offset: data.server_now - (before + Date.now()) / 2, error: '',
+    const name = getSettingsSnapshot().settings.deviceName;
+    const device = snapshot.device?.is_local && name ? { ...snapshot.device, name } : snapshot.device;
+    publish({ items: data.items, device, offset: data.server_now - (before + Date.now()) / 2, error: '',
         warning: Object.values(data.discord_errors || {}).join(' ') });
 }
 
@@ -54,12 +57,14 @@ async function initialize() {
     if (loading) return loading;
     loading = (async () => {
         const status = await request('/api/auth/status', undefined, 'GET');
+        const settings = await loadSettings();
         let id = localStorage.getItem('chronoloft-device-id');
         if (!id) {
             id = newStopwatchId();
             localStorage.setItem('chronoloft-device-id', id);
         }
-        const name = localStorage.getItem('chronoloft-device-name') || (status.local ? '起動PC' : 'LAN端末');
+        const name = (status.local && settings.settings.deviceName)
+            || localStorage.getItem('chronoloft-device-name') || (status.local ? '起動PC' : 'LAN端末');
         const device = await request(`/api/stopwatch-devices/${id}`, { name }, 'PUT');
         publish({ device });
         const migrationErrors = [];
@@ -178,7 +183,13 @@ export async function operateStopwatchWithDraft(saveDraft, action, data = {}) {
 }
 
 export async function renameDevice(name) {
-    const device = await stopwatchRequest(`/api/stopwatch-devices/${snapshot.device.id}`, { name }, 'PUT');
+    let device;
+    if (snapshot.device.is_local) {
+        await saveSettings({ deviceName: name });
+        device = { ...snapshot.device, name };
+    } else {
+        device = await stopwatchRequest(`/api/stopwatch-devices/${snapshot.device.id}`, { name }, 'PUT');
+    }
     localStorage.setItem('chronoloft-device-name', device.name);
     publish({ device });
 }

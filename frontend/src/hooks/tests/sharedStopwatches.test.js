@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 
 const source = fs.readFileSync(new URL('../../services/stopwatches.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/, '')
+    .replace(/^import .*;\n/gm, '')
     .replace(/export /g, '');
 
 function harness(saved = {}, local = true) {
@@ -17,12 +17,19 @@ function harness(saved = {}, local = true) {
     let fail = false;
     let intercept = null;
     let timeoutCallback;
+    const sharedSettings = { settings: {} };
     const context = vm.createContext({
         crypto: webcrypto, Date, Set, Promise, Event, AbortController,
         setTimeout: callback => { timeoutCallback = callback; return 1; }, clearTimeout() {},
         localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) },
         window: { dispatchEvent() {} },
         useSyncExternalStore: (subscribe, get) => { subscriber ||= subscribe(() => {}); return get(); },
+        loadSettings: async () => sharedSettings,
+        getSettingsSnapshot: () => sharedSettings,
+        saveSettings: async changes => {
+            Object.assign(sharedSettings.settings, changes);
+            calls.push(['/api/settings/local', { method: 'PATCH', body: JSON.stringify(changes) }]);
+        },
         setInterval: callback => { interval = callback; return 1; }, clearInterval() {},
         fetch: async (path, options) => {
             calls.push([path, options]);
@@ -229,14 +236,15 @@ test('適用で変更されたLAN設定と端末名を保存する', async () =>
     const h = harness();
     await h.api.initialize();
     h.calls.length = 0;
-    h.intercept((path, options) => {
+    h.intercept((path) => {
         if (path === '/api/lan/settings') return { ok: true, json: async () => ({ enabled: true, password_set: true, urls: [] }) };
     });
     await h.api.saveDeviceAndLanSettings({ name: '作業PC', settings: { enabled: false, password_set: false }, enabled: true, password: 'valid-password' });
     const writes = h.calls.filter(([, options]) => options.method === 'PUT');
-    assert.equal(writes.length, 2);
+    assert.equal(writes.length, 1);
     assert.deepEqual(JSON.parse(writes[0][1].body), { enabled: true, password: 'valid-password' });
-    assert.equal(JSON.parse(writes[1][1].body).name, '作業PC');
+    const settingsWrite = h.calls.find(([path]) => path === '/api/settings/local');
+    assert.deepEqual(JSON.parse(settingsWrite[1].body), { deviceName: '作業PC' });
     assert.equal(h.api.get().device.name, '作業PC');
 });
 
