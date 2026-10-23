@@ -20,7 +20,7 @@ class Presence(BasePresence):
 
 
 def presence_text(value):
-    # Discord表示だけを2〜128文字に整え、保存するメモや項目名は変更しない。
+    # Discord表示だけを2〜128文字に整え、保存する項目名は変更しない。
     if not value or not value.strip():
         return None
     return value[:128].ljust(2)
@@ -52,18 +52,16 @@ class DiscordRPCManager:
                                    if isinstance(e, TimeoutError) else str(e) or type(e).__name__)
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
-    def update_presence(self, state, large_text, details, large_image, application_name=None):
+    def update_presence(self, state, large_text, large_image, application_name=None):
         if self.rpc:
             try:
-                # Discordは空文字の詳細を拒否するため、未入力時は項目自体を省く。
-                details = presence_text(details)
+                # 記録の詳細は公開せず、送信するアクティビティに含めない。
                 state = presence_text(state)
                 large_text = presence_text(large_text)
                 application_name = presence_text(application_name)
                 if application_name:
                     payload = Payload.set_activity(
                         state=state,
-                        details=details,
                         start=int(self.start_time) * 1000,
                         large_image=large_image,
                         large_text=large_text,
@@ -80,7 +78,6 @@ class DiscordRPCManager:
                     self.rpc.update(
                         state=state,
                         large_text=large_text,
-                        details=details,
                         large_image=large_image,
                         start=self.start_time,  # 接続開始時刻を利用
                     )

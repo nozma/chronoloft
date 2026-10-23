@@ -49,7 +49,6 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
     const discordQueueRef = useRef(Promise.resolve());
     const discordGenerationRef = useRef(0);
     const connectedDataRef = useRef(null);
-    const presenceDetailsRef = useRef(null);
     const pendingDiscordStartRef = useRef(null);
     const discordEnabledRef = useRef(discordEnabled);
     discordEnabledRef.current = discordEnabled;
@@ -197,7 +196,6 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
         // Discord連携を開始（新しいデータが有ればそちらを優先）
         const discordDataToUse = newDiscordData === undefined ? discordData : newDiscordData;
         setDiscordData(discordDataToUse);
-        presenceDetailsRef.current = null;
         await startDiscordIfNeeded(discordDataToUse, now);
     };
 
@@ -235,8 +233,9 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
         if (!discordEnabledRef.current || !data || startTime === null || stoppingRef.current) return Promise.resolve();
         const generation = discordGenerationRef.current;
         const sessionId = sessionRef.current;
-        const details = presenceDetailsRef.current ?? data.details;
-        const requestKey = JSON.stringify([sessionId, data, startTime, details]);
+        // 旧保存データに詳細が残っていても、Discordへ送る情報には含めない。
+        const presenceData = { group: data.group, activity_name: data.activity_name, asset_key: data.asset_key };
+        const requestKey = JSON.stringify([sessionId, presenceData, startTime]);
         if (pendingDiscordStartRef.current?.key === requestKey) {
             return pendingDiscordStartRef.current.promise;
         }
@@ -244,8 +243,7 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
         pending.promise = enqueueDiscord(async () => {
             if (!discordEnabledRef.current || generation !== discordGenerationRef.current || stoppingRef.current) return;
             await startDiscordPresence({
-                ...data,
-                details,
+                ...presenceData,
                 session_id: sessionId,
                 start_time: startTime / 1000,
             });
@@ -259,7 +257,6 @@ function useStopwatch(storageKey, initialDiscordData, { onComplete, onCancel, di
     };
 
     const refreshDiscord = () => {
-        presenceDetailsRef.current = memo;
         return startDiscordIfNeeded(discordData);
     };
 

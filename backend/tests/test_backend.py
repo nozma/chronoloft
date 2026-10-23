@@ -197,7 +197,7 @@ class RecordTests(DatabaseTestCase):
 
 
 class DiscordRouteTests(DatabaseTestCase):
-    def test_start_update_status_stop(self):
+    def test_start_update_status_stop_ignores_legacy_details(self):
         manager = Mock()
         manager.is_connected.return_value = True
         data = {'group': '学習', 'activity_name': '読書', 'details': '本A'}
@@ -206,12 +206,12 @@ class DiscordRouteTests(DatabaseTestCase):
             self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
             lookup.assert_called_once_with('学習')
             manager.connect.assert_called_once_with()
-            manager.update_presence.assert_called_once_with(state='学習', large_text='読書', details='本A',
+            manager.update_presence.assert_called_once_with(state='学習', large_text='読書',
                                                           large_image='default_image', application_name='読書')
             self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': True})
             data.update(details='本B', asset_key='book')
             self.assertEqual(self.client.post('/api/discord_presence/update', json=data).status_code, 200)
-            manager.update_presence.assert_called_with(state='学習', large_text='読書', details='本B',
+            manager.update_presence.assert_called_with(state='学習', large_text='読書',
                                                       large_image='book', application_name='読書')
             self.assertEqual(self.client.post('/api/discord_presence/stop', json={'group': '学習'}).status_code, 200)
             manager.close.assert_called_once_with()
@@ -305,8 +305,8 @@ class DiscordManagerTests(unittest.TestCase):
         self.factory.assert_called_once_with('123456789')
         self.rpc.connect.assert_called_once_with()
         self.assertTrue(self.manager.is_connected())
-        self.manager.update_presence('学習', '読書', '本A', 'book')
-        self.rpc.update.assert_called_once_with(state='学習', large_text='読書', details='本A',
+        self.manager.update_presence('学習', '読書', 'book')
+        self.rpc.update.assert_called_once_with(state='学習', large_text='読書',
                                                large_image='book', start=1234567890)
 
     def test_failed_connect_remains_disconnected_and_can_retry(self):
@@ -322,48 +322,35 @@ class DiscordManagerTests(unittest.TestCase):
 
     def test_application_name_payload(self):
         self.manager.connect()
-        self.manager.update_presence('学習', '読書', '本A', 'book', application_name='読書')
+        self.manager.update_presence('学習', '読書', 'book', application_name='読書')
         activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
         self.assertEqual(activity['name'], '読書')
         self.assertEqual(activity['status_display_type'], rpc_module.StatusDisplayType.NAME.value)
         self.assertEqual(activity['state'], '学習')
-        self.assertEqual(activity['details'], '本A')
+        self.assertNotIn('details', activity)
         self.assertEqual(activity['assets']['large_image'], 'book')
         self.assertEqual(activity['timestamps']['start'], int(self.manager.start_time) * 1000)
 
-    def test_empty_details_are_omitted_from_application_payload(self):
+    def test_standard_presence_omits_details(self):
         self.manager.connect()
-        for details in ('', None, '   '):
-            with self.subTest(details=details):
-                self.manager.update_presence('学習', '読書', details, 'book', application_name='読書')
-                activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
-                self.assertNotIn('details', activity)
-                self.assertEqual(activity['name'], '読書')
-                self.assertTrue(self.manager.is_connected())
-        self.manager.update_presence('学習', '読書', 'メモを追加', 'book', application_name='読書')
-        self.assertEqual(self.rpc.update.call_args.kwargs['payload_override']['args']['activity']['details'], 'メモを追加')
-        self.manager.update_presence('学習', '読書', '', 'book', application_name='読書')
-        self.assertNotIn('details', self.rpc.update.call_args.kwargs['payload_override']['args']['activity'])
-
-    def test_empty_details_use_none_for_standard_presence(self):
-        self.manager.connect()
-        self.manager.update_presence('学習', '読書', '', 'book')
-        self.assertIsNone(self.rpc.update.call_args.kwargs['details'])
+        self.manager.update_presence('学習', '読書', 'book')
+        self.assertNotIn('details', self.rpc.update.call_args.kwargs)
         self.assertTrue(self.manager.is_connected())
 
     def test_discord_text_boundaries_do_not_change_saved_text(self):
         self.manager.connect()
         for text in ('A', 'あ', 'あ' * 128, 'あ' * 129, 'x' * 10000):
             with self.subTest(length=len(text)):
-                self.manager.update_presence('学', '読', text, 'book', application_name='読')
+                self.manager.update_presence(text, text, 'book', application_name=text)
                 activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
-                for value in (activity['state'], activity['details'], activity['name'], activity['assets']['large_text']):
+                for value in (activity['state'], activity['name'], activity['assets']['large_text']):
                     self.assertGreaterEqual(len(value), 2)
                     self.assertLessEqual(len(value), 128)
-                self.assertEqual(activity['details'].rstrip(), text[:128])
+                    self.assertEqual(value.rstrip(), text[:128])
+                self.assertNotIn('details', activity)
 
     def test_update_without_connection_does_nothing(self):
-        self.manager.update_presence('学習', '読書', '本A', 'book')
+        self.manager.update_presence('学習', '読書', 'book')
         self.factory.assert_not_called()
         self.assertFalse(self.manager.is_connected())
 
@@ -371,7 +358,7 @@ class DiscordManagerTests(unittest.TestCase):
         self.manager.connect()
         self.rpc.update.side_effect = RuntimeError('切断')
         with self.assertLogs(rpc_module.logger, level='ERROR'), self.assertRaises(RuntimeError):
-            self.manager.update_presence('学習', '読書', '本A', 'book')
+            self.manager.update_presence('学習', '読書', 'book')
         self.assertFalse(self.manager.is_connected())
         self.rpc.close.assert_called_once()
 

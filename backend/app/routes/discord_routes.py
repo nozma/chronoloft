@@ -23,10 +23,9 @@ def serialized(function):
 @serialized
 def discord_presence_start(data=None):
     data = data if data is not None else request.get_json()
-    # 必要な情報（group, activity_name, details, asset_key）を取得
+    # 旧画面から詳細が届いても、公開する情報として取得・転送しない。
     group = data.get('group')
     activity_name = data.get('activity_name')
-    details = data.get('details')
     asset_key = data.get('asset_key') or "default_image"
     session_id = data.get('session_id')
     # 同じ計測からの要求だけ再接続・更新を許可する。
@@ -52,7 +51,6 @@ def discord_presence_start(data=None):
         manager.update_presence(
             state=group,
             large_text=activity_name,
-            details=details,
             large_image=asset_key,
             application_name=activity_name
         )
@@ -103,7 +101,6 @@ def discord_presence_update():
     data = request.get_json()
     group = data.get('group')
     activity_name = data.get('activity_name')
-    details = data.get('details')
     asset_key = data.get('asset_key') or "default_image"
 
     mgr = DISCORD_MANAGERS.get(group)
@@ -116,7 +113,6 @@ def discord_presence_update():
         mgr.update_presence(
             state=group,
             large_text=activity_name,
-            details=details,
             large_image=asset_key,
             application_name=activity_name
         )

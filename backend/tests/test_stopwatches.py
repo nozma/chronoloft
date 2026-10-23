@@ -132,10 +132,38 @@ class StopwatchTests(DatabaseTestCase):
             start.assert_not_called()
             stop.assert_not_called()
             start.return_value = (self.app.response_class('{}', mimetype='application/json'), 200)
-            local = self.start().json['item']
+            local = self.start(memo='公開しない詳細').json['item']
             self.assertEqual(start.call_args.args[0]['session_id'], local['id'])
-            self.operate(local, 'edit', True, memo='PCを遠隔操作')
-            self.assertEqual(start.call_args.args[0]['details'], 'PCを遠隔操作')
+            self.assertNotIn('details', start.call_args.args[0])
+            edited = self.operate(local, 'edit', True, memo='PCを遠隔操作').json['item']
+            self.assertEqual(edited['memo'], 'PCを遠隔操作')
+            self.assertNotIn('details', start.call_args.args[0])
+        self.discord.start()
+
+    def test_memo_is_saved_but_never_published_on_start_poll_edit_or_resume(self):
+        self.discord.stop()
+        with patch('app.discord_presence_manager.Presence') as presence:
+            item = self.start(memo='公開しない詳細').json['item']
+
+            def assert_private():
+                self.assertTrue(presence.return_value.update.called)
+                for call in presence.return_value.update.call_args_list:
+                    activity = call.kwargs['payload_override']['args']['activity']
+                    self.assertNotIn('details', activity)
+                    self.assertNotIn('公開しない詳細', str(activity))
+
+            assert_private()
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            self.assertEqual(self.client.get('/api/stopwatches').status_code, 200)
+            assert_private()
+            item = self.operate(item, 'edit', memo='公開しない詳細の変更').json['item']
+            self.assertEqual(item['memo'], '公開しない詳細の変更')
+            assert_private()
+            item = self.operate(item, 'confirm').json['item']
+            item = self.operate(item, 'resume').json['item']
+            assert_private()
+            self.operate(item, 'complete')
+            self.assertEqual(Record.query.one().memo, '公開しない詳細の変更')
         self.discord.start()
 
     def test_contiguous_records_with_same_memo_keep_existing_merge_behavior(self):

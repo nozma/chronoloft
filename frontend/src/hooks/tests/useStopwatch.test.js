@@ -187,15 +187,23 @@ test('アクティビティ切替では旧連携を停止してから新セッ�
     app.unmount();
 });
 
-test('手動更新した詳細を定期更新でも維持する', async () => {
+test('復元・再接続・定期更新で旧データや入力欄の詳細をDiscordへ送らない', async () => {
     const calls = [];
     const app = setup({ saved: { startTime: 1234567890000, displayTime: 0, sessionId: 'saved', memo: 'Updated' }, start: async value => calls.push(value) });
+    await app.flush();
+    app.hook.setMemo('Private edit');
     await app.flush();
     await app.hook.refreshDiscord();
     await app.flush();
     app.tick();
     await app.flush();
-    assert.equal(calls.at(-1).details, 'Updated');
+    assert.equal(app.hook.memo, 'Private edit');
+    assert.ok(calls.length >= 3);
+    for (const call of calls) {
+        assert.equal(Object.hasOwn(call, 'details'), false);
+        assert.equal(Object.hasOwn(call, 'memo'), false);
+        assert.equal(call.activity_name, 'Reading');
+    }
     app.unmount();
 });
 
