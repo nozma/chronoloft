@@ -1,0 +1,10 @@
+{
+  "repository": "nozma/chronoloft",
+  "bundle_id": "io.github.nozma.chronoloft",
+  "minimum_macos": "26.0",
+  "architecture": "arm64",
+  "keychain_account": "chronoloft",
+  "public_key": "5IQWBpD8SNxwsYn5Y0dVeFBYyumTz8UxKkHe+sWA7oA=",
+  "sparkle_version": "2.10.0",
+  "sparkle_sha256": "c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c"
+}
