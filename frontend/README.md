@@ -1,8 +1,6 @@
-# React + Vite
+# Chronoloft フロントエンド
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Vite・ReactによるChronoloftの画面です。
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+開発環境の準備、バックエンドと合わせた起動、ビルド、テストの手順は[開発ガイド](../docs/development.md)にまとめています。
+アプリの概要は[ルートのREADME](../README.md)を参照してください。

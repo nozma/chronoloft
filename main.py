@@ -9,6 +9,8 @@ from flask_migrate import upgrade
 from backend.app import create_app, db
 import os
 
+desktop_state = {}
+
 def apply_all_migrations(app):
     """
     Alembicのマイグレーションを常に実行し、
@@ -57,6 +59,7 @@ def find_free_port(preferred_port=5180):
 def run_flask(port):
     app = create_app()
     apply_all_migrations(app)
+    desktop_state['app'] = app
     print(app.instance_path)
     # LAN設定がオフの場合、認証処理が外部端末からの全アクセスを拒否する。
     app.config['LAN_PORT'] = port
@@ -88,6 +91,17 @@ def configure_macos_window(window):
             return False
 
     class ChronoloftAppDelegate(type(app.delegate())):
+        def applicationShouldTerminate_(self, sender):
+            from backend.desktop_updater import allow_update_termination, cancel_update_termination
+            provider = lambda: desktop_state.get('app')
+            if not allow_update_termination(window, provider):
+                cancel_update_termination(window, provider)
+                return 0
+            result = super().applicationShouldTerminate_(sender)
+            if result == 0:
+                cancel_update_termination(window, provider)
+            return result
+
         def applicationShouldHandleReopen_hasVisibleWindows_(self, sender, has_visible_windows):
             if native.isMiniaturized():
                 native.deminiaturize_(None)
@@ -102,6 +116,10 @@ def configure_macos_window(window):
     )
     native.setDelegate_(window._macos_delegates[0])
     app.setDelegate_(window._macos_delegates[1])
+    from backend.desktop_updater import install_updater
+    from PyObjCTools import AppHelper
+    # メニュー作成とウィンドウ初期化の完了後、Cocoaのメインスレッドで組み込む。
+    AppHelper.callAfter(install_updater, window, lambda: desktop_state.get('app'))
 
 
 if __name__ == '__main__':

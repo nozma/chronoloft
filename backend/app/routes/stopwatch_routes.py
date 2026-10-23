@@ -21,6 +21,11 @@ _lock = RLock()
 def install_stopwatches(app):
     with app.app_context():
         initialize_stopwatch_tables()
+    from ..desktop_update import DesktopUpdateGate
+    gate = DesktopUpdateGate(app, _lock, lambda: StopwatchSession.query.filter(
+        StopwatchSession.status.in_(['running', 'confirming'])).first() is not None)
+    gate.install()
+    app.extensions['desktop_update_gate'] = gate
     app.register_blueprint(stopwatch_bp)
 
 
