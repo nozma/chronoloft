@@ -2,12 +2,37 @@ from flask import Blueprint, request, jsonify, current_app
 from ..discord_presence_manager import get_discord_manager_for_group
 from functools import wraps
 from threading import RLock
+from datetime import datetime, timedelta, timezone
+import math
+from sqlalchemy import func
+from .. import db
+from ..models import Activity, ActivityGroup, ActivityUnitType, Record, StopwatchSession
 
 discord_bp = Blueprint('discord', __name__)
 
 DISCORD_MANAGERS = {}
 DISCORD_SESSIONS = {}
 _discord_lock = RLock()
+
+
+def recent_activity_minutes(group, activity_name, session_id):
+    # 計測対象を特定し、入力された詳細ではなく保存済みの時間だけを集計する。
+    query = Activity.query.join(ActivityGroup).filter(
+        ActivityGroup.name == group, Activity.name == activity_name,
+        Activity.unit == ActivityUnitType.MINUTES)
+    session = db.session.get(StopwatchSession, session_id) if session_id else None
+    if session is not None:
+        query = query.filter(Activity.id == session.activity_id)
+    activities = query.limit(2).all()
+    if len(activities) != 1:
+        return None
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    total = db.session.query(func.sum(Record.value)).filter(
+        Record.activity_id == activities[0].id,
+        Record.created_at >= now - timedelta(days=30), Record.created_at <= now,
+        Record.value >= 0).scalar() or 0
+    # 以前と同じく合計後に分単位へ四捨五入する。不正な値は公開しない。
+    return math.floor(total + 0.5) if math.isfinite(total) else None
 
 
 def serialized(function):
@@ -52,7 +77,8 @@ def discord_presence_start(data=None):
             state=group,
             large_text=activity_name,
             large_image=asset_key,
-            application_name=activity_name
+            application_name=activity_name,
+            recent_minutes=recent_activity_minutes(group, activity_name, session_id)
         )
         DISCORD_MANAGERS[group] = manager
         DISCORD_SESSIONS[group] = session_id
@@ -114,7 +140,8 @@ def discord_presence_update():
             state=group,
             large_text=activity_name,
             large_image=asset_key,
-            application_name=activity_name
+            application_name=activity_name,
+            recent_minutes=recent_activity_minutes(group, activity_name, data.get('session_id'))
         )
         return jsonify({'message': 'Discord presence updated'}), 200
     except Exception as e:

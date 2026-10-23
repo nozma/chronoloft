@@ -1,9 +1,10 @@
 import uuid
+import datetime
 from unittest.mock import patch
 
 from test_backend import DatabaseTestCase
 from app import db
-from app.models import Record, StopwatchSession
+from app.models import Activity, ActivityUnitType, Record, StopwatchSession
 from app.routes import stopwatch_routes
 
 
@@ -149,7 +150,7 @@ class StopwatchTests(DatabaseTestCase):
                 self.assertTrue(presence.return_value.update.called)
                 for call in presence.return_value.update.call_args_list:
                     activity = call.kwargs['payload_override']['args']['activity']
-                    self.assertNotIn('details', activity)
+                    self.assertEqual(activity['details'], '0時間0分/30日')
                     self.assertNotIn('公開しない詳細', str(activity))
 
             assert_private()
@@ -164,6 +165,32 @@ class StopwatchTests(DatabaseTestCase):
             assert_private()
             self.operate(item, 'complete')
             self.assertEqual(Record.query.one().memo, '公開しない詳細の変更')
+        self.discord.start()
+
+    def test_recent_time_uses_session_activity_and_refreshes_on_poll(self):
+        activity = db.session.get(Activity, self.activity_id)
+        duplicate = Activity(name=activity.name, group=activity.group, unit=ActivityUnitType.MINUTES)
+        db.session.add(duplicate)
+        db.session.flush()
+        now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+        db.session.add_all([
+            Record(activity_id=self.activity_id, value=30, created_at=now),
+            Record(activity_id=self.activity_id, value=6000, created_at=now - datetime.timedelta(days=31)),
+            Record(activity_id=duplicate.id, value=6000, created_at=now),
+        ])
+        db.session.commit()
+        self.discord.stop()
+        with patch('app.discord_presence_manager.Presence') as presence:
+            self.assertEqual(self.start(memo='公開しない文章').status_code, 201)
+            payload = presence.return_value.update.call_args.kwargs['payload_override']
+            self.assertEqual(payload['args']['activity']['details'], '0時間30分/30日')
+            db.session.add(Record(activity_id=self.activity_id, value=30, created_at=now))
+            db.session.commit()
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            self.assertEqual(self.client.get('/api/stopwatches').status_code, 200)
+            payload = presence.return_value.update.call_args.kwargs['payload_override']
+            self.assertEqual(payload['args']['activity']['details'], '1時間0分/30日')
+            self.assertNotIn('公開しない文章', str(payload))
         self.discord.start()
 
     def test_contiguous_records_with_same_memo_keep_existing_merge_behavior(self):
