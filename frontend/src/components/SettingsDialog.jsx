@@ -29,6 +29,7 @@ function SettingsDialog({ open, onClose }) {
     const [saveError, setSaveError] = useState('');
     const wasOpen = useRef(false);
     const originalSettings = useRef({});
+    const resetRequested = useRef(false);
     const handleClose = () => { if (!applyingRef.current) onClose(); };
     const {
         isMobile,
@@ -52,6 +53,7 @@ function SettingsDialog({ open, onClose }) {
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open && !wasOpen.current) {
+            resetRequested.current = false;
             originalSettings.current = {
                 language: savedLanguage, autoFilterOnSelect, themeMode, layoutMode,
                 recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode,
@@ -73,6 +75,7 @@ function SettingsDialog({ open, onClose }) {
     // リセット用ハンドラ
     const handleReset = () => {
         // 既定値を適用
+        resetRequested.current = true;
         setTmpLanguage(DEFAULT_SETTINGS.language);
         setTmpAutoFilter(DEFAULT_SETTINGS.autoFilterOnSelect);
         setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
@@ -270,9 +273,9 @@ function SettingsDialog({ open, onClose }) {
                                     recentMinimum: tmpRecentMinimum, discordEnabled: tmpDiscordEnabled,
                                     recordSaveMode: tmpRecordSaveMode,
                                 };
-                                // 他の画面で変更された項目を、開いた時の値で上書きしない。
+                                // 通常は変更した項目だけを保存し、明示的なリセットでは全項目を反映する。
                                 const changes = Object.fromEntries(Object.entries(next).filter(
-                                    ([key, value]) => value !== originalSettings.current[key]));
+                                    ([key, value]) => resetRequested.current || value !== originalSettings.current[key]));
                                 await saveSettings(changes);
                                 onClose();
                             } catch (error) {
