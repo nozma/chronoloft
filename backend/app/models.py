@@ -120,6 +120,12 @@ class StopwatchDevice(db.Model):
     is_local = db.Column(db.Boolean, nullable=False)
 
 
+class LocalSetting(db.Model):
+    """起動PCのアプリとブラウザーで共有する設定。"""
+    key = db.Column(db.String(40), primary_key=True)
+    value = db.Column(db.JSON, nullable=False)
+
+
 class StopwatchSession(db.Model):
     """終了済みセッションも保持し、再送による二重保存・復活を防ぐ。"""
     id = db.Column(db.String(36), primary_key=True)

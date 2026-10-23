@@ -27,18 +27,16 @@ function SettingsDialog({ open, onClose }) {
     const [applying, setApplying] = useState(false);
     const [lanReady, setLanReady] = useState(false);
     const [saveError, setSaveError] = useState('');
+    const wasOpen = useRef(false);
+    const originalSettings = useRef({});
     const handleClose = () => { if (!applyingRef.current) onClose(); };
     const {
         isMobile,
-        language: savedLanguage, setLanguage,
-        autoFilterOnSelect, setAutoFilterOnSelect,
-        themeMode, setThemeMode,
-        layoutMode, setLayoutMode,
-        recentDays, setRecentDays,
-        recentLimit, setRecentLimit,
-        recentMinimum, setRecentMinimum,
-        discordEnabled, setDiscordEnabled,
-        recordSaveMode, setRecordSaveMode,
+        language: savedLanguage,
+        autoFilterOnSelect, themeMode, layoutMode,
+        recentDays, recentLimit, recentMinimum,
+        discordEnabled, recordSaveMode,
+        settingsError, saveSettings,
     } = useSettings();
 
     // ─── 設定値のローカルコピー ───
@@ -53,7 +51,11 @@ function SettingsDialog({ open, onClose }) {
     const [tmpRecordSaveMode, setTmpRecordSaveMode] = useState(recordSaveMode);
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
-        if (open) {
+        if (open && !wasOpen.current) {
+            originalSettings.current = {
+                language: savedLanguage, autoFilterOnSelect, themeMode, layoutMode,
+                recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode,
+            };
             setSaveError('');
             setTmpLanguage(savedLanguage);
             setTmpAutoFilter(autoFilterOnSelect);
@@ -65,6 +67,7 @@ function SettingsDialog({ open, onClose }) {
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
         }
+        wasOpen.current = open;
     }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode]);
 
     // リセット用ハンドラ
@@ -233,7 +236,7 @@ function SettingsDialog({ open, onClose }) {
                 </Stack>
             </DialogContent>
 
-            {saveError && <Alert severity="error" sx={{ mx: 3, mt: 1 }}>{saveError}</Alert>}
+            {(saveError || settingsError) && <Alert severity="error" sx={{ mx: 3, mt: 1 }}>{saveError || settingsError}</Alert>}
             <DialogActions>
                 {/* Reset = 既定値に選択状態を戻す */}
                 <Button
@@ -260,15 +263,17 @@ function SettingsDialog({ open, onClose }) {
                             setSaveError('');
                             try {
                                 await lanSettings.current.save();
-                                setLanguage(tmpLanguage);
-                                setAutoFilterOnSelect(tmpAutoFilter);
-                                setThemeMode(tmpThemeMode);
-                                setLayoutMode(tmpLayoutMode);
-                                setRecentDays(tmpRecentDays);
-                                setRecentLimit(tmpRecentLimit);
-                                setRecentMinimum(tmpRecentMinimum);
-                                setDiscordEnabled(tmpDiscordEnabled);
-                                setRecordSaveMode(tmpRecordSaveMode);
+                                const next = {
+                                    language: tmpLanguage, autoFilterOnSelect: tmpAutoFilter,
+                                    themeMode: tmpThemeMode, layoutMode: tmpLayoutMode,
+                                    recentDays: tmpRecentDays, recentLimit: tmpRecentLimit,
+                                    recentMinimum: tmpRecentMinimum, discordEnabled: tmpDiscordEnabled,
+                                    recordSaveMode: tmpRecordSaveMode,
+                                };
+                                // 他の画面で変更された項目を、開いた時の値で上書きしない。
+                                const changes = Object.fromEntries(Object.entries(next).filter(
+                                    ([key, value]) => value !== originalSettings.current[key]));
+                                await saveSettings(changes);
                                 onClose();
                             } catch (error) {
                                 setSaveError(error.message || '設定を保存できませんでした。');

@@ -96,6 +96,8 @@ def create_app(test_config=None):
     register_routes(app)
     from .routes.stopwatch_routes import install_stopwatches
     install_stopwatches(app)
+    from .routes.settings_routes import install_local_settings
+    install_local_settings(app)
 
     # エラーハンドラ
     @app.errorhandler(Exception)

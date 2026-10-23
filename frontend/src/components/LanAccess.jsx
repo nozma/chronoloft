@@ -1,4 +1,4 @@
-import { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useState } from 'react';
+import { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Alert, Box, Button, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Tooltip, FormControl, FormControlLabel, FormLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -28,9 +28,12 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
     const [enabled, setEnabled] = useState(false);
     const [password, setPassword] = useState('');
     const [name, setName] = useState(shared.device?.name || '');
+    const nameEdited = useRef(false);
     const [message, setMessage] = useState('');
     const [loaded, setLoaded] = useState(false);
-    useEffect(() => { setName(shared.device?.name || ''); }, [shared.device?.name]);
+    useEffect(() => {
+        if (!nameEdited.current) setName(shared.device?.name || '');
+    }, [shared.device?.name]);
     useEffect(() => {
         let cancelled = false;
         authRequest('/api/auth/status').then(async status => {
@@ -49,7 +52,8 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
     useImperativeHandle(ref, () => ({
         save: async () => {
             if (!loaded) throw new Error('LAN設定の取得をお待ちください。');
-            const result = await saveDeviceAndLanSettings({ name, settings, enabled, password });
+            const result = await saveDeviceAndLanSettings({ name: nameEdited.current ? name : shared.device?.name || name, settings, enabled, password });
+            nameEdited.current = false;
             setSettings(result);
             setPassword('');
         },
@@ -59,7 +63,7 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
         <Stack spacing={2} sx={{ mt: 1 }}>
             <Stack spacing={1}>
                 <Typography variant="body2" color="text.secondary">端末名は、ほかの端末からストップウォッチを見分けるために使います。</Typography>
-                <TextField label="この端末の名前" size="small" fullWidth value={name} disabled={disabled || !shared.device} inputProps={{ maxLength: 80 }} onChange={e => setName(e.target.value)} />
+                <TextField label="この端末の名前" size="small" fullWidth value={name} disabled={disabled || !shared.device} inputProps={{ maxLength: 80 }} onChange={e => { nameEdited.current = true; setName(e.target.value); }} />
             </Stack>
             {settings && <Box>
                 <FormControlLabel label="同じLAN内からのアクセスを許可" control={<Switch checked={enabled} disabled={disabled} onChange={e => { setEnabled(e.target.checked); setMessage(''); }} />} />

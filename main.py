@@ -147,4 +147,5 @@ if __name__ == '__main__':
         height=600,
     )
     window.events.before_show += configure_macos_window
-    webview.start()
+    # 画面設定や端末IDを、アプリを完全終了した後も保持する。
+    webview.start(private_mode=False)
