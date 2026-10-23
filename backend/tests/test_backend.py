@@ -197,6 +197,46 @@ class RecordTests(DatabaseTestCase):
 
 
 class DiscordRouteTests(DatabaseTestCase):
+    def test_publishes_only_saved_time_within_last_30_days(self):
+        now = datetime.datetime(2026, 10, 23, 12, tzinfo=datetime.timezone.utc)
+        stamp = now.replace(tzinfo=None)
+        other = Activity(name='読書', group=ActivityGroup(name='別グループ'), unit=ActivityUnitType.MINUTES)
+        db.session.add(other)
+        db.session.flush()
+        rows = [(self.activity_id, 59.6, stamp),
+                (self.activity_id, 60, stamp - datetime.timedelta(days=30)),
+                (self.activity_id, 0.9, stamp - datetime.timedelta(days=1)),
+                (self.activity_id, 6000, stamp - datetime.timedelta(days=30, microseconds=1)),
+                (self.activity_id, 6000, stamp + datetime.timedelta(microseconds=1)),
+                (other.id, 6000, stamp)]
+        for activity_id, value, created_at in rows:
+            db.session.add(Record(activity_id=activity_id, value=value, created_at=created_at, memo='公開しない文章'))
+        db.session.commit()
+        data = {'group': '学習', 'activity_name': '読書', 'details': '公開しない文章', 'recent_minutes': 99999}
+        with patch.object(discord_routes, 'datetime') as clock, patch.object(rpc_module, 'Presence') as presence:
+            clock.now.return_value = now
+            self.assertEqual(self.client.post('/api/discord_presence/start', json=data).status_code, 200)
+            activity = presence.return_value.update.call_args.kwargs['payload_override']['args']['activity']
+            self.assertEqual(activity['details'], '2時間1分/30日')
+            self.assertNotIn('公開しない文章', str(activity))
+            self.assertNotIn('合計', activity['details'])
+            db.session.add(Record(activity_id=self.activity_id, value=60, created_at=stamp))
+            db.session.commit()
+            self.assertEqual(self.client.post('/api/discord_presence/update', json=data).status_code, 200)
+            activity = presence.return_value.update.call_args.kwargs['payload_override']['args']['activity']
+            self.assertEqual(activity['details'], '3時間1分/30日')
+
+    def test_ambiguous_or_count_activity_does_not_publish_time(self):
+        activity = db.session.get(Activity, self.activity_id)
+        duplicate = Activity(name=activity.name, group=activity.group, unit=ActivityUnitType.MINUTES)
+        db.session.add(duplicate)
+        db.session.commit()
+        self.assertIsNone(discord_routes.recent_activity_minutes('学習', '読書', None))
+        db.session.delete(duplicate)
+        activity.unit = ActivityUnitType.COUNT
+        db.session.commit()
+        self.assertIsNone(discord_routes.recent_activity_minutes('学習', '読書', None))
+
     def test_start_update_status_stop_ignores_legacy_details(self):
         manager = Mock()
         manager.is_connected.return_value = True
@@ -207,12 +247,12 @@ class DiscordRouteTests(DatabaseTestCase):
             lookup.assert_called_once_with('学習')
             manager.connect.assert_called_once_with()
             manager.update_presence.assert_called_once_with(state='学習', large_text='読書',
-                                                          large_image='default_image', application_name='読書')
+                                                          large_image='default_image', application_name='読書', recent_minutes=0)
             self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': True})
             data.update(details='本B', asset_key='book')
             self.assertEqual(self.client.post('/api/discord_presence/update', json=data).status_code, 200)
             manager.update_presence.assert_called_with(state='学習', large_text='読書',
-                                                      large_image='book', application_name='読書')
+                                                      large_image='book', application_name='読書', recent_minutes=0)
             self.assertEqual(self.client.post('/api/discord_presence/stop', json={'group': '学習'}).status_code, 200)
             manager.close.assert_called_once_with()
             self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': False})
@@ -336,6 +376,20 @@ class DiscordManagerTests(unittest.TestCase):
         self.manager.update_presence('学習', '読書', 'book')
         self.assertNotIn('details', self.rpc.update.call_args.kwargs)
         self.assertTrue(self.manager.is_connected())
+
+    def test_recent_minutes_are_formatted_without_all_time_total(self):
+        self.manager.connect()
+        for minutes, expected in [(0, '0時間0分/30日'), (59, '0時間59分/30日'), (60, '1時間0分/30日')]:
+            with self.subTest(minutes=minutes):
+                self.manager.update_presence('学習', '読書', 'book', application_name='読書', recent_minutes=minutes)
+                activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
+                self.assertEqual(activity['details'], expected)
+                self.manager.update_presence('学習', '読書', 'book', recent_minutes=minutes)
+                self.assertEqual(self.rpc.update.call_args.kwargs['details'], expected)
+        for value in ('公開しない文章', -1, True):
+            self.manager.update_presence('学習', '読書', 'book', application_name='読書', recent_minutes=value)
+            activity = self.rpc.update.call_args.kwargs['payload_override']['args']['activity']
+            self.assertNotIn('details', activity)
 
     def test_discord_text_boundaries_do_not_change_saved_text(self):
         self.manager.connect()

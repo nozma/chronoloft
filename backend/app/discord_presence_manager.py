@@ -52,16 +52,19 @@ class DiscordRPCManager:
                                    if isinstance(e, TimeoutError) else str(e) or type(e).__name__)
                 logger.error("Failed to connect to Discord RPC: %s", e)
 
-    def update_presence(self, state, large_text, large_image, application_name=None):
+    def update_presence(self, state, large_text, large_image, application_name=None, recent_minutes=None):
         if self.rpc:
             try:
-                # 記録の詳細は公開せず、送信するアクティビティに含めない。
+                # 詳細欄の文章は受け取らず、サーバーで集計した30日間の時間だけを表示する。
+                recent_time = (f'{recent_minutes // 60}時間{recent_minutes % 60}分/30日'
+                               if type(recent_minutes) is int and recent_minutes >= 0 else None)
                 state = presence_text(state)
                 large_text = presence_text(large_text)
                 application_name = presence_text(application_name)
                 if application_name:
                     payload = Payload.set_activity(
                         state=state,
+                        details=recent_time,
                         start=int(self.start_time) * 1000,
                         large_image=large_image,
                         large_text=large_text,
@@ -77,6 +80,7 @@ class DiscordRPCManager:
                 else:
                     self.rpc.update(
                         state=state,
+                        **({'details': recent_time} if recent_time is not None else {}),
                         large_text=large_text,
                         large_image=large_image,
                         start=self.start_time,  # 接続開始時刻を利用
