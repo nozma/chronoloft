@@ -54,6 +54,7 @@ def create_app(test_config=None):
 
     frontend_dist = os.path.join(base_dir, 'frontend', 'dist')
 
+    # 未使用のinstanceフォルダーは作成しない。配布版ではアプリ内を指し、作成すると署名が壊れる。
     app = Flask(
         __name__,
         instance_relative_config=True,
@@ -79,12 +80,6 @@ def create_app(test_config=None):
 
     if test_config is not None:
         app.config.update(test_config)
-
-    # instanceフォルダ（Flaskのinstance_path）を作成
-    try:
-        os.makedirs(app.instance_path, exist_ok=True)
-    except OSError:
-        pass
 
     # CORSとDBを初期化
     db.init_app(app)

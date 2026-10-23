@@ -1,7 +1,10 @@
 import datetime
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+from flask import Flask
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import create_app, db
@@ -61,6 +64,28 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 class AppSafetyTests(unittest.TestCase):
+    def test_startup_does_not_write_inside_app_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / 'Chronoloft.app'
+            instance = bundle / 'Contents/Frameworks/var/backend.app-instance'
+            bundle.mkdir()
+
+            def frozen_flask(*args, **kwargs):
+                # 配布版でFlaskが選ぶアプリ内の保存先を再現する。
+                return Flask(*args, **kwargs, instance_path=str(instance))
+
+            with patch('app.Flask', side_effect=frozen_flask), \
+                    patch('app.get_os_db_path', side_effect=AssertionError('通常DBへのアクセスは禁止')):
+                app = create_app(TEST_CONFIG)
+            self.addCleanup(app.extensions['lan_auth_db'].close)
+            with app.app_context():
+                try:
+                    self.assertEqual(app.test_client().get('/api/stopwatches').status_code, 200)
+                finally:
+                    db.session.remove()
+                    db.engine.dispose()
+            self.assertEqual(list(bundle.iterdir()), [])
+
     def test_rejects_non_memory_database_before_accessing_normal_path(self):
         with patch('app.get_os_db_path') as path:
             for config in [{}, {'TESTING': False, 'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:'},
