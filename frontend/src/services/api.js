@@ -146,7 +146,7 @@ export async function deleteRecord(recordId) {
 
 export async function startDiscordPresence(data) {
     // data はオブジェクトで、以下のキーを含むことを想定：
-    // { group, activity_name, details, asset_key }
+    // { group, activity_name, asset_key, session_id, start_time }
     const response = await fetch('/api/discord_presence/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

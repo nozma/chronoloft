@@ -118,7 +118,7 @@ def _sync_discord(item):
             if session == item.id and group != activity.group.name:
                 discord_routes.discord_presence_stop(dict(group=group, session_id=item.id))
         response, status = discord_routes.discord_presence_start(dict(
-            group=activity.group.name, activity_name=activity.name, details=item.memo,
+            group=activity.group.name, activity_name=activity.name,
             asset_key=activity.asset_key, session_id=item.id, start_time=item.started_at / 1000))
         return response.get_json().get('error') if status >= 400 else None
     except Exception:
