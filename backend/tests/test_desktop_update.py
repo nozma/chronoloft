@@ -170,7 +170,8 @@ class ReleaseTests(unittest.TestCase):
                         'commit': 'abc', 'files': {name: release.digest(output / name) for name in names}}
             (output / 'manifest.json').write_text(json.dumps(manifest))
             (output / names[0]).write_bytes(b'changed')
-            with patch.object(release, 'run', return_value='abc'), self.assertRaisesRegex(ValueError, '変更'):
+            with patch.object(release, 'version', return_value='1.2.0'), \
+                    patch.object(release, 'run', return_value='abc'), self.assertRaisesRegex(ValueError, '配布物が変更'):
                 release.load_release(output, self.config)
 
     def test_build_keeps_starting_commit_and_preserves_previous_output_on_change(self):
