@@ -297,6 +297,9 @@ class ReleaseTests(unittest.TestCase):
                     else:
                         release.publish(output, self.config, manifest)
                 edits = [args for args in calls if args[:2] == ('release', 'edit')]
+                creates = [args for args in calls if args[:2] == ('release', 'create')]
+                self.assertEqual(len(creates), 1)
+                self.assertIn('--generate-notes', creates[0])
                 self.assertEqual(len(edits), 0 if corrupt else 1)
                 if not corrupt:
                     self.assertEqual(calls[-1], ('release', 'edit', 'v1.2.0', '--draft=false', '--latest'))
