@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Alert, Box, Button, Divider, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useActivities } from '../contexts/ActivityContext';
 import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { useSharedStopwatches } from '../services/stopwatches';
 import { useI18n } from '../i18n/I18nContext';
 import { recentDesktopActivities } from '../utils/desktop';
@@ -16,10 +18,12 @@ export default function MenuBarPanel() {
     const { activities, refreshActivities } = useActivities();
     const { records } = useRecords();
     const { groups, setGroups } = useGroups();
+    const { recentDays, recentLimit, recentMinimum } = useSettings();
     const state = useSharedStopwatches();
     const main = state.items.find(item => item.device_id === state.device?.id && item.slot === 'main');
-    const { recent, eligible } = recentDesktopActivities(activities, records);
-    const candidates = recent.length ? recent : eligible;
+    const { recent: candidates, hasHistory } = recentDesktopActivities(activities, records, {
+        recentDays, recentLimit, recentMinimum,
+    });
     useEffect(() => {
         const resize = () => window.webkit?.messageHandlers?.chronoloft?.postMessage({
             command: 'resize',
@@ -40,10 +44,17 @@ export default function MenuBarPanel() {
         return () => window.removeEventListener('chronoloft:panel-opened', refresh);
     }, [refreshActivities, setGroups]);
     return <Stack spacing={1.5} sx={{ py: 1 }}>
-        <Typography variant="subtitle1" fontWeight={600}>Chronoloft</Typography>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Typography variant="subtitle1" fontWeight={600}>Chronoloft</Typography>
+            <Tooltip title={t('Open app')}>
+                <IconButton size="small" aria-label={t('Open app')} onClick={() => controller.current?.desktopAction('open')}>
+                    <OpenInNewIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+        </Stack>
         <SharedStopwatches ref={controller} desktopPanel />
         {!main && <>
-            <Typography variant="subtitle2">{t(recent.length ? 'Recent activities' : 'Start a stopwatch')}</Typography>
+            <Typography variant="subtitle2">{t(hasHistory ? 'Recent activities' : 'Start a stopwatch')}</Typography>
             {!candidates.length && <Alert severity="info">{t('No time activities available. Add one in the app.')}</Alert>}
             <Box>
                 {candidates.map(activity => <Button key={activity.id} fullWidth
@@ -55,10 +66,5 @@ export default function MenuBarPanel() {
                 </Button>)}
             </Box>
         </>}
-        <Divider />
-        <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
-            <Button onClick={() => controller.current?.desktopAction('open')}>{t('Open app')}</Button>
-            <Button onClick={() => controller.current?.desktopAction('settings')}>{t('Settings')}</Button>
-        </Stack>
     </Stack>;
 }
