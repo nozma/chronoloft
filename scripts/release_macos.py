@@ -314,7 +314,7 @@ def publish(output, config, manifest):
         notes.write_text(f"Chronoloft {manifest['version']}\n\nアプリ内更新用の配布ファイルです。\n"
                          f"\n対象コミット: {manifest['commit']}\n", encoding='utf-8')
         github(config, 'release', 'create', tag, '--draft', '--target', manifest['commit'],
-               '--title', f"Chronoloft {manifest['version']}", '--notes-file', notes)
+               '--title', f"Chronoloft {manifest['version']}", '--notes-file', notes, '--generate-notes')
         release = remote_release(config, tag)
     if not release or not release['draft'] or release['target_commitish'] != manifest['commit']:
         raise ValueError('再開対象の下書きとビルドしたコミットが一致しません。')
