@@ -244,12 +244,24 @@ def run_native_app(result_path, quit_action=None):
         assert finished.wait(5) and not errors, str(errors)
 
     def exercise_menubar(window, cocoa_app):
-        from AppKit import NSApplicationActivationPolicyAccessory, NSApplicationActivationPolicyRegular, NSEventTypeRightMouseUp
+        from AppKit import (NSApplicationActivationPolicyAccessory, NSApplicationActivationPolicyRegular,
+                            NSEvent, NSEventTypeLeftMouseDown, NSEventTypeLeftMouseUp,
+                            NSEventTypeRightMouseDown, NSEventTypeRightMouseUp)
         from backend.desktop_menubar import read_desktop_state
         from backend.app.models import LocalSetting, StopwatchSession, Record
 
         wait_for(lambda: on_main_thread(lambda: bool(getattr(window, '_menubar', None) and window._menubar.device_id)))
         controller = window._menubar
+        # 判定メソッドを直接呼ばず、Cocoaのイベント配送とボタンの設定も検証する。
+        def post_click(right=False):
+            button = controller.status.button()
+            point = button.convertPoint_toView_((button.bounds().size.width / 2, button.bounds().size.height / 2), None)
+            event_types = ((NSEventTypeRightMouseDown, NSEventTypeRightMouseUp) if right
+                           else (NSEventTypeLeftMouseDown, NSEventTypeLeftMouseUp))
+            for event_type in event_types:
+                event = NSEvent.mouseEventWithType_location_modifierFlags_timestamp_windowNumber_context_eventNumber_clickCount_pressure_(
+                    event_type, point, 0, time.monotonic(), button.window().windowNumber(), None, 0, 1, 0)
+                cocoa_app.postEvent_atStart_(event, False)
         # 配布版の既存更新操作を代役に置き換え、ネットワーク送信せず入口を検証する。
         from types import SimpleNamespace
         update_checks = []
@@ -262,7 +274,7 @@ def run_native_app(result_path, quit_action=None):
                 backend_app.db.session.merge(LocalSetting(key='showDockIcon', value=enabled))
                 backend_app.db.session.commit()
             wait_for(lambda: on_main_thread(cocoa_app.activationPolicy) == policy)
-        on_main_thread(lambda: controller.toggle_(None))
+        on_main_thread(post_click)
         wait_for(lambda: on_main_thread(lambda: controller.panel is not None and controller.popover.isShown()))
         panel = controller.panel
         wait_for(lambda: evaluate(panel, "document.body.innerText.includes('最近のアクティビティ')"))
@@ -270,19 +282,33 @@ def run_native_app(result_path, quit_action=None):
         wait_for(lambda: evaluate(panel, "Array.from(document.querySelectorAll('button')).some(b => b.textContent === 'メニューバーテスト' && !b.disabled)"))
         assert evaluate(panel, "!Array.from(document.querySelectorAll('button')).some(b => ['アップデートを確認…', '終了'].includes(b.textContent))")
         # 右クリックではパネルを閉じ、標準メニューに更新確認と終了を表示する。
+        menu_closed = threading.Event()
+        original_show_context_menu = controller.show_context_menu
+        def observe_context_menu():
+            try:
+                original_show_context_menu()
+            finally:
+                menu_closed.set()
+        controller.show_context_menu = observe_context_menu
         def right_click():
+            menu_closed.clear()
             from Foundation import NSRunLoop, NSRunLoopCommonModes, NSTimer
             timer = NSTimer.timerWithTimeInterval_repeats_block_(
-                0.2, False, lambda timer: controller.context_menu.cancelTracking())
+                0.5, False, lambda timer: controller.context_menu.cancelTracking())
             NSRunLoop.currentRunLoop().addTimer_forMode_(timer, NSRunLoopCommonModes)
-            controller.handle_click(SimpleNamespace(type=lambda: NSEventTypeRightMouseUp))
+            post_click(right=True)
+        on_main_thread(right_click)
+        assert menu_closed.wait(5), '右クリックメニューが閉じませんでした'
+        wait_for(lambda: on_main_thread(lambda: getattr(controller, 'context_menu', None) is not None))
+        def check_menu():
+            assert controller.context_menu_from_panel, '右クリック直前の入力パネルが保持されませんでした'
             assert [str(item.title()) for item in controller.context_menu.itemArray()] == [
                 'アップデートを確認…', '', 'Chronoloftを終了']
             controller.context_menu.performActionForItemAtIndex_(0)
-        on_main_thread(right_click)
+        on_main_thread(check_menu)
         wait_for(lambda: update_checks == [True])
         wait_for(lambda: not on_main_thread(controller.popover.isShown))
-        on_main_thread(lambda: controller.toggle_(None))
+        on_main_thread(post_click)
         wait_for(lambda: on_main_thread(controller.popover.isShown))
         snapshot(panel, 'idle')
         evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'メニューバーテスト').click()")
@@ -318,7 +344,7 @@ def run_native_app(result_path, quit_action=None):
             wait_for(lambda: evaluate(main_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
             evaluate(main_view, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === '実行を続ける').click()")
             wait_for(lambda: evaluate(main_view, "!document.body.innerText.includes('Chronoloftを終了しますか？')"))
-            on_main_thread(lambda: controller.toggle_(None))
+            on_main_thread(post_click)
             wait_for(lambda: on_main_thread(controller.popover.isShown))
             panel = controller.panel
             wait_for(lambda: evaluate(panel, "Boolean(document.querySelector('input[role=combobox]:not(:disabled)'))"))
@@ -355,6 +381,10 @@ def run_native_app(result_path, quit_action=None):
                     }))
             original_command(value, source=source)
         controller.command = command
+        previous_menu = controller.context_menu
+        on_main_thread(right_click)
+        assert menu_closed.wait(5), '右クリックメニューが閉じませんでした'
+        wait_for(lambda: on_main_thread(lambda: controller.context_menu is not previous_menu))
         on_main_thread(lambda: controller.context_menu.performActionForItemAtIndex_(2))
         wait_for(lambda: evaluate(quit_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
         # 継続を選ぶと、計測とサーバーを保持して終了を取り消す。
