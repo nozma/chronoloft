@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import webbrowser
+import uuid
 from flask_migrate import upgrade
 from backend.app import create_app, db
 import os
@@ -69,9 +70,10 @@ class ApiBridge:
     def __init__(self, app_url):
         self.app_url = app_url
 
-    def open_in_browser(self):
-        """外部ブラウザでself.app_urlを開く"""
-        webbrowser.open(self.app_url)
+    def open_in_browser(self, device_id):
+        """アプリの端末IDを引き継いで外部ブラウザを開く。"""
+        device_id = str(uuid.UUID(device_id))
+        webbrowser.open(f'{self.app_url}#chronoloft-device-id={device_id}')
 
     def desktop_ready(self, device_id):
         """通常画面とメニューバーが操作する端末を一致させる。"""

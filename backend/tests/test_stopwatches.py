@@ -48,6 +48,23 @@ class StopwatchTests(DatabaseTestCase):
         self.assertEqual(Record.query.count(), 1)
         self.assertEqual(self.client.get('/api/stopwatches').json['items'][0]['id'], remote['id'])
 
+    def test_local_browser_shares_desktop_session(self):
+        browser = self.app.test_client()
+        device = browser.put('/api/stopwatch-devices/' + self.local_id, json=dict(name='作業PC')).json
+        self.assertEqual(device['id'], self.local_id)
+        item = self.start(discord_enabled=False).json['item']
+        self.assertEqual(browser.get('/api/stopwatches').json['items'][0]['id'], item['id'])
+        duplicate = browser.post('/api/stopwatches', json=dict(
+            id=str(uuid.uuid4()), device_id=device['id'], activity_id=self.activity_id))
+        self.assertEqual(duplicate.status_code, 409)
+        edited = browser.post(f"/api/stopwatches/{item['id']}/edit", json=dict(
+            revision=item['revision'], memo='ブラウザーで編集')).json['item']
+        self.assertFalse(edited['discord_enabled'])
+        self.assertEqual(self.client.get('/api/stopwatches').json['items'][0]['memo'], 'ブラウザーで編集')
+        self.assertEqual(self.operate(edited, 'complete').status_code, 200)
+        self.assertEqual(browser.get('/api/stopwatches').json['items'], [])
+        self.assertEqual(Record.query.count(), 1)
+
     def test_complete_retry_is_idempotent_and_cannot_resurrect(self):
         item = self.start().json['item']
         first = self.operate(item, 'complete').json['item']

@@ -9,7 +9,15 @@ from unittest.mock import patch
 
 
 with patch.object(sys, 'path', [str(Path(__file__).resolve().parents[2]), *sys.path]):
-    from main import find_free_port
+    from main import ApiBridge, find_free_port
+
+
+class DesktopBrowserTests(unittest.TestCase):
+    def test_browser_receives_desktop_device_id(self):
+        device_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+        with patch('main.webbrowser.open') as open_browser:
+            ApiBridge('http://127.0.0.1:5180').open_in_browser(device_id)
+        open_browser.assert_called_once_with(f'http://127.0.0.1:5180#chronoloft-device-id={device_id}')
 
 
 class DesktopPortTests(unittest.TestCase):
