@@ -1,11 +1,72 @@
-"""実際のMacウィンドウとサーバーを使う任意実行の結合テスト。"""
+"""起動時の画面調整と、任意実行のMacウィンドウ結合テスト。"""
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock, patch
+
+
+class DesktopWindowSizeTests(unittest.TestCase):
+    def fit_window(self, frame, visible, *, use_main_screen=False):
+        with patch.object(sys, 'path', [str(Path(__file__).resolve().parents[2]), *sys.path]):
+            from main import fit_macos_window_to_screen
+
+        def rect(x, y, width, height):
+            return SimpleNamespace(
+                origin=SimpleNamespace(x=x, y=y),
+                size=SimpleNamespace(width=width, height=height),
+            )
+
+        screen = Mock()
+        screen.visibleFrame.return_value = rect(*visible)
+        native = Mock()
+        native.screen.return_value = None if use_main_screen else screen
+        native.frame.return_value = rect(*frame)
+        appkit = SimpleNamespace(NSMakeRect=lambda *args: args, NSScreen=Mock())
+        appkit.NSScreen.mainScreen.return_value = screen
+        with patch.dict(sys.modules, AppKit=appkit):
+            fit_macos_window_to_screen(SimpleNamespace(native=native))
+        return native.setFrame_display_.call_args.args[0]
+
+    def test_keeps_default_size_when_it_fits(self):
+        self.assertEqual(
+            self.fit_window((320, 160, 1280, 800), (0, 80, 1920, 976)),
+            (320, 160, 1280, 800),
+        )
+
+    def test_shrinks_to_small_screen_above_bottom_dock(self):
+        self.assertEqual(
+            self.fit_window((-128, -16, 1280, 800), (0, 70, 1024, 674)),
+            (0, 70, 1024, 674),
+        )
+
+    def test_shrinks_only_height_when_width_fits(self):
+        self.assertEqual(
+            self.fit_window((80, -16, 1280, 800), (0, 70, 1440, 674)),
+            (80, 70, 1280, 674),
+        )
+
+    def test_keeps_window_right_of_left_dock(self):
+        self.assertEqual(
+            self.fit_window((0, 100, 1280, 800), (80, 0, 1200, 1000)),
+            (80, 100, 1200, 800),
+        )
+
+    def test_fits_external_screen_with_negative_coordinates(self):
+        self.assertEqual(
+            self.fit_window((-1520, 300, 1280, 800), (-1440, 80, 1360, 674)),
+            (-1440, 80, 1280, 674),
+        )
+
+    def test_uses_main_screen_before_window_is_assigned(self):
+        self.assertEqual(
+            self.fit_window((40, 20, 1280, 800), (0, 0, 1024, 744), use_main_screen=True),
+            (0, 0, 1024, 744),
+        )
 
 if '--native-tests' in sys.argv:
     os.environ['CHRONOLOFT_TEST_NATIVE'] = '1'
@@ -17,10 +78,32 @@ if '--native-tests' in sys.argv:
     'MacのGUI環境で CHRONOLOFT_TEST_NATIVE=1 を指定した場合だけ実行',
 )
 class DesktopLifecycleTests(unittest.TestCase):
+    def isolate_window_frame(self, name):
+        from AppKit import NSWindow
+        self.addCleanup(NSWindow.removeFrameUsingName_, name)
+        return name
+
+    def test_window_geometry_survives_restart(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result_path = Path(directory) / 'geometry.json'
+            frame_name = self.isolate_window_frame('ChronoloftGeometryTest-' + Path(directory).name)
+            frames = []
+            for action in ('save', 'restore'):
+                result = subprocess.run(
+                    [sys.executable, str(Path(__file__).resolve()), '--geometry-app',
+                     str(result_path), frame_name, action],
+                    capture_output=True, text=True, timeout=20,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                frames.append(json.loads(result_path.read_text()))
+                result_path.unlink()
+            self.assertEqual(frames[0], frames[1])
+
     def test_close_reopen_and_quit_keep_expected_server_lifetime(self):
         root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory:
             result_path = Path(directory) / 'result.json'
+            self.isolate_window_frame('ChronoloftLifecycleTest-' + Path(directory).name)
             process = subprocess.Popen(
                 [sys.executable, str(Path(__file__).resolve()), '--native-app', str(result_path)],
                 cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -54,6 +137,7 @@ class DesktopLifecycleTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory:
             result_path = Path(directory) / 'result.json'
+            self.isolate_window_frame('ChronoloftLifecycleTest-' + Path(directory).name)
             process = subprocess.Popen(
                 [sys.executable, str(Path(__file__).resolve()), '--menubar-app', str(result_path), action],
                 cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -134,6 +218,7 @@ def run_native_app(result_path, quit_action=None):
 
     def create_window(*args, **kwargs):
         window = original_create_window(*args, **kwargs)
+        window._frame_autosave_name = 'ChronoloftLifecycleTest-' + Path(result_path).parent.name
         window.events.shown += ready.set
         captured.update(window=window, url=kwargs['url'] + '/health')
         return window
@@ -406,8 +491,49 @@ def run_native_app(result_path, quit_action=None):
         runpy.run_path(str(root / 'main.py'), run_name='__main__')
 
 
+def run_geometry_app(result_path, frame_name, action):
+    from AppKit import NSMakeRect
+    from Foundation import NSUserDefaults
+    from PyObjCTools import AppHelper
+    import webview
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from main import restore_macos_window
+
+    # 通常の記録・端末ID・ウィンドウ設定を使わずに、別プロセス間の復元を確認する。
+    window = webview.create_window('Chronoloft Window Test', html='<html></html>', width=1280, height=800)
+    window._frame_autosave_name = frame_name
+    window.events.before_show += restore_macos_window
+
+    def check_geometry():
+        try:
+            native = window.native
+            if action == 'save':
+                visible = native.screen().visibleFrame()
+                native.setFrame_display_(NSMakeRect(
+                    visible.origin.x + 20, visible.origin.y + 20,
+                    min(1000, visible.size.width - 40), min(600, visible.size.height - 40),
+                ), False)
+            frame = native.frame()
+            Path(result_path).write_text(json.dumps([
+                frame.origin.x, frame.origin.y, frame.size.width, frame.size.height,
+            ]))
+        except BaseException:
+            import traceback
+            traceback.print_exc()
+            os._exit(1)
+        window.destroy()
+
+    window.events.shown += lambda: AppHelper.callAfter(check_geometry)
+    webview.start(private_mode=True)
+    # 次のプロセスを直ちに起動するテストでも、保存の反映を待ってから終了する。
+    NSUserDefaults.standardUserDefaults().synchronize()
+
+
 if __name__ == '__main__':
-    if '--menubar-app' in sys.argv:
+    if '--geometry-app' in sys.argv:
+        run_geometry_app(*sys.argv[-3:])
+    elif '--menubar-app' in sys.argv:
         run_native_app(sys.argv[-2], sys.argv[-1])
     elif '--native-app' in sys.argv:
         run_native_app(sys.argv[-1])
