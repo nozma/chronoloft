@@ -58,7 +58,11 @@ async function initialize() {
     loading = (async () => {
         const status = await request('/api/auth/status', undefined, 'GET');
         const settings = await loadSettings();
-        let id = window.__chronoloftDesktopDeviceId || localStorage.getItem('chronoloft-device-id');
+        // アプリから開いたローカル画面だけ、同じ端末IDを引き継ぐ。
+        const handoff = new URLSearchParams(window.location?.hash?.slice(1) || '').get('chronoloft-device-id');
+        const sharedId = status.local && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(handoff || '') ? handoff : null;
+        let id = window.__chronoloftDesktopDeviceId || sharedId || localStorage.getItem('chronoloft-device-id');
+        if (sharedId) localStorage.setItem('chronoloft-device-id', id);
         if (!id) {
             id = newStopwatchId();
             localStorage.setItem('chronoloft-device-id', id);
@@ -123,6 +127,12 @@ const subscribe = listener => {
 export function useSharedStopwatches() {
     const state = useSyncExternalStore(subscribe, () => snapshot);
     return state;
+}
+
+export async function openStopwatchInBrowser() {
+    await initialize();
+    if (!snapshot.ready || !snapshot.device || snapshot.error) return;
+    return window.pywebview.api.open_in_browser(snapshot.device.id);
 }
 
 export async function stopwatchRequest(path, data, method) {

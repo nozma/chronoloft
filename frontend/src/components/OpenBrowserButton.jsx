@@ -1,3 +1,4 @@
+import { openStopwatchInBrowser } from '../services/stopwatches';
 import { useI18n } from '../i18n/I18nContext';
 import { IconButton, Tooltip } from '@mui/material';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
@@ -20,7 +21,7 @@ function OpenBrowserButton() {
 
     const handleOpenBrowser = () => {
         if (window.pywebview?.api?.open_in_browser) {
-            window.pywebview.api.open_in_browser();
+            openStopwatchInBrowser();
         } else {
             console.warn("PyWebView API is not available.");
         }

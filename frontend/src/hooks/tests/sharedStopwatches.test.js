@@ -8,7 +8,7 @@ const source = fs.readFileSync(new URL('../../services/stopwatches.js', import.m
     .replace(/^import .*;\n/gm, '')
     .replace(/export /g, '');
 
-function harness(saved = {}, local = true) {
+function harness(saved = {}, local = true, hash = '') {
     const storage = new Map(Object.entries(saved));
     const calls = [];
     const items = [];
@@ -19,10 +19,10 @@ function harness(saved = {}, local = true) {
     let timeoutCallback;
     const sharedSettings = { settings: {} };
     const context = vm.createContext({
-        crypto: webcrypto, Date, Set, Promise, Event, AbortController,
+        crypto: webcrypto, Date, Set, Promise, Event, AbortController, URLSearchParams,
         setTimeout: callback => { timeoutCallback = callback; return 1; }, clearTimeout() {},
         localStorage: { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) },
-        window: { dispatchEvent() {} },
+        window: { location: { hash }, pywebview: { api: { open_in_browser: id => calls.push(['browser', id]) } }, dispatchEvent() {} },
         useSyncExternalStore: (subscribe, get) => { subscriber ||= subscribe(() => {}); return get(); },
         loadSettings: async () => sharedSettings,
         getSettingsSnapshot: () => sharedSettings,
@@ -51,7 +51,7 @@ function harness(saved = {}, local = true) {
             return { ok: true, json: async () => data };
         },
     });
-    vm.runInContext(source + '\nthis.api = { logoutDevice, useSharedStopwatches, initialize, newStopwatchId, sharedLiveRecords, elapsedMilliseconds, operateStopwatch, operateStopwatchWithDraft, saveDeviceAndLanSettings, stopwatchRequest, refreshStopwatches, currentStopwatch, get: () => snapshot };', context);
+    vm.runInContext(source + '\nthis.api = { openStopwatchInBrowser, logoutDevice, useSharedStopwatches, initialize, newStopwatchId, sharedLiveRecords, elapsedMilliseconds, operateStopwatch, operateStopwatchWithDraft, saveDeviceAndLanSettings, stopwatchRequest, refreshStopwatches, currentStopwatch, get: () => snapshot };', context);
     return { api: context.api, storage, calls, items, poll: () => interval(), fail: value => { fail = value; }, intercept: value => { intercept = value; }, timeout: () => timeoutCallback() };
 }
 
@@ -276,4 +276,27 @@ test('計測の破棄に失敗したらログアウトせず再試行できる',
     assert.equal(h.calls.some(([path]) => path === '/api/auth/logout'), false);
     assert.equal(h.api.get().busy, false);
     assert.equal(h.api.get().ready, true);
+});
+
+
+test('アプリから開くブラウザーは同じ端末IDを引き継ぎ、再読み込みでも保持する', async () => {
+    const app = harness();
+    await app.api.openStopwatchInBrowser();
+    const id = app.api.get().device.id;
+    assert.equal(app.calls.find(([path]) => path === 'browser')[1], id);
+    const browser = harness({ 'chronoloft-device-id': 'previous-browser' }, true, `#chronoloft-device-id=${id}`);
+    await browser.api.initialize();
+    assert.equal(browser.api.get().device.id, id);
+    const reload = harness(Object.fromEntries(browser.storage));
+    await reload.api.initialize();
+    assert.equal(reload.api.get().device.id, id);
+});
+
+test('LAN接続や不正な引き継ぎIDではブラウザー固有の端末IDを保持する', async () => {
+    const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    for (const [local, hash] of [[false, `#chronoloft-device-id=${id}`], [true, '#chronoloft-device-id=invalid']]) {
+        const browser = harness({ 'chronoloft-device-id': 'existing' }, local, hash);
+        await browser.api.initialize();
+        assert.equal(browser.api.get().device.id, 'existing');
+    }
 });
