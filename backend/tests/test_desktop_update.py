@@ -13,7 +13,7 @@ from test_backend import DatabaseTestCase
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from scripts import release_macos as release
-from backend.desktop_updater import allow_update_termination, cancel_update_termination
+from backend.desktop_updater import allow_update_termination, cancel_update_termination, check_for_updates
 
 
 class DesktopUpdateGateTests(DatabaseTestCase):
@@ -78,6 +78,13 @@ class DesktopUpdateGateTests(DatabaseTestCase):
 
 
 class DesktopTerminationTests(unittest.TestCase):
+    def test_menubar_update_uses_the_installed_controller(self):
+        controller = Mock()
+        window = SimpleNamespace(_sparkle=(controller, None))
+        check_for_updates(window)
+        controller.checkForUpdates_.assert_called_once_with(None)
+        check_for_updates(SimpleNamespace())
+
     def test_canceled_update_checks_again_on_retry(self):
         state = Mock()
         state.prepare.side_effect = [False, False, True]

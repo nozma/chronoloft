@@ -45,6 +45,15 @@ def prepare_desktop_termination(app, device_id):
     """終了直前の再確認から受付停止までを、計測操作と同じロックで行う。"""
     from backend.app.routes.stopwatch_routes import _lock
     with _lock:
+        if device_id is None:
+            from backend.app.models import StopwatchDevice, StopwatchSession
+            with app.app_context():
+                # 端末IDの復元前は、既存の起動PC計測を無確認で残して終了しない。
+                unknown = StopwatchSession.query.join(StopwatchDevice, StopwatchSession.device_id == StopwatchDevice.id).filter(
+                    StopwatchDevice.is_local.is_(True), StopwatchSession.slot == 'main',
+                    StopwatchSession.status.in_(['running', 'confirming'])).first()
+                if unknown:
+                    return False
         if read_desktop_state(app, device_id)['session']:
             return False
         app.extensions['desktop_update_gate'].pending = True
@@ -80,6 +89,8 @@ def install_menubar(window, app_provider):
             self.polling = False
             self.state = None
             self.images = {}
+            self.confirmation_views = set()
+            self.termination_waiting = False
             self.status = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
             self.status.button().setTarget_(self)
             self.status.button().setAction_('toggle:')
@@ -159,6 +170,9 @@ def install_menubar(window, app_provider):
                     self.popover.performClose_(None)
                     self.panel = None
             self.tick_(None)
+            if self.termination_waiting:
+                self.termination_waiting = False
+                NSApplication.sharedApplication().terminate_(None)
 
         @objc.python_method
         def emit(self, command, panel=False):
@@ -176,6 +190,9 @@ def install_menubar(window, app_provider):
 
         @objc.python_method
         def show_panel(self):
+            if 'main' in self.confirmation_views:
+                self.show_main(preserve_confirmation=False)
+                return
             if not self.device_id:
                 self.show_main()
                 return
@@ -184,7 +201,8 @@ def install_menubar(window, app_provider):
                 content = WKUserContentController.alloc().init()
                 content.addScriptMessageHandler_name_(self, 'chronoloft')
                 content.addUserScript_(WKUserScript.alloc().initWithSource_injectionTime_forMainFrameOnly_(
-                    f'window.__chronoloftDesktopDeviceId = {json.dumps(self.device_id)};', 0, True))
+                    f'window.__chronoloftDesktopDeviceId = {json.dumps(self.device_id)}; '
+                    f'window.__chronoloftHasUpdater = {json.dumps(bool(getattr(window, "_sparkle", None)))};', 0, True))
                 config.setUserContentController_(content)
                 self.panel = WKWebView.alloc().initWithFrame_configuration_(NSMakeRect(0, 0, 390, 560), config)
                 self.panel.setUIDelegate_(self)
@@ -200,7 +218,10 @@ def install_menubar(window, app_provider):
                 "window.dispatchEvent(new Event('chronoloft:panel-opened'))", None)
 
         @objc.python_method
-        def show_main(self, settings=False):
+        def show_main(self, settings=False, preserve_confirmation=True):
+            if preserve_confirmation and 'panel' in self.confirmation_views and 'main' not in self.confirmation_views:
+                self.show_panel()
+                return
             self.popover.performClose_(None)
             if window.native.isMiniaturized():
                 window.native.deminiaturize_(None)
@@ -211,8 +232,12 @@ def install_menubar(window, app_provider):
                     "window.dispatchEvent(new Event('chronoloft:open-settings'))", None)
 
         @objc.python_method
-        def command(self, command):
-            if command == 'panel-ready':
+        def command(self, command, source='main'):
+            if command == 'confirmation-open':
+                self.confirmation_views.add(source)
+            elif command == 'confirmation-closed':
+                self.confirmation_views.discard(source)
+            elif command == 'panel-ready':
                 self.show_panel()
             elif command in ('open', 'settings'):
                 self.show_main(command == 'settings')
@@ -220,6 +245,11 @@ def install_menubar(window, app_provider):
                 NSApplication.sharedApplication().terminate_(None)
             elif command == 'quit-ready':
                 NSApplication.sharedApplication().terminate_(None)
+            elif command == 'updates':
+                from backend.desktop_updater import check_for_updates
+                self.popover.performClose_(None)
+                NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+                check_for_updates(window)
 
         @objc.python_method
         def allow_termination(self):
@@ -228,10 +258,18 @@ def install_menubar(window, app_provider):
                 return True
             if prepare_desktop_termination(app, self.device_id):
                 return True
-            # 終了をいったん取り消し、保存・破棄・実行継続を選択してもらう。
-            panel = bool(self.popover.isShown() and self.panel)
-            if not panel:
+            if self.device_id is None:
+                self.termination_waiting = True
                 self.show_main()
+                return False
+            # 終了をいったん取り消し、保存・破棄・実行継続を選択してもらう。
+            panel = 'main' not in self.confirmation_views and bool(
+                'panel' in self.confirmation_views or self.popover.isShown() and self.panel)
+            if panel:
+                if not self.popover.isShown():
+                    self.show_panel()
+            else:
+                self.show_main(preserve_confirmation=False)
             self.emit('quit', panel=panel)
             return False
 
@@ -251,7 +289,7 @@ def install_menubar(window, app_provider):
                     if isinstance(height, (int, float)) and 0 < height < 100000:
                         self.popover.setContentSize_(NSMakeSize(390, max(200, min(560, height))))
                 else:
-                    self.command(body.get('command'))
+                    self.command(body.get('command'), source='panel')
 
         def webView_decidePolicyForNavigationAction_decisionHandler_(self, view, action, handler):
             handler(1 if self.trusted(action.request().URL().absoluteString()) else 0)

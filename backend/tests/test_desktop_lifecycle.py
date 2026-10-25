@@ -47,6 +47,9 @@ class DesktopLifecycleTests(unittest.TestCase):
     def test_menubar_panel_and_quit_discard(self):
         self.run_menubar_case('cancel')
 
+    def test_quit_preserves_main_window_confirmation(self):
+        self.run_menubar_case('main-complete')
+
     def run_menubar_case(self, action):
         root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory:
@@ -63,9 +66,9 @@ class DesktopLifecycleTests(unittest.TestCase):
                 self.fail(f'メニューバーの操作が完了しませんでした。\n{stdout}\n{stderr}')
             self.assertEqual(process.returncode, 0, f'{stdout}\n{stderr}')
             result = json.loads(result_path.read_text())
-            self.assertEqual(result['status'], 'completed' if action == 'complete' else 'cancelled')
-            self.assertEqual(result['saved'], action == 'complete')
-            self.assertEqual(result['memo'], '保存確認で入力' if action == 'complete' else 'メニューバーで入力')
+            self.assertEqual(result['status'], 'completed' if action.endswith('complete') else 'cancelled')
+            self.assertEqual(result['saved'], action.endswith('complete'))
+            self.assertEqual(result['memo'], '保存確認で入力' if action.endswith('complete') else 'メニューバーで入力')
 
 
 def run_native_app(result_path, quit_action=None):
@@ -122,7 +125,7 @@ def run_native_app(result_path, quit_action=None):
             backend_app.db.session.add(Record(activity_id=activity.id, value=10,
                 created_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=1)))
             backend_app.db.session.add_all([LocalSetting(key='language', value='ja'), LocalSetting(key='discordEnabled', value=False)])
-            if quit_action == 'complete':
+            if quit_action.endswith('complete'):
                 backend_app.db.session.add(LocalSetting(key='recordSaveMode', value='confirm'))
             backend_app.db.session.commit()
     ready = threading.Event()
@@ -247,6 +250,11 @@ def run_native_app(result_path, quit_action=None):
 
         wait_for(lambda: on_main_thread(lambda: bool(getattr(window, '_menubar', None) and window._menubar.device_id)))
         controller = window._menubar
+        # 配布版の既存更新操作を代役に置き換え、ネットワーク送信せず入口を検証する。
+        from types import SimpleNamespace
+        update_checks = []
+        window._sparkle = (SimpleNamespace(checkForUpdates_=lambda sender: update_checks.append(True)),
+                           SimpleNamespace(installing=False), None)
         wait_for(lambda: on_main_thread(cocoa_app.activationPolicy) == NSApplicationActivationPolicyAccessory)
         # 同じ設定保存先の変更で、再起動なしにDock表示が往復する。
         for enabled, policy in [(True, NSApplicationActivationPolicyRegular), (False, NSApplicationActivationPolicyAccessory)]:
@@ -260,6 +268,11 @@ def run_native_app(result_path, quit_action=None):
         wait_for(lambda: evaluate(panel, "document.body.innerText.includes('最近のアクティビティ')"))
         assert evaluate(panel, 'window.__chronoloftDesktopDeviceId') == controller.device_id
         wait_for(lambda: evaluate(panel, "Array.from(document.querySelectorAll('button')).some(b => b.textContent === 'メニューバーテスト' && !b.disabled)"))
+        evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'アップデートを確認…').click()")
+        wait_for(lambda: update_checks == [True])
+        wait_for(lambda: not on_main_thread(controller.popover.isShown))
+        on_main_thread(lambda: controller.toggle_(None))
+        wait_for(lambda: on_main_thread(controller.popover.isShown))
         snapshot(panel, 'idle')
         evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'メニューバーテスト').click()")
         wait_for(lambda: read_desktop_state(app, controller.device_id)['session'] is not None)
@@ -279,17 +292,49 @@ def run_native_app(result_path, quit_action=None):
         snapshot(panel, 'running')
         # 既存画面にも同じ端末の計測と詳細が反映される。
         wait_for(lambda: evaluate(window.native.contentView(), "Boolean(document.querySelector('input[role=combobox][value=\"メニューバーで入力\"]'))"))
-        if quit_action == 'complete':
+        if quit_action == 'cancel':
+            # 起動直後に端末IDがまだ復元されていない場合も、確認を飛ばさない。
+            device_id = controller.device_id
+            def unbind_and_quit():
+                controller.device_id = None
+                assert not controller.allow_termination()
+                assert controller.termination_waiting
+                assert not app.extensions['desktop_update_gate'].pending
+            on_main_thread(unbind_and_quit)
+            wait_for(lambda: not on_main_thread(controller.popover.isShown))
+            on_main_thread(lambda: controller.bind_device(device_id))
+            main_view = window.native.contentView()
+            wait_for(lambda: evaluate(main_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
+            evaluate(main_view, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === '実行を続ける').click()")
+            wait_for(lambda: evaluate(main_view, "!document.body.innerText.includes('Chronoloftを終了しますか？')"))
+            on_main_thread(lambda: controller.toggle_(None))
+            wait_for(lambda: on_main_thread(controller.popover.isShown))
+            panel = controller.panel
+            wait_for(lambda: evaluate(panel, "Boolean(document.querySelector('input[role=combobox]:not(:disabled)'))"))
+        quit_view = panel
+        if quit_action.endswith('complete'):
             # 保存確認画面で入力中の内容も、終了時の保存へ引き継ぐ。
-            evaluate(panel, "document.querySelector('button[aria-label=\"終了・保存\"]').click()")
-            wait_for(lambda: evaluate(panel, "Boolean(document.querySelector('[role=dialog] input[role=combobox]'))"))
-            evaluate(panel, """(() => {
+            if quit_action == 'main-complete':
+                on_main_thread(controller.show_main)
+                quit_view = window.native.contentView()
+            evaluate(quit_view, "document.querySelector('button[aria-label=\"終了・保存\"]').click()")
+            wait_for(lambda: evaluate(quit_view, "Boolean(document.querySelector('[role=dialog] input[role=combobox]'))"))
+            evaluate(quit_view, """(() => {
                 const input = document.querySelector('[role=dialog] input[role=combobox]');
                 Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '保存確認で入力');
                 input.dispatchEvent(new Event('input', {bubbles:true}));
             })()""")
+            owner = 'main' if quit_action == 'main-complete' else 'panel'
+            wait_for(lambda: on_main_thread(lambda: owner in controller.confirmation_views))
+            if owner == 'main':
+                on_main_thread(lambda: controller.command('panel-ready'))
+                wait_for(lambda: not on_main_thread(controller.popover.isShown))
+            else:
+                # パネルが閉じていても、その保存確認を優先して終了確認を開く。
+                on_main_thread(lambda: controller.popover.performClose_(None))
+                wait_for(lambda: not on_main_thread(controller.popover.isShown))
         original_command = controller.command
-        def command(value):
+        def command(value, source='main'):
             if value == 'quit-ready':
                 with app.app_context():
                     item = StopwatchSession.query.filter_by(device_id=controller.device_id, slot='main').one()
@@ -297,19 +342,19 @@ def run_native_app(result_path, quit_action=None):
                         'status': item.status, 'saved': item.record_id is not None,
                         'memo': backend_app.db.session.get(Record, item.record_id).memo if item.record_id else item.memo,
                     }))
-            original_command(value)
+            original_command(value, source=source)
         controller.command = command
         on_main_thread(lambda: cocoa_app.terminate_(None))
-        wait_for(lambda: evaluate(panel, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
+        wait_for(lambda: evaluate(quit_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
         # 継続を選ぶと、計測とサーバーを保持して終了を取り消す。
-        evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === '実行を続ける').click()")
-        wait_for(lambda: evaluate(panel, "!document.body.innerText.includes('Chronoloftを終了しますか？')"))
+        evaluate(quit_view, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === '実行を続ける').click()")
+        wait_for(lambda: evaluate(quit_view, "!document.body.innerText.includes('Chronoloftを終了しますか？')"))
         assert read_desktop_state(app, controller.device_id)['session'] is not None
         on_main_thread(lambda: cocoa_app.terminate_(None))
-        wait_for(lambda: evaluate(panel, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
-        label = '保存して終了' if quit_action == 'complete' else '破棄して終了'
-        wait_for(lambda: evaluate(panel, f"Array.from(document.querySelectorAll('button')).some(b => b.textContent === '{label}' && !b.disabled)"))
-        evaluate(panel, f"Array.from(document.querySelectorAll('button')).find(b => b.textContent === '{label}').click()")
+        wait_for(lambda: evaluate(quit_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
+        label = '保存して終了' if quit_action.endswith('complete') else '破棄して終了'
+        wait_for(lambda: evaluate(quit_view, f"Array.from(document.querySelectorAll('button')).some(b => b.textContent === '{label}' && !b.disabled)"))
+        evaluate(quit_view, f"Array.from(document.querySelectorAll('button')).find(b => b.textContent === '{label}').click()")
         wait_for(lambda: Path(result_path).exists())
 
     threading.Thread(target=exercise_lifecycle, daemon=True).start()

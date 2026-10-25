@@ -9,6 +9,18 @@ export function desktopCommand(command) {
     return window.pywebview?.api?.desktop_command(command);
 }
 
+export async function desktopDiscordEnabled(fetchSettings = fetch) {
+    // 閉じたパネルのキャッシュで、直前に変更した公開設定を戻さない。
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+        const response = await fetchSettings('/api/settings/local', { signal: controller.signal });
+        if (!response.ok) throw new Error('設定を読み込めませんでした。');
+        const data = await response.json();
+        return data.settings.discordEnabled !== false;
+    } finally { clearTimeout(timeout); }
+}
+
 export function recentDesktopActivities(activities, records, now = Date.now()) {
     const eligible = activities.filter(item => item.unit === 'minutes' && item.is_active !== false);
     const byId = new Map(eligible.map(item => [item.id, item]));

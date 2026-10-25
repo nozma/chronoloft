@@ -90,3 +90,12 @@ class MenuBarTests(unittest.TestCase):
         self.start(other_id)
         self.start(slot='sub')
         self.assertTrue(prepare_desktop_termination(self.app, self.device_id))
+
+    def test_unbound_desktop_waits_until_its_existing_main_is_identified(self):
+        self.assertTrue(prepare_desktop_termination(self.app, None))
+        self.app.extensions['desktop_update_gate'].cancel()
+        item = self.start()
+        self.assertFalse(prepare_desktop_termination(self.app, None))
+        self.assertFalse(self.app.extensions['desktop_update_gate'].pending)
+        self.client.post(f"/api/stopwatches/{item['id']}/confirm", json={'revision': item['revision']})
+        self.assertFalse(prepare_desktop_termination(self.app, None))

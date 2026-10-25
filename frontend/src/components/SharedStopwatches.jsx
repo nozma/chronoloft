@@ -20,7 +20,7 @@ import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMe
 import { createStopwatchDraft } from '../utils/stopwatchDraft';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import { currentStopwatch, elapsedMilliseconds, newStopwatchId, operateStopwatch, refreshStopwatches, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
-import { desktopCommand } from '../utils/desktop';
+import { desktopCommand, desktopDiscordEnabled } from '../utils/desktop';
 
 function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const { t } = useI18n();
@@ -195,6 +195,12 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     const main = own.find(item => item.slot === 'main');
     const other = state.items.filter(item => item.device_id !== state.device?.id);
     const busy = state.busy || !state.ready || Boolean(state.error);
+    const ownConfirmation = Boolean(pending && pending.item.device_id === state.device?.id && pending.item.slot === 'main');
+
+    useEffect(() => {
+        desktopCommand(ownConfirmation ? 'confirmation-open' : 'confirmation-closed');
+        return () => { if (ownConfirmation) desktopCommand('confirmation-closed'); };
+    }, [ownConfirmation]);
 
     useEffect(() => {
         if (props.desktopPanel || !state.ready || !state.device?.is_local) return;
@@ -220,20 +226,24 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     }, [main, activities, now, state.offset, setActiveActivity]);
     // Discord設定の反映は、起動PC自身のメイン計測に限る。
     useEffect(() => {
-        if (!main || !state.device?.is_local || busy || main.discord_enabled === discordEnabled) return;
+        if (props.desktopPanel || !main || !state.device?.is_local || busy || main.discord_enabled === discordEnabled) return;
         operateStopwatch(main, 'edit', { discord_enabled: discordEnabled }).catch(err => setError(err.message));
-    }, [main, state.device?.is_local, discordEnabled, busy]);
+    }, [props.desktopPanel, main, state.device?.is_local, discordEnabled, busy]);
 
     const start = async activity => {
+        const publishToDiscord = props.desktopPanel ? await desktopDiscordEnabled() : discordEnabled;
         if (autoFilterOnSelect) setFilterState(previous => ({ ...previous, activityNameFilter: activity.name }));
         await stopwatchRequest('/api/stopwatches', {
             id: newStopwatchId(), device_id: state.device.id, activity_id: activity.id,
-            discord_enabled: state.device.is_local && discordEnabled,
+            discord_enabled: state.device.is_local && publishToDiscord,
         });
     };
     const openConfirm = async (item, next = null) => {
         const result = item.status === 'confirming' ? { item } : await operateStopwatch(item, 'confirm');
-        setPending({ item: result.item, next });
+        // 一覧の再取得で項目オブジェクトが変わっても、確認中の入力を初期化しない。
+        const activity = activities.find(value => value.id === result.item.activity_id)
+            || { id: result.item.activity_id, name: result.item.activity_name, unit: 'minutes' };
+        setPending({ item: result.item, next, activity });
         return null;
     };
     const desktopAction = command => run(async () => {
@@ -258,7 +268,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         return () => window.removeEventListener('chronoloft:desktop', handle);
     });
     const finishQuit = action => run(async () => {
-        if (pending && action === 'complete') {
+        if (pending?.item.id === quitItem.id && action === 'complete') {
             quittingAfterSave.current = true;
             try {
                 if (!await pendingSubmit.current?.()) {
@@ -268,7 +278,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
             } finally { quittingAfterSave.current = false; }
         } else {
             await operateStopwatch(quitItem, action);
-            if (pending) setPending(null);
+            if (pending?.item.id === quitItem.id) setPending(null);
         }
         setQuitItem(null);
         await desktopCommand('quit-ready');
@@ -317,7 +327,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         </Dialog>
         {pending && <AddRecordDialog open title={`${pending.item.device_name}：${pending.item.activity_name}`}
             submitRef={pendingSubmit}
-            activity={activities.find(item => item.id === pending.item.activity_id) || { id: pending.item.activity_id, name: pending.item.activity_name, unit: 'minutes' }}
+            activity={pending.activity}
             initialValue={elapsedMilliseconds(pending.item, now + state.offset) / 60000}
             initialMemo={pending.item.memo} initialDate={new Date(pending.item.paused_at).toISOString()}
             autoFocusMemo onClose={() => {
