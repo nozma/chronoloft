@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
 // frontend/src/components/AppHeader.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
 import { LogoutButton } from './LanAccess';
 import OpenBrowserButton from './OpenBrowserButton';
@@ -20,6 +20,11 @@ function AppHeader() {
     const [anchorEl, setAnchorEl] = useState(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const menuOpen = Boolean(anchorEl);
+    useEffect(() => {
+        const openSettings = () => setSettingsOpen(true);
+        window.addEventListener('chronoloft:open-settings', openSettings);
+        return () => window.removeEventListener('chronoloft:open-settings', openSettings);
+    }, []);
 
     return (
         <Box

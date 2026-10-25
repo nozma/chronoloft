@@ -33,7 +33,8 @@ function AddRecordDialog({
     isEdit = false,
     onDelete,
     title,
-    autoFocusMemo = false
+    autoFocusMemo = false,
+    submitRef
 }) {
     const { t } = useI18n();
     const { isMobile } = useSettings();
@@ -104,17 +105,17 @@ function AddRecordDialog({
         setBusy(true);
         setSubmitError('');
         try {
-            if (!selectedActivity) return;
+            if (!selectedActivity) return false;
             if (selectedActivity?.unit === 'count') { // 回数により記録するもの
                 const numValue = parseFloat(value);
                 if (isNaN(numValue) || numValue < 0) {
                     alert(t("Enter a valid count."));
-                    return;
+                    return false;
                 }
                 const dtLocal = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm");
                 if (!dtLocal.isValid) {
                     alert(t("Invalid date and time."));
-                    return;
+                    return false;
                 }
                 const dtUtc = dtLocal.toUTC().toISO();
 
@@ -131,12 +132,12 @@ function AddRecordDialog({
 
                 if (!startLocal.isValid || !endLocal.isValid) {
                     alert(t("Invalid start or end time."));
-                    return;
+                    return false;
                 }
                 // バリデーション: 開始<=終了
                 if (startLocal > endLocal) {
                     alert(t("Start time must not be later than end time."));
-                    return;
+                    return false;
                 }
 
                 const duration = endLocal.diff(startLocal, 'minutes').toObject().minutes ?? 0;
@@ -150,13 +151,22 @@ function AddRecordDialog({
                 await onSubmit(recordData);
             }
             onClose();
+            return true;
         } catch (error) {
             setSubmitError(error.message || '保存に失敗しました。');
+            return false;
         } finally {
             submitting.current = false;
             setBusy(false);
         }
     };
+
+    // 終了確認からも、入力中の保存内容を同じ検証・保存処理に渡す。
+    useEffect(() => {
+        if (!submitRef) return;
+        submitRef.current = handleSubmit;
+        return () => { submitRef.current = null; };
+    });
 
     const handleDelete = async () => {
         if (!onDelete) return;

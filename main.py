@@ -73,6 +73,20 @@ class ApiBridge:
         """外部ブラウザでself.app_urlを開く"""
         webbrowser.open(self.app_url)
 
+    def desktop_ready(self, device_id):
+        """通常画面とメニューバーが操作する端末を一致させる。"""
+        if sys.platform == 'darwin':
+            from PyObjCTools import AppHelper
+            desktop_state['device_id'] = device_id
+            if controller := desktop_state.get('menubar'):
+                AppHelper.callAfter(controller.bind_device, device_id)
+
+    def desktop_command(self, command):
+        if sys.platform == 'darwin':
+            from PyObjCTools import AppHelper
+            if controller := desktop_state.get('menubar'):
+                AppHelper.callAfter(controller.command, command)
+
 
 def configure_macos_window(window):
     """Macでは画面を閉じても常駐し、Dockから同じ画面を再表示する。"""
@@ -95,6 +109,9 @@ def configure_macos_window(window):
             from backend.desktop_updater import allow_update_termination, cancel_update_termination
             provider = lambda: desktop_state.get('app')
             if not allow_update_termination(window, provider):
+                cancel_update_termination(window, provider)
+                return 0
+            if (controller := getattr(window, '_menubar', None)) and not controller.allow_termination():
                 cancel_update_termination(window, provider)
                 return 0
             result = super().applicationShouldTerminate_(sender)
@@ -120,6 +137,19 @@ def configure_macos_window(window):
     from PyObjCTools import AppHelper
     # メニュー作成とウィンドウ初期化の完了後、Cocoaのメインスレッドで組み込む。
     AppHelper.callAfter(install_updater, window, lambda: desktop_state.get('app'))
+    from backend.desktop_menubar import install_menubar
+    def install_desktop_controls():
+        import logging
+        try:
+            if not install_menubar(window, lambda: desktop_state.get('app')):
+                AppHelper.callLater(0.1, install_desktop_controls)
+                return
+            desktop_state['menubar'] = window._menubar
+            if device_id := desktop_state.get('device_id'):
+                window._menubar.bind_device(device_id)
+        except Exception:
+            logging.getLogger(__name__).exception('メニューバーを初期化できませんでした')
+    AppHelper.callAfter(install_desktop_controls)
 
 
 if __name__ == '__main__':

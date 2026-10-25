@@ -6,6 +6,13 @@ import sys
 logger = logging.getLogger(__name__)
 
 
+def check_for_updates(window):
+    """Dock非表示時も、既存の手動更新処理と計測確認を利用する。"""
+    sparkle = getattr(window, '_sparkle', None)
+    if sparkle:
+        sparkle[0].checkForUpdates_(None)
+
+
 def install_updater(window, app_provider):
     if sys.platform != 'darwin' or not getattr(sys, 'frozen', False):
         return

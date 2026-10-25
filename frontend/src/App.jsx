@@ -18,6 +18,8 @@ import { ActivityProvider } from './contexts/ActivityContext';
 import { RecordProvider } from './contexts/RecordContext';
 import AppHeader from './components/AppHeader';
 import { useSettings } from './contexts/SettingsContext';
+import MenuBarPanel from './components/MenuBarPanel';
+import { isMenuBarPanel } from './utils/desktop';
 
 function App() {
     const { language } = useI18n();
@@ -96,7 +98,7 @@ function App() {
                                     <FilterProvider>
                                         <ActiveActivityProvider>
                                             <div>
-                                                <AppHeader />
+                                                {isMenuBarPanel() ? <MenuBarPanel /> : <><AppHeader />
                                                 <Box
                                                     sx={{
                                                         display: 'grid',
@@ -121,6 +123,7 @@ function App() {
                                                         </Box>
                                                     </Box>
                                                 </Box>
+                                                </>}
                                             </div>
                                         </ActiveActivityProvider>
                                     </FilterProvider>

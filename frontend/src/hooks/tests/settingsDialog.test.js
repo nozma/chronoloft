@@ -9,7 +9,7 @@ const source = transformSync(readFileSync(new URL('../../components/SettingsDial
 }).code;
 const defaults = {
     language: 'en', autoFilterOnSelect: true, themeMode: 'system', layoutMode: 'one-column',
-    recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto',
+    recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', showDockIcon: false,
 };
 
 function dialog() {
@@ -56,7 +56,7 @@ function dialog() {
             } }),
         },
     };
-    const context = vm.createContext({ module: { exports: {} }, require: name => {
+    const context = vm.createContext({ window: { pywebview: { api: { desktop_ready() {} } } }, module: { exports: {} }, require: name => {
         assert.ok(name in modules, name);
         return modules[name];
     } });
@@ -99,6 +99,10 @@ function dialog() {
             find('RadioGroup', props => ['system', 'light', 'dark'].includes(props.value)).onChange({ target: { value } });
             render();
         },
+        changeDock(value) {
+            find('FormControlLabel', props => props.label === 'Show icon in Dock').control.props.onChange({ target: { checked: value } });
+            render();
+        },
     };
 }
 
@@ -127,4 +131,14 @@ test('編集中のテーマは同期で消さず、保存時に別項目の変�
     await ui.apply();
     assert.deepEqual(ui.writes, [{ themeMode: 'light' }]);
     assert.equal(ui.settings.recordSaveMode, 'confirm');
+});
+
+test('Dock表示の変更を適用し、リセットでは非表示に戻す', async () => {
+    const ui = dialog();
+    ui.changeDock(true);
+    await ui.apply();
+    assert.deepEqual(ui.writes, [{ showDockIcon: true }]);
+    ui.reset();
+    await ui.apply();
+    assert.equal(ui.settings.showDockIcon, false);
 });

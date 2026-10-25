@@ -6,6 +6,10 @@ import './index.css'
 import App from './App.jsx'
 import { SettingsProvider } from './contexts/SettingsContext';
 
+if (new URLSearchParams(window.location.search).get('menubar') === '1') {
+    document.documentElement.dataset.menubar = 'true';
+}
+
 // 全APIの認証切れを検知し、操作画面を閉じる。
 const originalFetch = window.fetch.bind(window);
 window.fetch = async (...args) => {

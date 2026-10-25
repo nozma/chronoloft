@@ -37,6 +37,7 @@ function SettingsDialog({ open, onClose }) {
         autoFilterOnSelect, themeMode, layoutMode,
         recentDays, recentLimit, recentMinimum,
         discordEnabled, recordSaveMode,
+        showDockIcon,
         settingsError, saveSettings,
     } = useSettings();
 
@@ -50,6 +51,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpRecentMinimum, setTmpRecentMinimum] = useState(recentMinimum);
     const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
     const [tmpRecordSaveMode, setTmpRecordSaveMode] = useState(recordSaveMode);
+    const [tmpShowDockIcon, setTmpShowDockIcon] = useState(showDockIcon);
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
         if (open && !wasOpen.current) {
@@ -57,6 +59,7 @@ function SettingsDialog({ open, onClose }) {
             originalSettings.current = {
                 language: savedLanguage, autoFilterOnSelect, themeMode, layoutMode,
                 recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode,
+                showDockIcon,
             };
             setSaveError('');
             setTmpLanguage(savedLanguage);
@@ -68,9 +71,10 @@ function SettingsDialog({ open, onClose }) {
             setTmpRecentMinimum(recentLimit === 'all' ? recentMinimum : String(Math.min(Number(recentMinimum), Number(recentLimit))));
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
+            setTmpShowDockIcon(showDockIcon);
         }
         wasOpen.current = open;
-    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode]);
+    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, showDockIcon]);
 
     // リセット用ハンドラ
     const handleReset = () => {
@@ -85,6 +89,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpRecentMinimum(DEFAULT_SETTINGS.recentMinimum);
         setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
         setTmpRecordSaveMode(DEFAULT_SETTINGS.recordSaveMode);
+        setTmpShowDockIcon(DEFAULT_SETTINGS.showDockIcon);
     };
 
     return (
@@ -102,6 +107,10 @@ function SettingsDialog({ open, onClose }) {
                     </FormControl>
                     {/* ------------- 外観関連設定 ------------- */}
                     <Stack spacing={3}>
+                        {typeof window !== 'undefined' && window.pywebview?.api?.desktop_ready && <FormControlLabel
+                            control={<Switch checked={tmpShowDockIcon} onChange={e => setTmpShowDockIcon(e.target.checked)} />}
+                            label={t('Show icon in Dock')}
+                        />}
                         {/* ダークモード・ライトモード切り替え */}
                         <FormControl component="fieldset">
                             <FormLabel component="legend">{t("Theme")}</FormLabel>
@@ -272,6 +281,7 @@ function SettingsDialog({ open, onClose }) {
                                     recentDays: tmpRecentDays, recentLimit: tmpRecentLimit,
                                     recentMinimum: tmpRecentMinimum, discordEnabled: tmpDiscordEnabled,
                                     recordSaveMode: tmpRecordSaveMode,
+                                    showDockIcon: tmpShowDockIcon,
                                 };
                                 // 通常は変更した項目だけを保存し、明示的なリセットでは全項目を反映する。
                                 const changes = Object.fromEntries(Object.entries(next).filter(

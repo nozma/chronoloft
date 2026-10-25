@@ -174,3 +174,15 @@ test('LAN端末の別タブからの変更も反映する', async () => {
     assert.equal(remote.settings.language, 'en');
     unsubscribe();
 });
+
+test('Dock表示は再起動後も復元され、真偽値以外は保存しない', async () => {
+    const server = {};
+    const app = client(server);
+    await app.loadSettings();
+    assert.equal(app.settings.showDockIcon, false);
+    await app.saveSettings({ showDockIcon: true });
+    const restarted = client(server);
+    await restarted.loadSettings();
+    assert.equal(restarted.settings.showDockIcon, true);
+    await assert.rejects(restarted.saveSettings({ showDockIcon: 'false' }));
+});
