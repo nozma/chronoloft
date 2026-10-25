@@ -244,7 +244,7 @@ def run_native_app(result_path, quit_action=None):
         assert finished.wait(5) and not errors, str(errors)
 
     def exercise_menubar(window, cocoa_app):
-        from AppKit import NSApplicationActivationPolicyAccessory, NSApplicationActivationPolicyRegular
+        from AppKit import NSApplicationActivationPolicyAccessory, NSApplicationActivationPolicyRegular, NSEventTypeRightMouseUp
         from backend.desktop_menubar import read_desktop_state
         from backend.app.models import LocalSetting, StopwatchSession, Record
 
@@ -268,7 +268,18 @@ def run_native_app(result_path, quit_action=None):
         wait_for(lambda: evaluate(panel, "document.body.innerText.includes('最近のアクティビティ')"))
         assert evaluate(panel, 'window.__chronoloftDesktopDeviceId') == controller.device_id
         wait_for(lambda: evaluate(panel, "Array.from(document.querySelectorAll('button')).some(b => b.textContent === 'メニューバーテスト' && !b.disabled)"))
-        evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'アップデートを確認…').click()")
+        assert evaluate(panel, "!Array.from(document.querySelectorAll('button')).some(b => ['アップデートを確認…', '終了'].includes(b.textContent))")
+        # 右クリックではパネルを閉じ、標準メニューに更新確認と終了を表示する。
+        def right_click():
+            from Foundation import NSRunLoop, NSRunLoopCommonModes, NSTimer
+            timer = NSTimer.timerWithTimeInterval_repeats_block_(
+                0.2, False, lambda timer: controller.context_menu.cancelTracking())
+            NSRunLoop.currentRunLoop().addTimer_forMode_(timer, NSRunLoopCommonModes)
+            controller.handle_click(SimpleNamespace(type=lambda: NSEventTypeRightMouseUp))
+            assert [str(item.title()) for item in controller.context_menu.itemArray()] == [
+                'アップデートを確認…', '', 'Chronoloftを終了']
+            controller.context_menu.performActionForItemAtIndex_(0)
+        on_main_thread(right_click)
         wait_for(lambda: update_checks == [True])
         wait_for(lambda: not on_main_thread(controller.popover.isShown))
         on_main_thread(lambda: controller.toggle_(None))
@@ -344,7 +355,7 @@ def run_native_app(result_path, quit_action=None):
                     }))
             original_command(value, source=source)
         controller.command = command
-        on_main_thread(lambda: cocoa_app.terminate_(None))
+        on_main_thread(lambda: controller.context_menu.performActionForItemAtIndex_(2))
         wait_for(lambda: evaluate(quit_view, "document.body.innerText.includes('Chronoloftを終了しますか？')"))
         # 継続を選ぶと、計測とサーバーを保持して終了を取り消す。
         evaluate(quit_view, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === '実行を続ける').click()")

@@ -5,7 +5,7 @@ import { useRecords } from '../contexts/RecordContext';
 import { useGroups } from '../contexts/GroupContext';
 import { useSharedStopwatches } from '../services/stopwatches';
 import { useI18n } from '../i18n/I18nContext';
-import { desktopCommand, recentDesktopActivities } from '../utils/desktop';
+import { recentDesktopActivities } from '../utils/desktop';
 import getIconForGroup from '../utils/getIconForGroup';
 import { fetchActivityGroups } from '../services/api';
 import SharedStopwatches from './SharedStopwatches';
@@ -56,13 +56,9 @@ export default function MenuBarPanel() {
             </Box>
         </>}
         <Divider />
-        {window.__chronoloftHasUpdater && <Button onClick={() => controller.current?.desktopAction('updates')}>
-            {t('Check for updates…')}
-        </Button>}
         <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
             <Button onClick={() => controller.current?.desktopAction('open')}>{t('Open app')}</Button>
             <Button onClick={() => controller.current?.desktopAction('settings')}>{t('Settings')}</Button>
-            <Button sx={{ ml: 'auto' }} onClick={() => desktopCommand('quit')}>{t('Quit')}</Button>
         </Stack>
     </Stack>;
 }

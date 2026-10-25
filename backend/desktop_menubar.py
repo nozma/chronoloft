@@ -68,10 +68,11 @@ def install_menubar(window, app_provider):
     from AppKit import (
         NSAlert, NSApplication, NSApplicationActivationPolicyAccessory,
         NSApplicationActivationPolicyRegular, NSFont, NSImage, NSImageLeft,
-        NSObject, NSPopover, NSPopoverBehaviorTransient, NSStatusBar,
+        NSMenu, NSMenuItem, NSEventMaskLeftMouseUp, NSEventMaskRightMouseUp,
+        NSEventTypeRightMouseUp, NSObject, NSPopover, NSPopoverBehaviorTransient, NSStatusBar,
         NSVariableStatusItemLength, NSViewController,
     )
-    from Foundation import NSMakeRect, NSMakeSize, NSTimer, NSURL, NSURLRequest
+    from Foundation import NSMakePoint, NSMakeRect, NSMakeSize, NSTimer, NSURL, NSURLRequest
     from PyObjCTools import AppHelper
     from WebKit import WKUserContentController, WKUserScript, WKWebView
 
@@ -94,6 +95,7 @@ def install_menubar(window, app_provider):
             self.status = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
             self.status.button().setTarget_(self)
             self.status.button().setAction_('toggle:')
+            self.status.button().sendActionOn_(NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp)
             self.status.button().setFont_(NSFont.monospacedDigitSystemFontOfSize_weight_(12, 0))
             self.status.button().setImagePosition_(NSImageLeft)
             self.status.button().setToolTip_('Chronoloft')
@@ -181,12 +183,48 @@ def install_menubar(window, app_provider):
             target.evaluateJavaScript_completionHandler_(script, None)
 
         def toggle_(self, sender):
+            self.handle_click(NSApplication.sharedApplication().currentEvent())
+
+        @objc.python_method
+        def handle_click(self, event):
+            if event and event.type() == NSEventTypeRightMouseUp:
+                self.show_context_menu()
+                return
             if self.popover.isShown():
                 self.popover.performClose_(None)
             elif self.device_id:
                 self.emit('open-panel')
             else:
                 self.show_main()
+
+        @objc.python_method
+        def show_context_menu(self):
+            self.context_menu_from_panel = self.popover.isShown()
+            self.popover.performClose_(None)
+            menu = NSMenu.alloc().init()
+            if getattr(window, '_sparkle', None):
+                item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                    'アップデートを確認…', 'checkUpdates:', '')
+                item.setTarget_(self)
+                menu.addItem_(item)
+                menu.addItem_(NSMenuItem.separatorItem())
+            item = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
+                'Chronoloftを終了', 'quitApp:', '')
+            item.setTarget_(self)
+            menu.addItem_(item)
+            self.context_menu = menu
+            button = self.status.button()
+            menu.popUpMenuPositioningItem_atLocation_inView_(
+                None, NSMakePoint(0, button.bounds().size.height), button)
+
+        def checkUpdates_(self, sender):
+            self.command('updates')
+
+        def quitApp_(self, sender):
+            # 入力していたパネルで終了確認を行い、未保存の詳細も引き継ぐ。
+            if self.context_menu_from_panel and self.panel:
+                self.show_panel()
+            self.command('quit')
 
         @objc.python_method
         def show_panel(self):
@@ -201,8 +239,7 @@ def install_menubar(window, app_provider):
                 content = WKUserContentController.alloc().init()
                 content.addScriptMessageHandler_name_(self, 'chronoloft')
                 content.addUserScript_(WKUserScript.alloc().initWithSource_injectionTime_forMainFrameOnly_(
-                    f'window.__chronoloftDesktopDeviceId = {json.dumps(self.device_id)}; '
-                    f'window.__chronoloftHasUpdater = {json.dumps(bool(getattr(window, "_sparkle", None)))};', 0, True))
+                    f'window.__chronoloftDesktopDeviceId = {json.dumps(self.device_id)};', 0, True))
                 config.setUserContentController_(content)
                 self.panel = WKWebView.alloc().initWithFrame_configuration_(NSMakeRect(0, 0, 390, 560), config)
                 self.panel.setUIDelegate_(self)

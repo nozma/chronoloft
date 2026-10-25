@@ -1,6 +1,5 @@
 export const messages = {
     "en": {
-        "Check for updates…": "Check for updates…",
         "Show icon in Dock": "Show icon in Dock",
         "Recent activities": "Recent activities",
         "Start a stopwatch": "Start a stopwatch",
@@ -185,7 +184,6 @@ export const messages = {
         "{from}–{to} of {count}": "{from}–{to} of {count}"
     },
     "ja": {
-        "Check for updates…": "アップデートを確認…",
         "Show icon in Dock": "Dockにアイコンを表示",
         "Recent activities": "最近のアクティビティ",
         "Start a stopwatch": "計測を開始",
