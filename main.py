@@ -90,6 +90,35 @@ class ApiBridge:
                 AppHelper.callAfter(controller.command, command)
 
 
+def fit_macos_window_to_screen(window):
+    """起動時のウィンドウ全体をDock・メニューバーを除いた領域に収める。"""
+    from AppKit import NSMakeRect, NSScreen
+
+    native = window.native
+    screen = native.screen() or NSScreen.mainScreen()
+    if screen is None:
+        return
+
+    visible = screen.visibleFrame()
+    frame = native.frame()
+    width = min(frame.size.width, visible.size.width)
+    height = min(frame.size.height, visible.size.height)
+    # 外部ディスプレイの座標や、Dockが左右にある場合も考慮する。
+    x = min(max(frame.origin.x, visible.origin.x), visible.origin.x + visible.size.width - width)
+    y = min(max(frame.origin.y, visible.origin.y), visible.origin.y + visible.size.height - height)
+    native.setFrame_display_(NSMakeRect(x, y, width, height), False)
+
+
+def restore_macos_window(window):
+    """前回のサイズ・位置を復元し、現在の画面内に収めて以後の変更を自動保存する。"""
+    # 結合テストは専用の保存名を使い、利用者のウィンドウ設定を変更しない。
+    frame_name = getattr(window, '_frame_autosave_name', 'ChronoloftMainWindow')
+    native = window.native
+    native.setFrameAutosaveName_(frame_name)
+    native.setFrameUsingName_(frame_name)
+    fit_macos_window_to_screen(window)
+
+
 def configure_macos_window(window):
     """Macでは画面を閉じても常駐し、Dockから同じ画面を再表示する。"""
     if sys.platform != 'darwin':
@@ -99,6 +128,7 @@ def configure_macos_window(window):
 
     app = NSApplication.sharedApplication()
     native = window.native
+    restore_macos_window(window)
 
     # 元のデリゲートを継承し、終了メニューや他のウィンドウイベントを維持する。
     class ChronoloftWindowDelegate(type(native.delegate())):
@@ -175,8 +205,8 @@ if __name__ == '__main__':
         title="Chronoloft",
         url=app_url,
         js_api=api,   # フロントエンドから呼び出すAPIを登録
-        width=900,
-        height=600,
+        width=1280,
+        height=800,
     )
     window.events.before_show += configure_macos_window
     # 画面設定や端末IDを、アプリを完全終了した後も保持する。
