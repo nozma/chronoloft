@@ -5,6 +5,16 @@
   padding: 2rem;
 }
 
+html[data-menubar='true'] #root {
+  padding: 0.5rem;
+  min-height: 0;
+}
+
+html[data-menubar='true'] body {
+  display: block;
+  min-height: 0;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;

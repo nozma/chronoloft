@@ -58,7 +58,7 @@ async function initialize() {
     loading = (async () => {
         const status = await request('/api/auth/status', undefined, 'GET');
         const settings = await loadSettings();
-        let id = localStorage.getItem('chronoloft-device-id');
+        let id = window.__chronoloftDesktopDeviceId || localStorage.getItem('chronoloft-device-id');
         if (!id) {
             id = newStopwatchId();
             localStorage.setItem('chronoloft-device-id', id);

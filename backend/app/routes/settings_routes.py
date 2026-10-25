@@ -48,7 +48,7 @@ def install_local_settings(app):
 
 
 def valid(key, value):
-    if key in ('autoFilterOnSelect', 'discordEnabled'):
+    if key in ('autoFilterOnSelect', 'discordEnabled', 'showDockIcon'):
         return type(value) is bool
     if key == 'deviceName':
         return isinstance(value, str) and 1 <= len(value.strip()) <= 80 and value == value.strip()

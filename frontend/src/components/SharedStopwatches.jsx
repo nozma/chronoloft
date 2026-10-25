@@ -1,6 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Alert, Autocomplete, Box, Button, Collapse, IconButton, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Autocomplete, Box, Button, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, TextField, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -19,7 +19,8 @@ import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import { createStopwatchDraft } from '../utils/stopwatchDraft';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
-import { elapsedMilliseconds, newStopwatchId, operateStopwatch, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
+import { currentStopwatch, elapsedMilliseconds, newStopwatchId, operateStopwatch, refreshStopwatches, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
+import { desktopCommand } from '../utils/desktop';
 
 function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const { t } = useI18n();
@@ -174,6 +175,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
 }
 
 const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
+    const { t } = useI18n();
     const state = useSharedStopwatches();
     const { activities, refreshActivities } = useActivities();
     const { setActiveActivity } = useActiveActivity();
@@ -183,13 +185,24 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     const [othersOpen, setOthersOpen] = useState(true);
     const [pending, setPending] = useState(null);
     const [error, setError] = useState('');
+    const [quitItem, setQuitItem] = useState(null);
     const actionLock = useRef(false);
     const submitted = useRef(false);
+    const pendingSubmit = useRef(null);
+    const quittingAfterSave = useRef(false);
     const drafts = useRef({});
-    const own = state.items.filter(item => item.device_id === state.device?.id);
+    const own = state.items.filter(item => item.device_id === state.device?.id && (!props.desktopPanel || item.slot === 'main'));
     const main = own.find(item => item.slot === 'main');
     const other = state.items.filter(item => item.device_id !== state.device?.id);
     const busy = state.busy || !state.ready || Boolean(state.error);
+
+    useEffect(() => {
+        if (props.desktopPanel || !state.ready || !state.device?.is_local) return;
+        const ready = () => window.pywebview?.api?.desktop_ready?.(state.device.id);
+        ready();
+        window.addEventListener('pywebviewready', ready);
+        return () => window.removeEventListener('pywebviewready', ready);
+    }, [props.desktopPanel, state.ready, state.device?.id, state.device?.is_local]);
     const run = async action => {
         if (actionLock.current) return;
         actionLock.current = true;
@@ -223,7 +236,45 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         setPending({ item: result.item, next });
         return null;
     };
+    const desktopAction = command => run(async () => {
+        if (busy) throw new Error(t('Wait for the current operation to finish.'));
+        if (main) await drafts.current[main.id]?.();
+        await desktopCommand(command);
+    });
+    useEffect(() => {
+        const handle = event => {
+            if (event.detail === 'open-panel') { desktopAction('panel-ready'); return; }
+            if (event.detail !== 'quit') return;
+            run(async () => {
+                if (busy) throw new Error(t('Wait for the current operation to finish.'));
+                const saved = main ? await drafts.current[main.id]?.() || main : null;
+                await refreshStopwatches();
+                const latest = saved && currentStopwatch(saved.id);
+                if (latest) setQuitItem(latest);
+                else await desktopCommand('quit-ready');
+            });
+        };
+        window.addEventListener('chronoloft:desktop', handle);
+        return () => window.removeEventListener('chronoloft:desktop', handle);
+    });
+    const finishQuit = action => run(async () => {
+        if (pending && action === 'complete') {
+            quittingAfterSave.current = true;
+            try {
+                if (!await pendingSubmit.current?.()) {
+                    setQuitItem(null);
+                    return;
+                }
+            } finally { quittingAfterSave.current = false; }
+        } else {
+            await operateStopwatch(quitItem, action);
+            if (pending) setPending(null);
+        }
+        setQuitItem(null);
+        await desktopCommand('quit-ready');
+    });
     useImperativeHandle(ref, () => ({
+        desktopAction,
         start: activity => run(async () => {
             if (busy) throw new Error('接続状態を確認してください。');
             if (main?.activity_id === activity.id) return;
@@ -243,7 +294,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         {state.warning && <Alert severity="warning">{state.warning}</Alert>}
         {!state.ready && <Typography variant="body2" color="text.secondary">計測状態を取得しています…</Typography>}
         {own.map(item => <SessionCard key={item.id} item={item} own now={now + state.offset} busy={busy} openConfirm={openConfirm} run={run} drafts={drafts} />)}
-        {other.length > 0 && <Box>
+        {!props.desktopPanel && other.length > 0 && <Box>
             <Button color="inherit" size="small" fullWidth onClick={() => setOthersOpen(value => !value)} aria-expanded={othersOpen} sx={{ justifyContent: 'space-between', color: 'text.secondary', px: 0.5, mb: othersOpen ? 1 : 0 }} endIcon={<ExpandMoreIcon sx={{ transform: othersOpen ? 'rotate(180deg)' : 'none' }} />}>
                 ほかの端末
             </Button>
@@ -251,7 +302,21 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
                 <Stack spacing={1.5}>{other.map(item => <SessionCard key={item.id} item={item} now={now + state.offset} busy={busy} openConfirm={openConfirm} run={run} drafts={drafts} />)}</Stack>
             </Collapse>
         </Box>}
+        <Dialog open={Boolean(quitItem)} onClose={() => { if (!state.busy) setQuitItem(null); }} fullWidth maxWidth="xs">
+            <DialogTitle>{t('Quit Chronoloft?')}</DialogTitle>
+            <DialogContent>
+                <Typography>{t('Save the current stopwatch or discard it before quitting.')}</Typography>
+                <Typography sx={{ mt: 1, overflowWrap: 'anywhere' }}>{quitItem?.activity_name}</Typography>
+                {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+            </DialogContent>
+            <DialogActions sx={{ flexWrap: 'wrap' }}>
+                <Button disabled={state.busy} onClick={() => setQuitItem(null)}>{t('Keep running')}</Button>
+                <Button disabled={state.busy} color="error" onClick={() => finishQuit('cancel')}>{t('Discard and quit')}</Button>
+                <Button disabled={state.busy} variant="contained" onClick={() => finishQuit('complete')}>{t('Save and quit')}</Button>
+            </DialogActions>
+        </Dialog>
         {pending && <AddRecordDialog open title={`${pending.item.device_name}：${pending.item.activity_name}`}
+            submitRef={pendingSubmit}
             activity={activities.find(item => item.id === pending.item.activity_id) || { id: pending.item.activity_id, name: pending.item.activity_name, unit: 'minutes' }}
             initialValue={elapsedMilliseconds(pending.item, now + state.offset) / 60000}
             initialMemo={pending.item.memo} initialDate={new Date(pending.item.paused_at).toISOString()}
@@ -265,7 +330,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
                 submitted.current = true;
                 setPending(null);
                 await refreshActivities();
-                if (pending.next) await run(() => start(pending.next));
+                if (pending.next && !quittingAfterSave.current) await run(() => start(pending.next));
             }} />}
     </Stack>;
 });
