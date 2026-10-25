@@ -1,5 +1,6 @@
 import { useI18n } from '../i18n/I18nContext';
-import { Button } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
+import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 
 /**
  * 「Open in Browser」ボタンを表示し、
@@ -26,9 +27,11 @@ function OpenBrowserButton() {
     };
 
     return (
-        <Button variant="contained" onClick={handleOpenBrowser}>
-            {t("Open in Browser")}
-        </Button>
+        <Tooltip title={t("Open in Browser")}>
+            <IconButton aria-label={t("Open in Browser")} onClick={handleOpenBrowser}>
+                <OpenInBrowserIcon />
+            </IconButton>
+        </Tooltip>
     );
 }
 

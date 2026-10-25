@@ -94,7 +94,7 @@ function SettingsDialog({ open, onClose }) {
 
     return (
         <Dialog fullScreen={isMobile} open={open} onClose={handleClose} maxWidth="sm">
-            <DialogTitle>{t("Settings")}</DialogTitle>
+            <DialogTitle>{t("App Settings")}</DialogTitle>
 
             <DialogContent dividers>
                 <Stack component="fieldset" disabled={applying} sx={{ border: 0, m: 0, p: 0, minWidth: 0 }} spacing={3} divider={<Divider flexItem />}>

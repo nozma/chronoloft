@@ -21,11 +21,11 @@ export async function desktopDiscordEnabled(fetchSettings = fetch) {
     } finally { clearTimeout(timeout); }
 }
 
-export function recentDesktopActivities(activities, records, now = Date.now()) {
+export function recentDesktopActivities(activities, records, { recentDays, recentLimit, recentMinimum }, now = Date.now()) {
     const eligible = activities.filter(item => item.unit === 'minutes' && item.is_active !== false);
     const byId = new Map(eligible.map(item => [item.id, item]));
     const seen = new Set();
-    const recent = [];
+    const recorded = [];
     // APIのタイムゾーン省略日時はUTCとして扱う。
     const timestamp = value => Date.parse(`${value}${/[Zz]|[+-]\d\d:\d\d$/.test(value) ? '' : 'Z'}`);
     for (const record of records.map(item => ({ ...item, timestamp: timestamp(item.created_at) }))
@@ -33,8 +33,21 @@ export function recentDesktopActivities(activities, records, now = Date.now()) {
         .sort((a, b) => b.timestamp - a.timestamp)) {
         if (!byId.has(record.activity_id) || seen.has(record.activity_id)) continue;
         seen.add(record.activity_id);
-        recent.push(byId.get(record.activity_id));
-        if (recent.length === 5) break;
+        recorded.push({ activity: byId.get(record.activity_id), timestamp: record.timestamp });
     }
-    return { recent, eligible };
+    const ordered = [...recorded.map(item => item.activity), ...eligible.filter(item => !seen.has(item.id))];
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - Number(recentDays));
+    const withinRange = recentDays === 'all'
+        ? ordered
+        : recorded.filter(item => item.timestamp >= cutoff.getTime()).map(item => item.activity);
+    const limit = recentLimit === 'all' ? eligible.length : Number(recentLimit);
+    const recent = withinRange.slice(0, limit);
+    const minimum = Math.min(Number(recentMinimum), limit);
+    // 期間内の候補が最低件数に満たない場合は、使用日時順に補充する。
+    if (recent.length < minimum) {
+        const selected = new Set(recent.map(item => item.id));
+        recent.push(...ordered.filter(item => !selected.has(item.id)).slice(0, minimum - recent.length));
+    }
+    return { recent, eligible, hasHistory: recorded.length > 0 };
 }

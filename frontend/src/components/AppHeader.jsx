@@ -1,13 +1,12 @@
 import { useI18n } from '../i18n/I18nContext';
 // frontend/src/components/AppHeader.jsx
 import { useEffect, useState } from 'react';
-import { Box, Typography, Menu, MenuItem, IconButton } from '@mui/material';
+import { Box, Typography, IconButton, Tooltip } from '@mui/material';
 import { LogoutButton } from './LanAccess';
 import OpenBrowserButton from './OpenBrowserButton';
 import AppIcon from '../../favicon.svg?react'
-import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SettingsIcon from '@mui/icons-material/Settings';
 import SettingsDialog from './SettingsDialog';
-import { clearUiSettings } from '../utils/storageReset';
 
 /**
  * アプリのヘッダー部分。
@@ -17,9 +16,7 @@ import { clearUiSettings } from '../utils/storageReset';
  */
 function AppHeader() {
     const { t } = useI18n();
-    const [anchorEl, setAnchorEl] = useState(null);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const menuOpen = Boolean(anchorEl);
     useEffect(() => {
         const openSettings = () => setSettingsOpen(true);
         window.addEventListener('chronoloft:open-settings', openSettings);
@@ -55,43 +52,12 @@ function AppHeader() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
                 <OpenBrowserButton />
                 <LogoutButton />
-                <IconButton aria-label={t("Settings")} onClick={(e) => setAnchorEl(e.currentTarget)}>
-                    <MoreVertIcon />
-                </IconButton>
+                <Tooltip title={t("App Settings")}>
+                    <IconButton aria-label={t("App Settings")} onClick={() => setSettingsOpen(true)}>
+                        <SettingsIcon />
+                    </IconButton>
+                </Tooltip>
             </Box>
-            <Menu
-                anchorEl={anchorEl}
-                open={menuOpen}
-                onClose={() => setAnchorEl(null)}
-                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                transformOrigin={{ horizontal: 'right' }}
-            >
-                <MenuItem
-                    onClick={() => {
-                        setSettingsOpen(true);
-                        setAnchorEl(null);
-                    }}
-                >
-                    {t("Settings")}
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        if (confirm(t("All UI settings will be cleared. Continue?"))) {
-                            clearUiSettings();
-                            location.reload();
-                        }
-                    }}
-                >
-                    {t("Reset UI Settings")}
-                </MenuItem>
-                <MenuItem
-                    onClick={() => {
-                        location.reload();
-                    }}
-                >
-                    {t("Reload")}
-                </MenuItem>
-            </Menu>
             <SettingsDialog
                 open={settingsOpen}
                 onClose={() => setSettingsOpen(false)}
