@@ -5,16 +5,16 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 
-function ConfirmDialog({ open, title, content, onConfirm, onCancel }) {
+function ConfirmDialog({ open, title, content, onConfirm, onCancel, confirmLabel }) {
     const { t } = useI18n();
   return (
-    <Dialog open={open} onClose={onCancel}>
-      <DialogTitle>{title}</DialogTitle>
+    <Dialog open={open} onClose={onCancel || onConfirm}>
+      {title && <DialogTitle>{title}</DialogTitle>}
       <DialogContent>{content}</DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{t("Cancel")}</Button>
+        {onCancel && <Button onClick={onCancel}>{t("Cancel")}</Button>}
         <Button onClick={onConfirm} variant="contained" color="primary">
-          {t("Confirm")}
+          {confirmLabel ?? t("Confirm")}
         </Button>
       </DialogActions>
     </Dialog>

@@ -9,6 +9,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import { DateTime } from 'luxon';
 import { StopwatchView } from './Stopwatch';
 import AddRecordDialog from './AddRecordDialog';
+import ConfirmDialog from './ConfirmDialog';
 import { useActivities } from '../contexts/ActivityContext';
 import { useActiveActivity } from '../contexts/ActiveActivityContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -31,6 +32,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const [showEditor, setShowEditor] = useState(false);
     const [editing, setEditing] = useState(false);
     const [memoEditing, setMemoEditing] = useState(false);
+    const [cancelItem, setCancelItem] = useState(null);
     const memoInput = useRef({ focused: false, composing: false });
     const updateMemoEditing = patch => {
         Object.assign(memoInput.current, patch);
@@ -91,7 +93,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
             const current = await savedItem();
             return recordSaveMode === 'confirm' ? openConfirm(current) : operateStopwatch(current, 'complete');
         }),
-        cancel: () => { if (window.confirm(`${item.device_name} の「${item.activity_name}」をキャンセルしますか？`)) run(() => operateStopwatch(item, 'cancel')); },
+        cancel: () => setCancelItem(item),
         pause: () => openConfirm(item),
         updateStartTime: value => {
             if (!Number.isFinite(value) || value > Date.now()) throw new Error(t("Start time cannot be in the future"));
@@ -183,6 +185,13 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
             <Button size="small" disabled={busy || showEditor} onClick={() => run(async () => openConfirm(await savedItem()))}>保存内容を確認</Button>
             <Button size="small" disabled={busy || showEditor} onClick={() => run(async () => operateStopwatch(await savedItem(), 'resume'))}>計測に戻る</Button>
         </Stack>}
+        <ConfirmDialog open={cancelItem !== null}
+            content={cancelItem && `${cancelItem.device_name} の「${cancelItem.activity_name}」をキャンセルしますか？`}
+            confirmLabel="OK" onCancel={() => setCancelItem(null)}
+            onConfirm={() => {
+                setCancelItem(null);
+                return run(() => operateStopwatch(cancelItem, 'cancel'));
+            }} />
     </Box>;
 }
 

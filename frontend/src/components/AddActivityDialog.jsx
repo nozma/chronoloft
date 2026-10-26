@@ -13,6 +13,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useTags } from '../contexts/TagContext';
+import ConfirmDialog from './ConfirmDialog';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupId, defaultTags }) {
     const { t } = useI18n();
@@ -26,6 +27,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
     const [assetKey, setAssetKey] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [selectedTags, setSelectedTags] = useState([]);
+    const [alertMessage, setAlertMessage] = useState(null);
 
     // ダイアログが開いたとき、または initialData が更新されたときにフォームフィールドを初期化する
     useEffect(() => {
@@ -50,7 +52,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
 
     const handleSubmit = () => {
         if (!name || !groupId) {
-            alert(t("Group and name are required."));
+            setAlertMessage(t("Group and name are required."));
             return;
         }
         const tagIds = selectedTags.map(t => t.id);
@@ -72,6 +74,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
     };
 
     return (
+        <>
         <Dialog open={open} onClose={onClose}>
             <DialogContent>
                 <TextField
@@ -164,6 +167,9 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                 </Button>
             </DialogActions>
         </Dialog>
+        <ConfirmDialog open={alertMessage !== null} content={alertMessage}
+            confirmLabel="OK" onConfirm={() => setAlertMessage(null)} />
+        </>
     );
 }
 
