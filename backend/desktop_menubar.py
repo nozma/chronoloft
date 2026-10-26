@@ -248,7 +248,7 @@ def install_menubar(window, app_provider):
                 view.setView_(self.panel)
                 self.popover.setContentViewController_(view)
                 self.panel.loadRequest_(NSURLRequest.requestWithURL_(NSURL.URLWithString_(window.real_url.rstrip('/') + '/?menubar=1')))
-            NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+            # パネルだけにフォーカスを与え、メインウィンドウを前面に出さない。
             self.popover.showRelativeToRect_ofView_preferredEdge_(self.status.button().bounds(), self.status.button(), 1)
             self.panel.window().makeKeyWindow()
             self.panel.evaluateJavaScript_completionHandler_(

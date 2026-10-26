@@ -359,11 +359,26 @@ def run_native_app(result_path, quit_action=None):
                 backend_app.db.session.merge(LocalSetting(key='showDockIcon', value=enabled))
                 backend_app.db.session.commit()
             wait_for(lambda: on_main_thread(cocoa_app.activationPolicy) == policy)
+        # パネル表示では閉じたメイン画面を再表示せず、開くアイコンで復帰する。
+        on_main_thread(lambda: window.native.orderOut_(None))
         on_main_thread(post_click)
         wait_for(lambda: on_main_thread(lambda: controller.panel is not None and controller.popover.isShown()))
         panel = controller.panel
         wait_for(lambda: evaluate(panel, "document.body.innerText.includes('最近のアクティビティ')"))
         assert evaluate(panel, 'window.__chronoloftDesktopDeviceId') == controller.device_id
+        assert not on_main_thread(window.native.isVisible), 'パネル表示でメイン画面が再表示されました'
+        evaluate(panel, "document.querySelector('button[aria-label=\"アプリを開く\"]').click()")
+        wait_for(lambda: on_main_thread(lambda: window.native.isVisible() and window.native.isKeyWindow() and cocoa_app.isActive()))
+        wait_for(lambda: not on_main_thread(controller.popover.isShown))
+        on_main_thread(lambda: window.native.miniaturize_(None))
+        wait_for(lambda: on_main_thread(window.native.isMiniaturized))
+        on_main_thread(post_click)
+        wait_for(lambda: on_main_thread(controller.popover.isShown))
+        assert on_main_thread(window.native.isMiniaturized), 'パネル表示で最小化が解除されました'
+        evaluate(panel, "document.querySelector('button[aria-label=\"アプリを開く\"]').click()")
+        wait_for(lambda: on_main_thread(lambda: not window.native.isMiniaturized() and window.native.isKeyWindow() and cocoa_app.isActive()))
+        on_main_thread(post_click)
+        wait_for(lambda: on_main_thread(controller.popover.isShown))
         wait_for(lambda: evaluate(panel, "Array.from(document.querySelectorAll('button')).some(b => b.textContent === 'メニューバーテスト' && !b.disabled)"))
         assert evaluate(panel, "!Array.from(document.querySelectorAll('button')).some(b => ['アップデートを確認…', '終了'].includes(b.textContent))")
         # 右クリックではパネルを閉じ、標準メニューに更新確認と終了を表示する。
