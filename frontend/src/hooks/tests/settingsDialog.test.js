@@ -9,7 +9,7 @@ const source = transformSync(readFileSync(new URL('../../components/SettingsDial
 }).code;
 const defaults = {
     language: 'en', autoFilterOnSelect: true, themeMode: 'system', layoutMode: 'one-column',
-    recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', showDockIcon: false,
+    recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', mergeConsecutiveRecords: true, showDockIcon: false,
 };
 
 function dialog(local = true) {
@@ -103,6 +103,10 @@ function dialog(local = true) {
             find('RadioGroup', props => ['system', 'light', 'dark'].includes(props.value)).onChange({ target: { value } });
             render();
         },
+        changeMerge(value) {
+            find('FormControlLabel', props => props.label === 'Merge consecutive records').control.props.onChange({ target: { checked: value } });
+            render();
+        },
         changeDock(value) {
             find('FormControlLabel', props => props.label === 'Show icon in Dock').control.props.onChange({ target: { checked: value } });
             render();
@@ -166,4 +170,14 @@ test('起動PCではDiscord設定の表示と切り替えを維持する', async
     ui.changeDiscord(false);
     await ui.apply();
     assert.equal(ui.settings.discordEnabled, false);
+});
+
+test('連続記録の結合をOFFで保存し、リセットでONに戻す', async () => {
+    const ui = dialog();
+    ui.changeMerge(false);
+    await ui.apply();
+    assert.equal(ui.settings.mergeConsecutiveRecords, false);
+    ui.reset();
+    await ui.apply();
+    assert.equal(ui.settings.mergeConsecutiveRecords, true);
 });

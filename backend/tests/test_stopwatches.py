@@ -223,6 +223,40 @@ class StopwatchTests(DatabaseTestCase):
         self.assertEqual(Record.query.count(), 1)
         self.assertEqual(Record.query.one().value, 3)
 
+    def test_merge_can_be_disabled(self):
+        response = self.client.patch('/api/settings/local', json={'mergeConsecutiveRecords': False})
+        self.assertEqual(response.status_code, 200)
+        for start in (1700000000, 1700000120):
+            with patch('app.routes.stopwatch_routes.time.time', return_value=start):
+                item = self.start(memo='読書').json['item']
+            with patch('app.routes.stopwatch_routes.time.time', return_value=start + 60):
+                self.assertEqual(self.operate(item, 'complete').status_code, 200)
+        self.assertEqual(Record.query.count(), 2)
+
+    def test_intervening_record_prevents_merge(self):
+        for different_activity in (False, True):
+            with self.subTest(different_activity=different_activity):
+                Record.query.delete()
+                with patch('app.routes.stopwatch_routes.time.time', return_value=1700000000):
+                    first = self.start(memo='読書').json['item']
+                with patch('app.routes.stopwatch_routes.time.time', return_value=1700000060):
+                    self.operate(first, 'complete')
+                activity_id = self.activity_id
+                if different_activity:
+                    activity = Activity(name='別の作業', unit=ActivityUnitType.MINUTES,
+                                        group_id=db.session.get(Activity, self.activity_id).group_id)
+                    db.session.add(activity)
+                    db.session.flush()
+                    activity_id = activity.id
+                db.session.add(Record(activity_id=activity_id, memo='別の詳細', value=0.5,
+                                      created_at=datetime.datetime.utcfromtimestamp(1700000090)))
+                db.session.commit()
+                with patch('app.routes.stopwatch_routes.time.time', return_value=1700000120):
+                    second = self.start(memo='読書').json['item']
+                with patch('app.routes.stopwatch_routes.time.time', return_value=1700000180):
+                    self.assertEqual(self.operate(second, 'complete').status_code, 200)
+                self.assertEqual(Record.query.count(), 3)
+
     def test_parallel_finishes_save_once(self):
         from concurrent.futures import ThreadPoolExecutor
         from threading import Barrier

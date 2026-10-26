@@ -186,7 +186,8 @@ export async function logoutDevice() {
 export const currentStopwatch = id => snapshot.items.find(item => item.id === id);
 
 export const operateStopwatch = (item, action, data = {}) => stopwatchRequest(
-    `/api/stopwatches/${item.id}/${action}`, { ...data, revision: item.revision });
+    `/api/stopwatches/${item.id}/${action}`, { ...data, revision: item.revision,
+        ...(action === 'complete' ? { merge_consecutive_records: getSettingsSnapshot().settings.mergeConsecutiveRecords } : {}) });
 
 export async function operateStopwatchWithDraft(saveDraft, action, data = {}) {
     return operateStopwatch(await saveDraft(), action, data);
