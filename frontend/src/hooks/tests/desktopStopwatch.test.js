@@ -25,6 +25,7 @@ function stopwatch({ panel = true, running = true, settingsError = false } = {})
         '@mui/material/styles': {},
         luxon: {},
         '../i18n/I18nContext': { useI18n: () => ({ t: value => value }) },
+        '../hooks/useLocalStorageState': (key, value) => [value, () => {}],
         '../contexts/ActivityContext': { useActivities: () => ({ activities: [], refreshActivities() {} }) },
         '../contexts/ActiveActivityContext': { useActiveActivity: () => ({ setActiveActivity() {} }) },
         '../contexts/FilterContext': { useFilter: () => ({ setFilterState() {} }) },
