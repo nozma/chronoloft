@@ -30,6 +30,12 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const [start, setStart] = useState('');
     const [showEditor, setShowEditor] = useState(false);
     const [editing, setEditing] = useState(false);
+    const [memoEditing, setMemoEditing] = useState(false);
+    const memoInput = useRef({ focused: false, composing: false });
+    const updateMemoEditing = patch => {
+        Object.assign(memoInput.current, patch);
+        setMemoEditing(memoInput.current.focused || memoInput.current.composing);
+    };
     const draftBase = useRef(item);
     const [, refreshDraft] = useState(0);
     const localDraft = useRef(null);
@@ -58,12 +64,14 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     };
     const autoSave = useRef(null);
     autoSave.current = () => run(savedItem);
-    // 連打や詳細の入力が落ち着いたら一括保存する。終了・切り替え時は待たずに保存する。
+    // 詳細欄のフォーカス・変換中は保存せず、欄を離れてから一括保存する。
     useEffect(() => {
-        if (!own || !Object.keys(changes).length || busy) return;
-        const timer = setTimeout(() => autoSave.current(), 600);
+        if (!own || !Object.keys(changes).length || busy || memoEditing) return;
+        const timer = setTimeout(() => {
+            if (!memoInput.current.focused && !memoInput.current.composing) autoSave.current();
+        }, 600);
         return () => clearTimeout(timer);
-    }, [own, changes, busy]);
+    }, [own, changes, busy, memoEditing]);
     useEffect(() => {
         const registry = drafts.current;
         registry[item.id] = savedItem;
@@ -97,6 +105,10 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     return <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', ...(!own && { backgroundImage: theme => `linear-gradient(${alpha(theme.palette.text.primary, 0.035)}, ${alpha(theme.palette.text.primary, 0.035)})` }) }}>
         {own ? <>
             <StopwatchView inlineMode controller={controller} activityId={item.activity_id}
+                onMemoFocus={() => updateMemoEditing({ focused: true })}
+                onMemoBlur={() => updateMemoEditing({ focused: false })}
+                onMemoCompositionStart={() => updateMemoEditing({ composing: true })}
+                onMemoCompositionEnd={() => updateMemoEditing({ composing: false })}
                 activityName={item.activity_name} activityGroup={item.activity_group}
                 discordData={canDiscord ? {} : null} recordSaveMode="auto" confirming={item.status === 'confirming'} />
         </> : <Box sx={{ px: 2, pt: 2, pb: 1, position: 'relative' }}>

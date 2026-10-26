@@ -300,6 +300,10 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                 <Box sx={isInlineMode ? { gridColumn: '1 / -1', gridRow: 2, minWidth: 0, mr: props.confirming ? 5.5 : 9.25 } : { position: 'relative', flex: 1, mt: 1 }}>
                     {/* メモ入力欄 */}
                     <Autocomplete
+                        onFocusCapture={props.onMemoFocus}
+                        onBlurCapture={props.onMemoBlur}
+                        onCompositionStartCapture={props.onMemoCompositionStart}
+                        onCompositionEndCapture={props.onMemoCompositionEnd}
                         fullWidth
                         sx={{ minWidth: 0 }}
                         disabled={isDiscordBusy}
