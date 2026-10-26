@@ -292,7 +292,16 @@ def operate_stopwatch(session_id, action):
             record = next((candidate for candidate in candidates
                            if re.sub(r'[\r\n\u2028\u2029]+', ' ', candidate.memo or '') == memo
                            and candidate.value is not None and math.isfinite(candidate.value) and candidate.value >= 0), None)
-            if record:
+            setting = db.session.get(LocalSetting, 'mergeConsecutiveRecords')
+            merge_enabled = data.get('merge_consecutive_records', setting.value if setting else True)
+            if type(merge_enabled) is not bool:
+                return jsonify(error='結合設定が不正です。'), 400
+            # 別の記録を挟んだ場合は、同じ内容に戻っても結合しない。
+            if record and Record.query.filter(Record.id != record.id,
+                                              Record.created_at >= record.created_at,
+                                              Record.created_at <= created_at).first():
+                record = None
+            if record and merge_enabled:
                 merged_start = min(new_start, record.created_at - datetime.timedelta(minutes=record.value))
                 record.value = (created_at - merged_start).total_seconds() / 60
                 record.created_at = created_at

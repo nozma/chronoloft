@@ -42,7 +42,7 @@ function SettingsDialog({ open, onClose }) {
         language: savedLanguage,
         autoFilterOnSelect, themeMode, layoutMode,
         recentDays, recentLimit, recentMinimum,
-        discordEnabled, recordSaveMode,
+        discordEnabled, recordSaveMode, mergeConsecutiveRecords,
         showDockIcon,
         settingsError, saveSettings,
     } = useSettings();
@@ -57,6 +57,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpRecentMinimum, setTmpRecentMinimum] = useState(recentMinimum);
     const [tmpDiscordEnabled, setTmpDiscordEnabled] = useState(discordEnabled);
     const [tmpRecordSaveMode, setTmpRecordSaveMode] = useState(recordSaveMode);
+    const [tmpMergeConsecutiveRecords, setTmpMergeConsecutiveRecords] = useState(mergeConsecutiveRecords);
     const [tmpShowDockIcon, setTmpShowDockIcon] = useState(showDockIcon);
     // ダイアログを開くたびに最新値でリセット
     useEffect(() => {
@@ -64,7 +65,7 @@ function SettingsDialog({ open, onClose }) {
             resetRequested.current = false;
             originalSettings.current = {
                 language: savedLanguage, autoFilterOnSelect, themeMode, layoutMode,
-                recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode,
+                recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords,
                 showDockIcon,
             };
             setSaveError('');
@@ -78,9 +79,10 @@ function SettingsDialog({ open, onClose }) {
             setTmpDiscordEnabled(discordEnabled);
             setTmpRecordSaveMode(recordSaveMode);
             setTmpShowDockIcon(showDockIcon);
+            setTmpMergeConsecutiveRecords(mergeConsecutiveRecords);
         }
         wasOpen.current = open;
-    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, showDockIcon]);
+    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords, showDockIcon]);
 
     // リセット用ハンドラ
     const handleReset = () => {
@@ -96,6 +98,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpDiscordEnabled(DEFAULT_SETTINGS.discordEnabled);
         setTmpRecordSaveMode(DEFAULT_SETTINGS.recordSaveMode);
         setTmpShowDockIcon(DEFAULT_SETTINGS.showDockIcon);
+        setTmpMergeConsecutiveRecords(DEFAULT_SETTINGS.mergeConsecutiveRecords);
     };
 
     return (
@@ -248,6 +251,18 @@ function SettingsDialog({ open, onClose }) {
                     <Stack spacing={3}>
                         <FormControl component="fieldset">
                             <FormLabel component="legend">{t("Record Save Mode")}</FormLabel>
+                            <Stack direction="row" alignItems="center">
+                                <FormControlLabel
+                                    control={<Switch checked={tmpMergeConsecutiveRecords} onChange={e => setTmpMergeConsecutiveRecords(e.target.checked)} />}
+                                    label={t("Merge consecutive records")}
+                                    sx={{ mr: 0 }}
+                                />
+                                <Tooltip title={t("Automatically merges records with the same activity and details when the gap between the end of one and the start of the next is 5 minutes or less. Records are not merged if another record occurs in between.")} arrow>
+                                    <IconButton size="small" aria-label={t("About merging consecutive records")}>
+                                        <InfoOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </Stack>
                             <RadioGroup
                                 row
                                 value={tmpRecordSaveMode}
@@ -295,6 +310,7 @@ function SettingsDialog({ open, onClose }) {
                                     recentDays: tmpRecentDays, recentLimit: tmpRecentLimit,
                                     recentMinimum: tmpRecentMinimum, discordEnabled: tmpDiscordEnabled,
                                     recordSaveMode: tmpRecordSaveMode,
+                                    mergeConsecutiveRecords: tmpMergeConsecutiveRecords,
                                     showDockIcon: tmpShowDockIcon,
                                 };
                                 // 通常は変更した項目だけを保存し、明示的なリセットでは全項目を反映する。

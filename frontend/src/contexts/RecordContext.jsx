@@ -8,6 +8,7 @@ import {
     updateRecord as apiUpdateRecord,
     deleteRecord as apiDeleteRecord
 } from '../services/api';
+import { useSettings } from './SettingsContext';
 import { useActivities } from './ActivityContext';
 
 const RecordContext = createContext();
@@ -48,6 +49,7 @@ const parseIsoToMs = (value) => {
 
 export function RecordProvider({ children }) {
     const { activities } = useActivities();
+    const { mergeConsecutiveRecords } = useSettings();
     const [records, setRecords] = useState([]);
     const [liveRecords, setLiveRecords] = useState([]);
     const shared = useSharedStopwatches();
@@ -71,7 +73,7 @@ export function RecordProvider({ children }) {
         const unit = resolveActivityUnit(activityId, activities, records);
         const valueMinutes = Number(payload.value);
 
-        if (unit === 'minutes' && Number.isFinite(valueMinutes) && valueMinutes >= 0) {
+        if (mergeConsecutiveRecords && unit === 'minutes' && Number.isFinite(valueMinutes) && valueMinutes >= 0) {
             const newEndMs = parseIsoToMs(payload.created_at);
             if (Number.isFinite(newEndMs)) {
                 const newStartMs = newEndMs - valueMinutes * MILLIS_PER_MINUTE;
@@ -95,7 +97,9 @@ export function RecordProvider({ children }) {
                     }
                 });
 
-                if (candidate) {
+                if (candidate && !records.some(record => record.id !== candidate.id
+                    && parseIsoToMs(record.created_at) >= candidateEndMs
+                    && parseIsoToMs(record.created_at) <= newEndMs)) {
                     const candidateValue = Number(candidate.value);
                     const candidateStartMs = candidateEndMs - candidateValue * MILLIS_PER_MINUTE;
                     const mergedStartMs = Math.min(candidateStartMs, newStartMs);

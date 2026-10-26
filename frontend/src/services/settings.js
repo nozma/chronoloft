@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
     recentMinimum: '1',
     discordEnabled: true,
     recordSaveMode: 'auto',
+    mergeConsecutiveRecords: true,
     showDockIcon: false,
 };
 
@@ -21,7 +22,7 @@ const choices = {
 };
 const valid = (key, value) => key === 'deviceName'
     ? typeof value === 'string' && value.trim() === value && value.length > 0 && value.length <= 80
-    : key === 'autoFilterOnSelect' || key === 'discordEnabled' || key === 'showDockIcon'
+    : key === 'autoFilterOnSelect' || key === 'discordEnabled' || key === 'showDockIcon' || key === 'mergeConsecutiveRecords'
         ? typeof value === 'boolean' : choices[key]?.includes(value);
 
 function readCache() {
