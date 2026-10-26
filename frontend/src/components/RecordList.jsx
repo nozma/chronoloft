@@ -1,10 +1,9 @@
 import { useI18n } from '../i18n/I18nContext';
-import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
+import { normalizeDetails } from '../utils/recordDetails';
 import { useState, useRef, useMemo } from 'react';
 import { DataGrid, gridClasses } from '@mui/x-data-grid';
 import ConfirmDialog from './ConfirmDialog'
-import { Box, Collapse, IconButton, Typography, TextField } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
+import { Box, Collapse, IconButton, Typography } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import AddRecordDialog from './AddRecordDialog';
@@ -85,20 +84,6 @@ function RecordList() {
         }
     };
 
-    const processRowUpdate = async (newRow, oldRow) => {
-        try {
-            // 変更が無ければ何もしない
-            if (newRow.memo === oldRow.memo) return oldRow;
-            // memo だけをパッチ更新
-            await updateRecord(newRow.id, { memo: newRow.memo });
-            // フロント側の行データは memo だけ差し替えて戻す
-            return { ...oldRow, memo: newRow.memo };
-        } catch (error) {
-            console.error("Failed to update record:", error);
-            throw error;
-        }
-    };
-
     // ----------------------------
     // DataGrid の列定義
     // ----------------------------
@@ -106,24 +91,9 @@ function RecordList() {
         {
             field: 'created_at',
             headerName: t("Recorded at"),
-            width: 160,
+            width: 220,
+            cellClassName: 'record-date',
             valueFormatter: (params) => formatToLocal(params, undefined, language)
-        },
-        {
-            field: 'activity_name',
-            headerName: t("Activity name"),
-            width: 240,
-            renderCell: (params) => {
-                const groupName = params.row.activity_group;
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {getIconForGroup(groupName, groups)}
-                        <Typography noWrap variant='body' title={params.value}>
-                            {params.value}
-                        </Typography>
-                    </Box>
-                );
-            }
         },
         {
             field: 'value',
@@ -149,10 +119,25 @@ function RecordList() {
             },
         },
         {
+            field: 'activity_name',
+            headerName: t("Activity name"),
+            width: 160,
+            renderCell: (params) => {
+                const groupName = params.row.activity_group;
+                return (
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getIconForGroup(groupName, groups)}
+                        <Typography noWrap variant='body' title={params.value}>
+                            {params.value}
+                        </Typography>
+                    </Box>
+                );
+            }
+        },
+        {
             field: 'memo',
             headerName: t("Details"),
             width: 200,
-            editable: true,
             renderCell: (params) => (
                 <Typography
                     variant='body2'
@@ -161,40 +146,21 @@ function RecordList() {
                 >
                     {normalizeDetails(params.value)}
                 </Typography>
-            ),
-            renderEditCell: (params) => (
-                <TextField
-                    size="small"
-                    onPaste={(event) => pasteDetails(event, (value) =>
-                        params.api.setEditCellValue({ id: params.id, field: params.field, value }, event)
-                    )}
-                    fullWidth
-                    autoFocus
-                    value={normalizeDetails(params.value)}
-                    onChange={(e) =>
-                        params.api.setEditCellValue(
-                            { id: params.id, field: params.field, value: normalizeDetails(e.target.value) },
-                            e
-                        )
-                    }
-                />
             )
         },
         {
             field: 'actions',
-            headerName: t("Actions"),
+            headerName: t("Delete"),
             width: 100,
             sortable: false,
             filterable: false,
             renderCell: (params) => (
-                <>
-                    <IconButton onClick={() => handleEditRecordClick(params.row)}>
-                        <EditIcon />
-                    </IconButton>
-                    <IconButton onClick={() => handleDeleteRecordClick(params.row.id)}>
-                        <DeleteIcon />
-                    </IconButton>
-                </>
+                <IconButton
+                    onClick={() => handleDeleteRecordClick(params.row.id)}
+                    onDoubleClick={(event) => event.stopPropagation()}
+                >
+                    <DeleteIcon />
+                </IconButton>
             )
         }
     ];
@@ -250,9 +216,13 @@ function RecordList() {
                             pageSize={5}
                             rowsPerPageOptions={[5]}
                             disableSelectionOnClick
-                            processRowUpdate={processRowUpdate}
+                            onRowDoubleClick={(params) => handleEditRecordClick(params.row)}
                             getRowHeight={() => 'auto'}
                             sx={{
+                                '& .record-date': { whiteSpace: 'nowrap' },
+                                [`& .${gridClasses.cell}:focus, & .${gridClasses.cell}:focus-within`]: {
+                                    outline: 'none',
+                                },
                                 [`& .${gridClasses.cell}`]: {
                                   py: 0,
                                   alignContent: 'center'
