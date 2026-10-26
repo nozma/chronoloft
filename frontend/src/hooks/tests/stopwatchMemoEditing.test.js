@@ -9,7 +9,7 @@ const source = transformSync(readFileSync(new URL('../../components/SharedStopwa
     loader: 'jsx', jsx: 'automatic', format: 'cjs',
 }).code;
 
-function harness() {
+function harness({ deferSave = false } = {}) {
     const slots = [];
     let index = 0;
     let effects = [];
@@ -17,6 +17,8 @@ function harness() {
     const timers = new Map();
     let nextTimer = 0;
     const calls = [];
+    let tree;
+    let finishSave;
     const hook = initial => {
         const key = index++;
         if (!(key in slots)) slots[key] = initial;
@@ -44,11 +46,15 @@ function harness() {
         '../utils/recentMemoOptions': { getRecentMemoOptions: () => [] },
         '../utils/stopwatchDraft': { createStopwatchDraft },
         './Stopwatch': { StopwatchView: 'StopwatchView' },
+        './ConfirmDialog': { default: 'ConfirmDialog', __esModule: true },
         '../services/stopwatches': {
             elapsedMilliseconds: () => 0,
             operateStopwatch: async (base, action, data) => {
-                calls.push({ action, data });
-                return { item: { ...base, ...data, revision: base.revision + 1 } };
+                calls.push({ action, data, revision: base.revision });
+                if (action === 'edit' && deferSave) await new Promise(resolve => { finishSave = resolve; });
+                assert.equal(base.revision, props.item.revision, '古い更新番号で操作しない');
+                props.item = { ...base, ...data, revision: base.revision + 1 };
+                return { item: props.item };
             },
         },
     };
@@ -61,23 +67,25 @@ function harness() {
     vm.runInContext(source, context);
     const props = { item: { id: 'main', memo: '', revision: 1, started_at: 1 }, own: true,
         now: 1, busy: false, drafts: { current: {} }, run: fn => fn() };
-    const findView = node => {
+    const find = (node, type) => {
         if (!node || typeof node !== 'object') return;
-        if (node.type === 'StopwatchView') return node.props;
+        if (node.type === type) return node.props;
         for (const child of [node.props?.children].flat()) {
-            const found = findView(child);
+            const found = find(child, type);
             if (found) return found;
         }
     };
     return {
         calls,
+        dialog: () => find(tree, 'ConfirmDialog'),
+        finishSave: () => finishSave(),
         render() {
             cleanups.forEach(fn => fn?.());
             index = 0;
             effects = [];
-            const tree = context.module.exports.SessionCard(props);
+            tree = context.module.exports.SessionCard(props);
             cleanups = effects.map(fn => fn());
-            return findView(tree);
+            return find(tree, 'StopwatchView');
         },
         async tick() {
             const pending = [...timers.values()];
@@ -131,4 +139,62 @@ test('保存待ちの間に詳細欄へ戻ると、再描画前でも保存を�
     view.onMemoFocus();
     await h.tick();
     assert.equal(h.calls.length, 0);
+});
+
+test('詳細編集直後のキャンセル確認中は自動保存せず、OKで未保存の内容ごと計測を破棄する', async () => {
+    const h = harness();
+    let view = h.render();
+    view.onMemoFocus();
+    view.controller.setMemo('破棄する下書き');
+    view = h.render();
+    view.onMemoBlur();
+    view = h.render();
+    view.controller.cancel();
+    await h.tick();
+    h.render();
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.dialog().open, true);
+    await h.dialog().onConfirm();
+    h.render();
+    assert.equal(h.dialog().open, false);
+    assert.deepEqual(h.calls, [{ action: 'cancel', data: undefined, revision: 1 }]);
+});
+
+test('キャンセル確認を取り消すと、保持した下書きの自動保存を再開する', async () => {
+    const h = harness();
+    let view = h.render();
+    view.controller.setMemo('保持する下書き');
+    view = h.render();
+    view.controller.cancel();
+    h.render();
+    await h.tick();
+    assert.equal(h.calls.length, 0);
+    h.dialog().onCancel();
+    h.render();
+    await h.tick();
+    assert.equal(h.dialog().open, false);
+    assert.equal(h.calls.length, 1);
+    assert.equal(h.calls[0].action, 'edit');
+    assert.equal(h.calls[0].data.memo, '保持する下書き');
+});
+
+test('既に自動保存の通信が始まっていたら、完了を待ち更新後の番号でキャンセルする', async () => {
+    const h = harness({ deferSave: true });
+    let view = h.render();
+    view.controller.setMemo('保存中の下書き');
+    view = h.render();
+    const saving = h.tick();
+    const opening = view.controller.cancel();
+    h.render();
+    assert.equal(h.dialog().open, false);
+    h.finishSave();
+    await saving;
+    await opening;
+    h.render();
+    assert.equal(h.dialog().open, true);
+    await h.dialog().onConfirm();
+    assert.deepEqual(h.calls.map(({ action, revision }) => ({ action, revision })), [
+        { action: 'edit', revision: 1 },
+        { action: 'cancel', revision: 2 },
+    ]);
 });

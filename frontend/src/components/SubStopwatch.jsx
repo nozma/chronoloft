@@ -11,6 +11,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import useStopwatch from '../hooks/useStopwatch';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
+import ConfirmDialog from './ConfirmDialog';
 
 const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
     const { t } = useI18n();
@@ -35,6 +36,7 @@ const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [editedStartTime, setEditedStartTime] = useState("");
+    const [alertMessage, setAlertMessage] = useState(null);
 
     const handleOpenPicker = (event) => {
         if (currentStartTime) {
@@ -56,7 +58,7 @@ const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
             try {
                 updateStartTime(dt.toMillis());
             } catch (error) {
-                alert(error.message);
+                setAlertMessage(error.message);
             }
         }
     };
@@ -69,7 +71,7 @@ const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
         try {
             updateStartTime(newDt.toMillis());
         } catch (error) {
-            alert(error.message);
+            setAlertMessage(error.message);
         }
     };
 
@@ -87,7 +89,7 @@ const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
         try {
             updateStartTime(dt.toMillis());
         } catch (error) {
-            alert(error.message);
+            setAlertMessage(error.message);
         }
     };
 
@@ -187,6 +189,8 @@ const SubStopwatch = forwardRef(function SubStopwatch(props, ref) {
                 </Box>
             </Box>
             <Box sx={{ marginTop: 0 }} />
+            <ConfirmDialog open={alertMessage !== null} content={alertMessage}
+                confirmLabel="OK" onConfirm={() => setAlertMessage(null)} />
         </>
     );
 });

@@ -21,6 +21,7 @@ import { DateTime } from 'luxon';
 import { useActivities } from '../contexts/ActivityContext'
 import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
+import ConfirmDialog from './ConfirmDialog';
 
 function AddRecordDialog({
     open,
@@ -50,6 +51,18 @@ function AddRecordDialog({
     const submitting = useRef(false);
     const [busy, setBusy] = useState(false);
     const [submitError, setSubmitError] = useState('');
+    const [alertMessage, setAlertMessage] = useState(null);
+    const alertResolver = useRef(null);
+    // 標準のalertと同様に、閉じるまでは保存処理の結果を返さない。
+    const showAlert = message => new Promise(resolve => {
+        alertResolver.current = resolve;
+        setAlertMessage(message);
+    });
+    const closeAlert = () => {
+        setAlertMessage(null);
+        alertResolver.current?.();
+        alertResolver.current = null;
+    };
 
     // activitiesを元のactivityとunitが一致するものに絞り込む
     const compatibleActivities = activities.filter(a => a.unit === activity.unit);
@@ -109,12 +122,12 @@ function AddRecordDialog({
             if (selectedActivity?.unit === 'count') { // 回数により記録するもの
                 const numValue = parseFloat(value);
                 if (isNaN(numValue) || numValue < 0) {
-                    alert(t("Enter a valid count."));
+                    await showAlert(t("Enter a valid count."));
                     return false;
                 }
                 const dtLocal = DateTime.fromFormat(dateValue, "yyyy-MM-dd'T'HH:mm");
                 if (!dtLocal.isValid) {
-                    alert(t("Invalid date and time."));
+                    await showAlert(t("Invalid date and time."));
                     return false;
                 }
                 const dtUtc = dtLocal.toUTC().toISO();
@@ -131,12 +144,12 @@ function AddRecordDialog({
                 const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
 
                 if (!startLocal.isValid || !endLocal.isValid) {
-                    alert(t("Invalid start or end time."));
+                    await showAlert(t("Invalid start or end time."));
                     return false;
                 }
                 // バリデーション: 開始<=終了
                 if (startLocal > endLocal) {
-                    alert(t("Start time must not be later than end time."));
+                    await showAlert(t("Start time must not be later than end time."));
                     return false;
                 }
 
@@ -248,6 +261,7 @@ function AddRecordDialog({
 
 
     return (
+        <>
         <Dialog
             fullScreen={isMobile}
             open={open}
@@ -480,6 +494,9 @@ function AddRecordDialog({
                 </Button>
             </DialogActions>
         </Dialog>
+        <ConfirmDialog open={alertMessage !== null} content={alertMessage}
+            confirmLabel="OK" onConfirm={closeAlert} />
+        </>
     );
 }
 

@@ -12,6 +12,7 @@ import { DateTime } from 'luxon';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
+import ConfirmDialog from './ConfirmDialog';
 
 export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const { t } = useI18n();
@@ -46,6 +47,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     // Start Time 編集用状態
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [editedStartTime, setEditedStartTime] = React.useState("");
+    const [alertMessage, setAlertMessage] = React.useState(null);
     const startTimeRef = React.useRef(displayStartTime);
     startTimeRef.current = displayStartTime;
 
@@ -70,7 +72,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
             try {
                 updateStartTime(dt.toMillis());
             } catch (error) {
-                alert(error.message);
+                setAlertMessage(error.message);
             }
         }
     };
@@ -83,7 +85,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
             startTimeRef.current = newDt.toMillis();
             setEditedStartTime(newDt.toFormat("yyyy-MM-dd'T'HH:mm"));
         } catch (error) {
-            alert(error.message);
+            setAlertMessage(error.message);
         }
     };
 
@@ -155,7 +157,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         try {
             updateStartTime(dt.toMillis());
         } catch (error) {
-            alert(error.message);
+            setAlertMessage(error.message);
         }
     };
 
@@ -328,6 +330,8 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
                 </Box>
             </Box>
             {!isInlineMode && <Box sx={{ marginTop: 8 }} />}
+            <ConfirmDialog open={alertMessage !== null} content={alertMessage}
+                confirmLabel="OK" onConfirm={() => setAlertMessage(null)} />
         </>
     );
 });
