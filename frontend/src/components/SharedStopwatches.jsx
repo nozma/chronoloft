@@ -22,6 +22,7 @@ import { createStopwatchDraft } from '../utils/stopwatchDraft';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import { currentStopwatch, elapsedMilliseconds, newStopwatchId, operateStopwatch, refreshStopwatches, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
 import { desktopCommand, desktopDiscordEnabled } from '../utils/desktop';
+import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const { t } = useI18n();
@@ -221,7 +222,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     const { setFilterState } = useFilter();
     const { discordEnabled, recordSaveMode, autoFilterOnSelect } = useSettings();
     const [now, setNow] = useState(Date.now());
-    const [othersOpen, setOthersOpen] = useState(true);
+    const [othersOpen, setOthersOpen] = useLocalStorageState('stopwatch.othersOpen', true);
     const [pending, setPending] = useState(null);
     const [error, setError] = useState('');
     const [quitItem, setQuitItem] = useState(null);
