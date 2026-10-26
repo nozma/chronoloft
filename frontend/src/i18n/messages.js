@@ -276,7 +276,7 @@ export const messages = {
         "2 Columns": "2列",
         "Filter chart and heatmap when starting a timer": "計測開始時にグラフ・ヒートマップを絞り込む",
         "About automatic activity filtering": "アクティビティの自動絞り込みについて",
-        "When you start timing an activity, the chart and heatmap are filtered to that activity. When OFF, the current filters are kept. The record list, calendar, and trends are not affected.": "計測を開始したアクティビティに合わせて、グラフとヒートマップの表示対象を切り替えます。OFFの場合は現在の絞り込みを維持します。記録一覧・カレンダー・増減傾向には影響しません。",
+        "When you start timing an activity, the chart and heatmap are filtered to that activity. When OFF, the current filters are kept. The record list, calendar, and trends are not affected.": "計測を開始したアクティビティに合わせて、グラフとヒートマップの表示対象を切り替えます。OFFの場合は現在の絞り込みを維持します。記録一覧・カレンダー・トレンドには影響しません。",
         "Initial-Display Activities Used in": "初期表示するアクティビティの使用期間",
         "Initial-Display Activities Limit": "初期表示するアクティビティの上限件数",
         "Initial-Display Activities Minimum": "初期表示するアクティビティの最低件数",
