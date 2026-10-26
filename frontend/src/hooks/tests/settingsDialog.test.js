@@ -16,6 +16,8 @@ function dialog(local = true) {
     const slots = [];
     const effects = [];
     const writes = [];
+    let preview = null;
+    const setDisplayPreview = value => { preview = value; };
     let settings = { ...defaults };
     let index = 0;
     let dirty = false;
@@ -48,11 +50,12 @@ function dialog(local = true) {
         '../services/stopwatches': { useSharedStopwatches: () => ({ device: { is_local: local } }) },
         'react/jsx-runtime': { jsx, jsxs: jsx },
         '@mui/material': new Proxy({}, { get: (_, name) => name }),
+        './InfoTooltip': { default: 'InfoTooltip' },
         './LanAccess': { LanSettings: 'LanSettings' },
         '../i18n/I18nContext': { useI18n: () => ({ t: key => key }) },
         '../contexts/SettingsContext': {
             DEFAULT_SETTINGS: defaults,
-            useSettings: () => ({ ...settings, isMobile: false, saveSettings: async changes => {
+            useSettings: () => ({ ...settings, isMobile: false, setDisplayPreview, saveSettings: async changes => {
                 writes.push(JSON.parse(JSON.stringify(changes)));
                 settings = { ...settings, ...changes };
             } }),
@@ -93,6 +96,17 @@ function dialog(local = true) {
     render();
     return {
         writes,
+        get preview() { return preview; },
+        cancel() { find('Button', props => props.children === 'Cancel').onClick(); },
+        dismiss() { find('Dialog', () => true).onClose(); },
+        changeLanguage(value) {
+            find('RadioGroup', props => ['ja', 'en'].includes(props.value)).onChange({ target: { value } });
+            render();
+        },
+        changeLayout(value) {
+            find('RadioGroup', props => ['one-column', 'two-column'].includes(props.value)).onChange({ target: { value } });
+            render();
+        },
         changeDiscord(value) { find('FormControlLabel', props => props.label === 'Enable Discord Rich Presence').control.props.onChange({ target: { checked: value } }); render(); },
         discord() { return find('FormControlLabel', props => props.label === 'Enable Discord Rich Presence').control.props; },
         get settings() { return settings; },
@@ -180,4 +194,33 @@ test('連続記録の結合をOFFで保存し、リセットでONに戻す', asy
     ui.reset();
     await ui.apply();
     assert.equal(ui.settings.mergeConsecutiveRecords, true);
+});
+
+test('言語・テーマ・レイアウトは保存せずにプレビューし、キャンセルで解除する', () => {
+    const ui = dialog();
+    ui.changeLanguage('ja');
+    ui.changeTheme('light');
+    ui.changeLayout('two-column');
+    assert.deepEqual(JSON.parse(JSON.stringify(ui.preview)), { language: 'ja', themeMode: 'light', layoutMode: 'two-column' });
+    assert.deepEqual(ui.writes, []);
+    assert.equal(ui.settings.language, 'en');
+    assert.equal(ui.settings.themeMode, 'system');
+    assert.equal(ui.settings.layoutMode, 'one-column');
+    ui.cancel();
+    assert.equal(ui.preview, null);
+});
+
+test('ダイアログを閉じる操作でもプレビューを解除し、適用時だけ保存する', async () => {
+    const dismissed = dialog();
+    dismissed.changeTheme('light');
+    dismissed.dismiss();
+    assert.equal(dismissed.preview, null);
+    assert.deepEqual(dismissed.writes, []);
+    const applied = dialog();
+    applied.changeLanguage('ja');
+    applied.changeTheme('light');
+    applied.changeLayout('two-column');
+    await applied.apply();
+    assert.deepEqual(applied.writes, [{ language: 'ja', themeMode: 'light', layoutMode: 'two-column' }]);
+    assert.equal(applied.preview, null);
 });

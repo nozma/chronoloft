@@ -2,6 +2,8 @@ import { createContext, forwardRef, useCallback, useContext, useEffect, useImper
 import { Alert, Box, Button, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Tooltip, FormControl, FormControlLabel, FormLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 
 import LogoutIcon from '@mui/icons-material/Logout';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoTooltip from './InfoTooltip';
 import { logoutDevice, saveDeviceAndLanSettings, useSharedStopwatches } from '../services/stopwatches';
 
 const LanAuthContext = createContext(null);
@@ -58,14 +60,17 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
             setPassword('');
         },
     }));
-    return <FormControl component="fieldset" fullWidth sx={{ minWidth: 0 }}>
-        <FormLabel component="legend">LANアクセス</FormLabel>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-            <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">端末名は、ほかの端末からストップウォッチを見分けるために使います。</Typography>
-                <TextField label="この端末の名前" size="small" fullWidth value={name} disabled={disabled || !shared.device} inputProps={{ maxLength: 80 }} onChange={e => { nameEdited.current = true; setName(e.target.value); }} />
+    return <Stack spacing={2} sx={{ minWidth: 0 }}>
+            <Stack direction="row" alignItems="center" spacing={1}>
+                <TextField label="端末名" size="small" sx={{ width: '50%' }} value={name} disabled={disabled || !shared.device} inputProps={{ maxLength: 80 }} onChange={e => { nameEdited.current = true; setName(e.target.value); }} />
+                <InfoTooltip title="ほかの端末からストップウォッチを見分けるために使います。">
+                    <IconButton size="small" aria-label="端末名について">
+                        <InfoOutlinedIcon fontSize="small" />
+                    </IconButton>
+                </InfoTooltip>
             </Stack>
-            {settings && <Box>
+            {settings && <FormControl component="fieldset" fullWidth sx={{ minWidth: 0 }}>
+                <FormLabel component="legend">LANアクセス</FormLabel>
                 <FormControlLabel label="同じLAN内からのアクセスを許可" control={<Switch checked={enabled} disabled={disabled} onChange={e => { setEnabled(e.target.checked); setMessage(''); }} />} />
                 <Collapse in={enabled}>
                     <Stack spacing={1.5} sx={{ mt: 1 }}>
@@ -77,10 +82,9 @@ export const LanSettings = forwardRef(function LanSettings({ disabled, onReadyCh
                     <Typography variant="body2" color="text.secondary" gutterBottom>別端末のブラウザーで開くURL</Typography>
                     {settings.urls.length ? settings.urls.map(url => <Typography variant="body2" key={url} sx={{ overflowWrap: 'anywhere' }}>{url}</Typography>) : <Typography variant="body2" color="text.secondary">起動PCのLAN内IPアドレスとポート番号でアクセスしてください。</Typography>}
                 </Box>}
-            </Box>}
+            </FormControl>}
             {message && <Alert severity="error">{message}</Alert>}
-        </Stack>
-    </FormControl>;
+    </Stack>;
 });
 
 export default function LanAccess({ children }) {
