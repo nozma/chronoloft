@@ -24,7 +24,7 @@ import { isMenuBarPanel } from './utils/desktop';
 function App() {
     const { language } = useI18n();
     // カラーテーマ対応
-    const { themeMode, isTwoColumnLayout } = useSettings();
+    const { displayThemeMode: themeMode, isTwoColumnLayout } = useSettings();
     const prefersDark = useMediaQuery('(prefers-color-scheme: dark)');
     const resolvedMode =
         themeMode === 'system' ? (prefersDark ? 'dark' : 'light') : themeMode;

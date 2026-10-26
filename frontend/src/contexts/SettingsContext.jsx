@@ -1,5 +1,5 @@
 import { resolveLanguage } from '../i18n/translate.js';
-import { createContext, useContext, useMemo, useSyncExternalStore } from 'react';
+import { createContext, useContext, useMemo, useState, useSyncExternalStore } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { DEFAULT_SETTINGS, getSettingsSnapshot, saveSettings, subscribeSettings } from '../services/settings';
 
@@ -9,15 +9,19 @@ const SettingsContext = createContext();
 
 export function SettingsProvider({ children }) {
     const snapshot = useSyncExternalStore(subscribeSettings, getSettingsSnapshot);
+    const [displayPreview, setDisplayPreview] = useState(null);
     const isMobile = useMediaQuery('(max-width: 599.95px)');
     const value = useMemo(() => ({
         ...snapshot.settings,
         language: resolveLanguage(snapshot.settings.language),
+        displayLanguage: resolveLanguage(displayPreview?.language ?? snapshot.settings.language),
+        displayThemeMode: displayPreview?.themeMode ?? snapshot.settings.themeMode,
+        setDisplayPreview,
         isMobile,
-        isTwoColumnLayout: !isMobile && snapshot.settings.layoutMode === 'two-column',
+        isTwoColumnLayout: !isMobile && (displayPreview?.layoutMode ?? snapshot.settings.layoutMode) === 'two-column',
         settingsError: snapshot.error,
         saveSettings,
-    }), [snapshot, isMobile]);
+    }), [snapshot, isMobile, displayPreview]);
 
     // Discord連携などが初期値で動き始める前に、起動PCの共通設定を読み込む。
     return <SettingsContext.Provider value={value}>

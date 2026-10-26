@@ -1,3 +1,4 @@
+import InfoTooltip from './InfoTooltip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { useSharedStopwatches } from '../services/stopwatches';
 import { LanSettings } from './LanAccess';
@@ -5,7 +6,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { useState, useEffect, useRef } from 'react';
 import {
     Alert,
-    Tooltip,
+    Typography,
     IconButton,
     Dialog,
     DialogTitle,
@@ -24,6 +25,15 @@ import {
 } from '@mui/material';
 import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 
+function SettingsSection({ title, children }) {
+    return (
+        <Box component="section">
+            <Typography component="h2" variant="subtitle2" sx={{ color: theme => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.55)' : 'rgba(0, 0, 0, 0.5)', fontWeight: 700, mb: 2 }}>{title}</Typography>
+            <Stack spacing={2}>{children}</Stack>
+        </Box>
+    );
+}
+
 function SettingsDialog({ open, onClose }) {
     const { t } = useI18n();
     const shared = useSharedStopwatches();
@@ -36,7 +46,12 @@ function SettingsDialog({ open, onClose }) {
     const wasOpen = useRef(false);
     const originalSettings = useRef({});
     const resetRequested = useRef(false);
-    const handleClose = () => { if (!applyingRef.current) onClose(); };
+    const handleClose = () => {
+        if (!applyingRef.current) {
+            setDisplayPreview(null);
+            onClose();
+        }
+    };
     const {
         isMobile,
         language: savedLanguage,
@@ -44,7 +59,7 @@ function SettingsDialog({ open, onClose }) {
         recentDays, recentLimit, recentMinimum,
         discordEnabled, recordSaveMode, mergeConsecutiveRecords,
         showDockIcon,
-        settingsError, saveSettings,
+        settingsError, saveSettings, setDisplayPreview,
     } = useSettings();
 
     // ─── 設定値のローカルコピー ───
@@ -84,6 +99,12 @@ function SettingsDialog({ open, onClose }) {
         wasOpen.current = open;
     }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords, showDockIcon]);
 
+    // 表示だけをプレビューし、閉じる際やアンマウント時に保存済みの表示へ戻す。
+    useEffect(() => {
+        if (open) setDisplayPreview({ language: tmpLanguage, themeMode: tmpThemeMode, layoutMode: tmpLayoutMode });
+        return () => setDisplayPreview(null);
+    }, [open, tmpLanguage, tmpThemeMode, tmpLayoutMode, setDisplayPreview]);
+
     // リセット用ハンドラ
     const handleReset = () => {
         // 既定値を適用
@@ -105,21 +126,16 @@ function SettingsDialog({ open, onClose }) {
         <Dialog fullScreen={isMobile} open={open} onClose={handleClose} maxWidth="sm">
             <DialogTitle>{t("App Settings")}</DialogTitle>
 
-            <DialogContent dividers>
+            <DialogContent dividers sx={{ '& legend.MuiFormLabel-root': { color: 'text.primary' } }}>
                 <Stack component="fieldset" disabled={applying} sx={{ border: 0, m: 0, p: 0, minWidth: 0 }} spacing={3} divider={<Divider flexItem />}>
-                    <FormControl component="fieldset">
-                        <FormLabel component="legend">{t("Language")}</FormLabel>
-                        <RadioGroup row value={tmpLanguage} onChange={e => setTmpLanguage(e.target.value)}>
-                            <FormControlLabel value="ja" label="日本語" control={<Radio />} />
-                            <FormControlLabel value="en" label="English" control={<Radio />} />
-                        </RadioGroup>
-                    </FormControl>
-                    {/* ------------- 外観関連設定 ------------- */}
-                    <Stack spacing={3}>
-                        {typeof window !== 'undefined' && window.pywebview?.api?.desktop_ready && <FormControlLabel
-                            control={<Switch checked={tmpShowDockIcon} onChange={e => setTmpShowDockIcon(e.target.checked)} />}
-                            label={t('Show icon in Dock')}
-                        />}
+                    <SettingsSection title={t("Display settings")}>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">{t("Language")}</FormLabel>
+                            <RadioGroup row value={tmpLanguage} onChange={e => setTmpLanguage(e.target.value)}>
+                                <FormControlLabel value="ja" label="日本語" control={<Radio />} />
+                                <FormControlLabel value="en" label="English" control={<Radio />} />
+                            </RadioGroup>
+                        </FormControl>
                         {/* ダークモード・ライトモード切り替え */}
                         <FormControl component="fieldset">
                             <FormLabel component="legend">{t("Theme")}</FormLabel>
@@ -144,25 +160,18 @@ function SettingsDialog({ open, onClose }) {
                                 <FormControlLabel value="two-column" label={t("2 Columns")} control={<Radio />} />
                             </RadioGroup>
                         </FormControl>
-                    </Stack>
-                    {/* ------------- アクティビティ関連設定 ------------- */}
-                    <Stack spacing={3}>
-                        {/* アクティビティフィルタの自動切り替え */}
-                        <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Activity Filter")}</FormLabel>
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={tmpAutoFilter}
-                                        onChange={(e) => setTmpAutoFilter(e.target.checked)}
-                                    />
-                                }
-                                label={t("Auto-switch activity filter on select")}
-                            />
-                        </FormControl>
+                    </SettingsSection>
+                    <SettingsSection title={t("Initial activity display")}>
                         {/* 最近使用した項目を決めるしきい値の日数設定 */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Initial-Display Activities Used in")}</FormLabel>
+                            <FormLabel component="legend">
+                                {t("Activity lookback period")}
+                                <InfoTooltip title={t("Activities with records within the specified period are eligible for initial display.")}>
+                                    <IconButton size="small" aria-label={t("About the activity history lookback period")} sx={{ ml: 0.5 }}>
+                                        <InfoOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </InfoTooltip>
+                            </FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecentDays}
@@ -180,7 +189,7 @@ function SettingsDialog({ open, onClose }) {
                         </FormControl>
                         {/* 最近使用した項目として表示するactivityの件数の上限 */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Initial-Display Activities Limit")}</FormLabel>
+                            <FormLabel component="legend">{t("Maximum activities")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecentLimit}
@@ -205,7 +214,7 @@ function SettingsDialog({ open, onClose }) {
                         </FormControl>
                         {/* 期間内の対象が少ない場合に補充する最低件数 */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Initial-Display Activities Minimum")}</FormLabel>
+                            <FormLabel component="legend">{t("Minimum activities")}</FormLabel>
                             <RadioGroup
                                 row
                                 value={tmpRecentMinimum}
@@ -222,19 +231,48 @@ function SettingsDialog({ open, onClose }) {
                                 )}
                             </RadioGroup>
                         </FormControl>
-                    </Stack>
-                    {/* ------------- Discord連係関連設定 ------------- */}
-                    <Stack spacing={3}>
-                        {/* Discord 連係 ON/OFF */}
-                        <FormControl component="fieldset">
-                            <FormLabel component="legend">
-                                {t("Discord Integration")}
-                                <Tooltip title={t("Discord integration requires the Discord desktop client and Chronoloft to be running on the same device.")} arrow>
-                                    <IconButton size="small" aria-label={t("About Discord integration")} sx={{ ml: 0.5 }}>
-                                        <InfoOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            </FormLabel>
+                    </SettingsSection>
+                    <SettingsSection title={t("Timing and records")}>
+                        {/* アクティビティフィルタの自動切り替え */}
+                        <Stack direction="row" alignItems="center">
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={tmpAutoFilter}
+                                        onChange={(e) => setTmpAutoFilter(e.target.checked)}
+                                    />
+                                }
+                                label={t("Filter chart and heatmap when starting a timer")}
+                                sx={{ mr: 0 }}
+                            />
+                            <InfoTooltip title={t("When you start timing an activity, the chart and heatmap are filtered to that activity. When OFF, the current filters are kept. The record list, calendar, and trends are not affected.")}>
+                                <IconButton size="small" aria-label={t("About automatic activity filtering")}>
+                                    <InfoOutlinedIcon fontSize="small" />
+                                </IconButton>
+                            </InfoTooltip>
+                        </Stack>
+                        <Stack direction="row" alignItems="center">
+                            <FormControlLabel
+                                control={<Switch checked={tmpRecordSaveMode === 'confirm'} onChange={e => setTmpRecordSaveMode(e.target.checked ? 'confirm' : 'auto')} />}
+                                label={t("Show edit dialog when saving")}
+                                sx={{ mr: 0 }}
+                            />
+                        </Stack>
+                        <Stack direction="row" alignItems="center">
+                            <FormControlLabel
+                                control={<Switch checked={tmpMergeConsecutiveRecords} onChange={e => setTmpMergeConsecutiveRecords(e.target.checked)} />}
+                                label={t("Merge consecutive records")}
+                                sx={{ mr: 0 }}
+                            />
+                            <InfoTooltip title={t("Automatically merges records with the same activity and details when the gap between the end of one and the start of the next is 5 minutes or less. Records are not merged if another record occurs in between.")}>
+                                <IconButton size="small" aria-label={t("About merging consecutive records")}>
+                                    <InfoOutlinedIcon fontSize="small" />
+                                </IconButton>
+                            </InfoTooltip>
+                        </Stack>
+                    </SettingsSection>
+                    <SettingsSection title={t("External integrations")}>
+                        <Stack direction="row" alignItems="center">
                             <FormControlLabel
                                 control={
                                     <Switch
@@ -244,36 +282,22 @@ function SettingsDialog({ open, onClose }) {
                                     />
                                 }
                                 label={t("Enable Discord Rich Presence")}
+                                sx={{ mr: 0 }}
                             />
-                        </FormControl>
-                    </Stack>
-                    {/* ------------- レコード保存モード ------------- */}
-                    <Stack spacing={3}>
-                        <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Record Save Mode")}</FormLabel>
-                            <Stack direction="row" alignItems="center">
-                                <FormControlLabel
-                                    control={<Switch checked={tmpMergeConsecutiveRecords} onChange={e => setTmpMergeConsecutiveRecords(e.target.checked)} />}
-                                    label={t("Merge consecutive records")}
-                                    sx={{ mr: 0 }}
-                                />
-                                <Tooltip title={t("Automatically merges records with the same activity and details when the gap between the end of one and the start of the next is 5 minutes or less. Records are not merged if another record occurs in between.")} arrow>
-                                    <IconButton size="small" aria-label={t("About merging consecutive records")}>
-                                        <InfoOutlinedIcon fontSize="small" />
-                                    </IconButton>
-                                </Tooltip>
-                            </Stack>
-                            <RadioGroup
-                                row
-                                value={tmpRecordSaveMode}
-                                onChange={e => setTmpRecordSaveMode(e.target.value)}
-                            >
-                                <FormControlLabel value="auto" control={<Radio />} label={t("Auto")} />
-                                <FormControlLabel value="confirm" control={<Radio />} label={t("Confirm")} />
-                            </RadioGroup>
-                        </FormControl>
-                    </Stack>
-                    {open && <LanSettings ref={lanSettings} disabled={applying} onReadyChange={setLanReady} />}
+                            <InfoTooltip title={t("Discord integration requires the Discord desktop client and Chronoloft to be running on the same device.")}>
+                                <IconButton size="small" aria-label={t("About Discord integration")}>
+                                    <InfoOutlinedIcon fontSize="small" />
+                                </IconButton>
+                            </InfoTooltip>
+                        </Stack>
+                    </SettingsSection>
+                    <SettingsSection title={t("Device and connection")}>
+                        {typeof window !== 'undefined' && window.pywebview?.api?.desktop_ready && <FormControlLabel
+                            control={<Switch checked={tmpShowDockIcon} onChange={e => setTmpShowDockIcon(e.target.checked)} />}
+                            label={t('Show icon in Dock')}
+                        />}
+                        {open && <LanSettings ref={lanSettings} disabled={applying} onReadyChange={setLanReady} />}
+                    </SettingsSection>
                 </Stack>
             </DialogContent>
 
@@ -318,6 +342,7 @@ function SettingsDialog({ open, onClose }) {
                                     ([key, value]) => (key !== 'discordEnabled' || canEditDiscord)
                                         && (resetRequested.current || value !== originalSettings.current[key])));
                                 await saveSettings(changes);
+                                setDisplayPreview(null);
                                 onClose();
                             } catch (error) {
                                 setSaveError(error.message || '設定を保存できませんでした。');
