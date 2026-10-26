@@ -33,6 +33,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     const [editing, setEditing] = useState(false);
     const [memoEditing, setMemoEditing] = useState(false);
     const [cancelItem, setCancelItem] = useState(null);
+    const cancelRequested = useRef(false);
     const memoInput = useRef({ focused: false, composing: false });
     const updateMemoEditing = patch => {
         Object.assign(memoInput.current, patch);
@@ -65,15 +66,20 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         return result.item;
     };
     const autoSave = useRef(null);
-    autoSave.current = () => run(savedItem);
+    const autoSavePending = useRef(null);
+    autoSave.current = () => {
+        const saving = run(savedItem).finally(() => { autoSavePending.current = null; });
+        autoSavePending.current = saving;
+        return saving;
+    };
     // 詳細欄のフォーカス・変換中は保存せず、欄を離れてから一括保存する。
     useEffect(() => {
-        if (!own || !Object.keys(changes).length || busy || memoEditing) return;
+        if (!own || !Object.keys(changes).length || busy || memoEditing || cancelRequested.current) return;
         const timer = setTimeout(() => {
-            if (!memoInput.current.focused && !memoInput.current.composing) autoSave.current();
+            if (!memoInput.current.focused && !memoInput.current.composing && !cancelRequested.current) autoSave.current();
         }, 600);
         return () => clearTimeout(timer);
-    }, [own, changes, busy, memoEditing]);
+    }, [own, changes, busy, memoEditing, cancelItem]);
     useEffect(() => {
         const registry = drafts.current;
         registry[item.id] = savedItem;
@@ -93,7 +99,14 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
             const current = await savedItem();
             return recordSaveMode === 'confirm' ? openConfirm(current) : operateStopwatch(current, 'complete');
         }),
-        cancel: () => setCancelItem(item),
+        cancel: () => {
+            // 確認中は自動保存を止め、既に始まった保存だけ完了を待つ。
+            cancelRequested.current = true;
+            if (autoSavePending.current) {
+                return autoSavePending.current.then(saved => setCancelItem(saved || item));
+            }
+            setCancelItem(item);
+        },
         pause: () => openConfirm(item),
         updateStartTime: value => {
             if (!Number.isFinite(value) || value > Date.now()) throw new Error(t("Start time cannot be in the future"));
@@ -187,10 +200,15 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         </Stack>}
         <ConfirmDialog open={cancelItem !== null}
             content={cancelItem && `${cancelItem.device_name} の「${cancelItem.activity_name}」をキャンセルしますか？`}
-            confirmLabel="OK" onCancel={() => setCancelItem(null)}
-            onConfirm={() => {
+            confirmLabel="OK" onCancel={() => {
+                cancelRequested.current = false;
                 setCancelItem(null);
-                return run(() => operateStopwatch(cancelItem, 'cancel'));
+            }}
+            onConfirm={() => {
+                return run(() => operateStopwatch(cancelItem, 'cancel')).finally(() => {
+                    cancelRequested.current = false;
+                    setCancelItem(null);
+                });
             }} />
     </Box>;
 }
