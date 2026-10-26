@@ -220,6 +220,9 @@ function RecordList() {
                             getRowHeight={() => 'auto'}
                             sx={{
                                 '& .record-date': { whiteSpace: 'nowrap' },
+                                [`& .${gridClasses.cell}:focus, & .${gridClasses.cell}:focus-within`]: {
+                                    outline: 'none',
+                                },
                                 [`& .${gridClasses.cell}`]: {
                                   py: 0,
                                   alignContent: 'center'
