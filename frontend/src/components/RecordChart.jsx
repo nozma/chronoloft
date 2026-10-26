@@ -975,17 +975,27 @@ function RecordChart() {
                     {settingsOpen && (
                         <Box
                             sx={{
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                // スクロールの初期位置を右端にし、項目自体の並びは内側で維持する。
+                                direction: 'rtl',
+                                overflowX: 'auto',
+                                scrollbarWidth: 'none',
+                                '&::-webkit-scrollbar': { display: 'none' },
+                            }}
+                        >
+                        <Box
+                            sx={{
+                                direction: 'ltr',
                                 display: 'flex',
                                 flexWrap: 'nowrap',
+                                width: 'max-content',
+                                minWidth: '100%',
                                 gap: 0.5,
                                 justifyContent: 'flex-end',
                                 alignItems: 'center',
                                 pt: 0.5,
                                 pb: 0.25,
-                                overflowX: 'auto',
-                                overflowY: 'visible',
-                                scrollbarWidth: 'none',
-                                '&::-webkit-scrollbar': { display: 'none' },
                             }}
                         >
                         {/* Activity フィルター */}
@@ -1097,6 +1107,7 @@ function RecordChart() {
                             <MenuItem value="time">{t("Time")}</MenuItem>
                             <MenuItem value="count">{t("Count")}</MenuItem>
                         </TextField>
+                        </Box>
                         </Box>
                     )}
                 </Box>
