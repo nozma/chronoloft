@@ -12,7 +12,7 @@ const defaults = {
     recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', showDockIcon: false,
 };
 
-function dialog() {
+function dialog(local = true) {
     const slots = [];
     const effects = [];
     const writes = [];
@@ -44,6 +44,8 @@ function dialog() {
     const jsx = (type, props) => ({ type, props });
     const modules = {
         react: hooks,
+        '@mui/icons-material/InfoOutlined': { default: 'InfoOutlinedIcon' },
+        '../services/stopwatches': { useSharedStopwatches: () => ({ device: { is_local: local } }) },
         'react/jsx-runtime': { jsx, jsxs: jsx },
         '@mui/material': new Proxy({}, { get: (_, name) => name }),
         './LanAccess': { LanSettings: 'LanSettings' },
@@ -91,6 +93,8 @@ function dialog() {
     render();
     return {
         writes,
+        changeDiscord(value) { find('FormControlLabel', props => props.label === 'Enable Discord Rich Presence').control.props.onChange({ target: { checked: value } }); render(); },
+        discord() { return find('FormControlLabel', props => props.label === 'Enable Discord Rich Presence').control.props; },
         get settings() { return settings; },
         remote(changes) { settings = { ...settings, ...changes }; render(); },
         reset() { find('Button', props => props.children === 'Reset to Defaults').onClick(); render(); },
@@ -141,4 +145,25 @@ test('Dock表示の変更を適用し、リセットでは非表示に戻す', a
     ui.reset();
     await ui.apply();
     assert.equal(ui.settings.showDockIcon, false);
+});
+
+
+test('別端末ではDiscordをOff表示で固定し、リセットでも起動PCの設定を書き換えない', async () => {
+    const ui = dialog(false);
+    assert.equal(ui.discord().checked, false);
+    assert.equal(ui.discord().disabled, true);
+    ui.reset();
+    assert.equal(ui.discord().checked, false);
+    await ui.apply();
+    assert.equal(Object.hasOwn(ui.writes[0], 'discordEnabled'), false);
+    assert.equal(ui.settings.discordEnabled, true);
+});
+
+test('起動PCではDiscord設定の表示と切り替えを維持する', async () => {
+    const ui = dialog();
+    assert.equal(ui.discord().checked, true);
+    assert.equal(ui.discord().disabled, false);
+    ui.changeDiscord(false);
+    await ui.apply();
+    assert.equal(ui.settings.discordEnabled, false);
 });

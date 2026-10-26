@@ -1,8 +1,12 @@
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { useSharedStopwatches } from '../services/stopwatches';
 import { LanSettings } from './LanAccess';
 import { useI18n } from '../i18n/I18nContext';
 import { useState, useEffect, useRef } from 'react';
 import {
     Alert,
+    Tooltip,
+    IconButton,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -22,6 +26,8 @@ import { useSettings, DEFAULT_SETTINGS } from '../contexts/SettingsContext';
 
 function SettingsDialog({ open, onClose }) {
     const { t } = useI18n();
+    const shared = useSharedStopwatches();
+    const canEditDiscord = shared.device?.is_local === true;
     const lanSettings = useRef(null);
     const applyingRef = useRef(false);
     const [applying, setApplying] = useState(false);
@@ -218,11 +224,19 @@ function SettingsDialog({ open, onClose }) {
                     <Stack spacing={3}>
                         {/* Discord 連係 ON/OFF */}
                         <FormControl component="fieldset">
-                            <FormLabel component="legend">{t("Discord Integration")}</FormLabel>
+                            <FormLabel component="legend">
+                                {t("Discord Integration")}
+                                <Tooltip title={t("Discord integration requires the Discord desktop client and Chronoloft to be running on the same device.")} arrow>
+                                    <IconButton size="small" aria-label={t("About Discord integration")} sx={{ ml: 0.5 }}>
+                                        <InfoOutlinedIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </FormLabel>
                             <FormControlLabel
                                 control={
                                     <Switch
-                                        checked={tmpDiscordEnabled}
+                                        checked={canEditDiscord && tmpDiscordEnabled}
+                                        disabled={!canEditDiscord}
                                         onChange={(e) => setTmpDiscordEnabled(e.target.checked)}
                                     />
                                 }
@@ -285,7 +299,8 @@ function SettingsDialog({ open, onClose }) {
                                 };
                                 // 通常は変更した項目だけを保存し、明示的なリセットでは全項目を反映する。
                                 const changes = Object.fromEntries(Object.entries(next).filter(
-                                    ([key, value]) => resetRequested.current || value !== originalSettings.current[key]));
+                                    ([key, value]) => (key !== 'discordEnabled' || canEditDiscord)
+                                        && (resetRequested.current || value !== originalSettings.current[key])));
                                 await saveSettings(changes);
                                 onClose();
                             } catch (error) {
