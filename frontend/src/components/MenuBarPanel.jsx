@@ -17,12 +17,12 @@ export default function MenuBarPanel() {
     const { t } = useI18n();
     const { activities, refreshActivities } = useActivities();
     const { records } = useRecords();
-    const { groups, setGroups } = useGroups();
+    const { groups, setGroups, excludedGroupIds, setGroupExclusions } = useGroups();
     const { recentDays, recentLimit, recentMinimum } = useSettings();
     const state = useSharedStopwatches();
     const main = state.items.find(item => item.device_id === state.device?.id && item.slot === 'main');
     const { recent: candidates, hasHistory } = recentDesktopActivities(activities, records, {
-        recentDays, recentLimit, recentMinimum,
+        recentDays, recentLimit, recentMinimum, excludedGroupIds,
     });
     useEffect(() => {
         const resize = () => window.webkit?.messageHandlers?.chronoloft?.postMessage({
@@ -39,10 +39,16 @@ export default function MenuBarPanel() {
         const refresh = () => {
             refreshActivities();
             fetchActivityGroups().then(setGroups).catch(() => {});
+            // パネルを開くたびに、アプリで変更したグループの除外設定を読み直す。
+            try {
+                setGroupExclusions(JSON.parse(localStorage.getItem('groupExclusions') || '{}'));
+            } catch (error) {
+                console.error('Failed to refresh group exclusions:', error);
+            }
         };
         window.addEventListener('chronoloft:panel-opened', refresh);
         return () => window.removeEventListener('chronoloft:panel-opened', refresh);
-    }, [refreshActivities, setGroups]);
+    }, [refreshActivities, setGroups, setGroupExclusions]);
     return <Stack spacing={1.5} sx={{ py: 1 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Typography variant="subtitle1" fontWeight={600}>Chronoloft</Typography>
