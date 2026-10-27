@@ -21,8 +21,9 @@ export async function desktopDiscordEnabled(fetchSettings = fetch) {
     } finally { clearTimeout(timeout); }
 }
 
-export function recentDesktopActivities(activities, records, { recentDays, recentLimit, recentMinimum }, now = Date.now()) {
-    const eligible = activities.filter(item => item.unit === 'minutes' && item.is_active !== false);
+export function recentDesktopActivities(activities, records, { recentDays, recentLimit, recentMinimum, excludedGroupIds = new Set() }, now = Date.now()) {
+    const eligible = activities.filter(item => item.unit === 'minutes' && item.is_active !== false
+        && !excludedGroupIds.has(Number(item.group_id)));
     const byId = new Map(eligible.map(item => [item.id, item]));
     const seen = new Set();
     const recorded = [];

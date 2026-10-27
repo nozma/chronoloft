@@ -4,6 +4,26 @@ import { desktopDiscordEnabled, recentDesktopActivities } from './desktop.js';
 
 const settings = { recentDays: '14', recentLimit: '15', recentMinimum: '1' };
 
+test('すべてと同様に除外グループを最近の候補と最低件数の補充対象から外す', () => {
+    const now = Date.UTC(2026, 9, 26);
+    const activities = [
+        { id: 1, group_id: 10, unit: 'minutes' },
+        { id: 2, group_id: '20', unit: 'minutes' },
+        { id: 3, group_id: 30, unit: 'minutes' },
+    ];
+    const records = [{ activity_id: 2, created_at: new Date(now).toISOString() }];
+    const options = { ...settings, recentMinimum: '5', excludedGroupIds: new Set([20]) };
+    for (const recentDays of ['14', 'all']) {
+        const result = recentDesktopActivities(activities, records, { ...options, recentDays }, now);
+        assert.deepEqual(result.recent.map(item => item.id), [1, 3]);
+        assert.deepEqual(result.eligible.map(item => item.id), [1, 3]);
+        assert.equal(result.hasHistory, false);
+    }
+    assert.deepEqual(recentDesktopActivities(activities, records, {
+        ...options, excludedGroupIds: new Set([10, 20, 30]),
+    }, now).recent, []);
+});
+
 test('最近の候補は設定した上限まで有効な時間計測だけを重複なしで表示する', () => {
     const activities = Array.from({ length: 7 }, (_, id) => ({ id, unit: 'minutes', is_active: true }));
     activities.push({ id: 8, unit: 'count' }, { id: 9, unit: 'minutes', is_active: false });
