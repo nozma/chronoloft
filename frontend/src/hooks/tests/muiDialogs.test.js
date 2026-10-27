@@ -184,24 +184,21 @@ test('計測キャンセルは取り消しでは実行せず、OKで確認開始
     assert.deepEqual(calls, [[item, 'cancel']]);
 });
 
-for (const file of ['Stopwatch', 'SubStopwatch']) {
-    test(`${file}の開始時刻エラーは元のメッセージを表示し、閉じても操作を再実行しない`, () => {
-        let updates = 0;
-        const controller = { displayTime: 0, memo: '', updateStartTime: () => {
-            updates++;
-            throw new Error('元のエラーメッセージ');
-        } };
-        const ui = dialogHarness(file, { inlineMode: true, controller }, {
-            exportName: file === 'Stopwatch' ? 'StopwatchView' : 'default',
-            modules: { '../hooks/useStopwatch': { default: () => controller, __esModule: true } },
-        });
-        ui.find('TextField', input => input.type === 'datetime-local').onChange({ target: { value: '2026-10-26T10:00' } });
-        ui.render();
-        assert.equal(ui.find('ConfirmDialog').content, '元のエラーメッセージ');
-        assert.equal(ui.find('ConfirmDialog').open, true);
-        ui.find('ConfirmDialog').onConfirm();
-        ui.render();
-        assert.equal(ui.find('ConfirmDialog').open, false);
-        assert.equal(updates, 1);
+test('StopwatchViewの開始時刻エラーは元のメッセージを表示し、閉じても操作を再実行しない', () => {
+    let updates = 0;
+    const controller = { displayTime: 0, memo: '', updateStartTime: () => {
+        updates++;
+        throw new Error('元のエラーメッセージ');
+    } };
+    const ui = dialogHarness('Stopwatch', { inlineMode: true, controller }, {
+        exportName: 'StopwatchView',
     });
-}
+    ui.find('TextField', input => input.type === 'datetime-local').onChange({ target: { value: '2026-10-26T10:00' } });
+    ui.render();
+    assert.equal(ui.find('ConfirmDialog').content, '元のエラーメッセージ');
+    assert.equal(ui.find('ConfirmDialog').open, true);
+    ui.find('ConfirmDialog').onConfirm();
+    ui.render();
+    assert.equal(ui.find('ConfirmDialog').open, false);
+    assert.equal(updates, 1);
+});

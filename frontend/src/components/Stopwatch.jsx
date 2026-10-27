@@ -3,8 +3,6 @@ import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo } from 'react';
 import { Autocomplete, Button, Typography, Box, TextField, IconButton, Popover } from '@mui/material';
 import getIconForGroup from '../utils/getIconForGroup';
-import useStopwatch from '../hooks/useStopwatch';
-import { useSettings } from '../contexts/SettingsContext';
 import { alpha } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useRecords } from '../contexts/RecordContext';
@@ -19,7 +17,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const isInlineMode = Boolean(props.inlineMode);
     const { groups } = useGroups();
     const { records } = useRecords();
-    // カスタムフック useStopwatch を利用してタイマー処理全体を管理する
+    // 計測操作は共有ストップウォッチのコントローラーから受け取る。
     const {
         displayTime,
         complete,
@@ -335,11 +333,3 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         </>
     );
 });
-
-const Stopwatch = forwardRef(function Stopwatch(props, ref) {
-    const { discordEnabled } = useSettings();
-    const controller = useStopwatch('stopwatchState', props.discordData, { onComplete: props.onComplete, onCancel: props.onCancel, discordEnabled });
-    return <StopwatchView {...props} ref={ref} controller={{ ...controller, discordEnabled }} />;
-});
-
-export default Stopwatch;
