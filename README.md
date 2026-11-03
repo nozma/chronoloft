@@ -8,7 +8,7 @@ Discordへのステータス表示機能を備えた、個人利用向けのア�
 
 ## 対応環境
 
-macOS 26以降のApple Silicon搭載Macで利用できます。
+macOS 27以降のApple Silicon搭載Macで利用できます。
 
 ## 使い方
 

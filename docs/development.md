@@ -67,7 +67,7 @@ npm run build
 ```
 
 [Chronoloft.spec](../Chronoloft.spec) の設定で `dist/Chronoloft.app` を生成します。
-現在の配布対象はApple Silicon・macOS 26以降です。同梱Pythonが要求するOS条件による制約です。
+現在の配布対象はApple Silicon・macOS 27以降です。同梱Python・ライブラリが要求するOS条件による制約です。
 `dist/`・`build/` は生成物なので、直接編集しません。
 
 ### アイコンとバージョン
