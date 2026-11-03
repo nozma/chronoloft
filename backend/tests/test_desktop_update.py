@@ -167,6 +167,26 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'Apple Silicon'):
                 release.validate_appcast(path, archive, self.config, '1.2.0')
 
+    def test_implicit_arm64_requires_macos_27_and_still_verifies_signature(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path, archive, root = self.appcast(Path(directory))
+            ns = '{' + release.SPARKLE_NS + '}'
+            item = root.find('./channel/item')
+            item.remove(item.find(ns + 'hardwareRequirements'))
+            item.find('enclosure').set(ns + 'edSignature', release.base64.b64encode(bytes(64)).decode())
+            for minimum in ('26.0', '27.0'):
+                config = self.config | {'minimum_macos': minimum}
+                item.find(ns + 'minimumSystemVersion').text = minimum
+                ET.ElementTree(root).write(path)
+                with patch.object(release, 'run') as run:
+                    if minimum == '26.0':
+                        with self.assertRaisesRegex(ValueError, 'Apple Silicon'):
+                            release.validate_appcast(path, archive, config, '1.2.0')
+                        run.assert_not_called()
+                    else:
+                        release.validate_appcast(path, archive, config, '1.2.0')
+                        self.assertIn('--verify', run.call_args.args[0])
+
     def test_changed_artifact_cannot_be_resumed(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
