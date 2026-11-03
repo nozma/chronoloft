@@ -29,6 +29,7 @@ def read_desktop_state(app, device_id):
             result['session'] = {
                 'id': session.id, 'started_at': session.started_at, 'paused_at': session.paused_at,
                 'icon': activity.group.icon_name if activity and activity.group else None,
+                'color': activity.group.icon_color if activity and activity.group else None,
             }
         return result
 
@@ -39,6 +40,62 @@ def elapsed_title(session, now=None):
     end = session['paused_at'] if session['paused_at'] is not None else (time.time() * 1000 if now is None else now)
     minutes = max(0, int((end - session['started_at']) // 60000))
     return f'{minutes // 60:02}:{minutes % 60:02}'
+
+
+def badge_colors(value):
+    """未設定色は灰色とし、コントラスト比の高い文字色を選ぶ。"""
+    try:
+        if not isinstance(value, str) or len(value) != 7 or not value.startswith('#'):
+            raise ValueError
+        rgb = tuple(int(value[i:i + 2], 16) / 255 for i in (1, 3, 5))
+    except ValueError:
+        rgb = (0.5, 0.5, 0.5)
+    linear = tuple(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb)
+    luminance = sum(c * weight for c, weight in zip(linear, (0.2126, 0.7152, 0.0722)))
+    foreground = 0.0 if (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05) else 1.0
+    return rgb, foreground
+
+
+def stopwatch_badge(icon, title, color):
+    """背景・アイコン・時間を一枚に描き、メニューバーの自動着色を避ける。"""
+    from AppKit import (
+        NSBezierPath, NSColor, NSCompositingOperationSourceIn,
+        NSCompositingOperationSourceOver, NSFont, NSFontAttributeName,
+        NSForegroundColorAttributeName, NSImage, NSRectFillUsingOperation,
+    )
+    from Foundation import NSMakeRect, NSMakeSize, NSString
+    import math
+
+    rgb, foreground = badge_colors(color)
+    ink = NSColor.colorWithSRGBRed_green_blue_alpha_(foreground, foreground, foreground, 1)
+    attributes = {NSFontAttributeName: NSFont.monospacedDigitSystemFontOfSize_weight_(12, 0),
+                  NSForegroundColorAttributeName: ink}
+    text = NSString.stringWithString_(title)
+    text_size = text.sizeWithAttributes_(attributes)
+    width = math.ceil(6 + 18 + 4 + text_size.width + 6)
+    image = NSImage.alloc().initWithSize_(NSMakeSize(width, 22))
+    # テンプレート画像のアルファを保ち、白または黒に塗る。
+    tinted = NSImage.alloc().initWithSize_(NSMakeSize(18, 18))
+    tinted.lockFocus()
+    try:
+        icon.drawInRect_fromRect_operation_fraction_(NSMakeRect(0, 0, 18, 18), NSMakeRect(0, 0, 0, 0),
+                                                     NSCompositingOperationSourceOver, 1)
+        ink.set()
+        NSRectFillUsingOperation(NSMakeRect(0, 0, 18, 18), NSCompositingOperationSourceIn)
+    finally:
+        tinted.unlockFocus()
+    image.lockFocus()
+    try:
+        NSColor.colorWithSRGBRed_green_blue_alpha_(*rgb, 1).setFill()
+        NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(NSMakeRect(0, 1, width, 20), 10, 10).fill()
+        tinted.drawInRect_fromRect_operation_fraction_(NSMakeRect(6, 2, 18, 18), NSMakeRect(0, 0, 0, 0),
+                                                       NSCompositingOperationSourceOver, 1)
+        text.drawInRect_withAttributes_(NSMakeRect(28, (22 - text_size.height) / 2,
+                                                  text_size.width, text_size.height), attributes)
+    finally:
+        image.unlockFocus()
+    image.setTemplate_(False)
+    return image
 
 
 def prepare_desktop_termination(app, device_id):
@@ -90,6 +147,7 @@ def install_menubar(window, app_provider):
             self.polling = False
             self.state = None
             self.images = {}
+            self.badge_key = None
             self.confirmation_views = set()
             self.termination_waiting = False
             self.status = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
@@ -151,8 +209,17 @@ def install_menubar(window, app_provider):
             icon = session['icon'] if session else 'Chronoloft'
             if session and icon not in ('MenuBookIcon', 'SportsEsportsIcon', 'FitnessCenterIcon', 'HomeWorkIcon'):
                 icon = 'HomeWorkIcon'
-            self.status.button().setImage_(self.image(icon, bool(session)))
-            self.status.button().setTitle_(elapsed_title(session))
+            button = self.status.button()
+            title = elapsed_title(session)
+            key = (icon, title, session.get('color')) if session else None
+            if session:
+                if self.badge_key != key:
+                    button.setImage_(stopwatch_badge(self.image(icon), title, session.get('color')))
+            else:
+                button.setImage_(self.image('Chronoloft', False))
+            self.badge_key = key
+            button.setTitle_('')
+            button.setAccessibilityValue_(title)
 
         @objc.python_method
         def bind_device(self, device_id):
