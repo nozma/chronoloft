@@ -186,7 +186,7 @@ function RecordList() {
             <div style={{ width: '100%' }}>
                 <Typography
                     variant='caption'
-                    color='#cccccc'
+                    color="text.sectionLabel"
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_RECORDS_OPEN', payload: !uiState.recordsOpen })}
                 >

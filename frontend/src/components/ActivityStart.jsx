@@ -264,7 +264,7 @@ function ActivityStart({
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography
                             variant='caption'
-                            color='#cccccc'
+                            color="text.sectionLabel"
                             sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                             onClick={() => dispatch({ type: 'SET_GROUP_OPEN', payload: !state.groupOpen })}
                         >
@@ -282,7 +282,7 @@ function ActivityStart({
                             <IconButton
                                 size="small"
                                 onClick={() => dispatch({ type: 'SET_GROUP_DIALOG', payload: true })}
-                                sx={{ color: '#cccccc' }}
+                                sx={{ color: 'text.sectionLabel' }}
                             >
                                 <SettingsIcon fontSize="small" />
                             </IconButton>
@@ -352,7 +352,7 @@ function ActivityStart({
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Typography
                             variant='caption'
-                            color='#cccccc'
+                            color="text.sectionLabel"
                             sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                             onClick={() => dispatch({ type: 'SET_TAG_OPEN', payload: !state.tagOpen })}
                         >
@@ -370,7 +370,7 @@ function ActivityStart({
                             <IconButton
                                 size="small"
                                 onClick={() => dispatch({ type: 'SET_TAG_DIALOG', payload: true })}
-                                sx={{ color: '#cccccc' }}
+                                sx={{ color: 'text.sectionLabel' }}
                             >
                                 <SettingsIcon fontSize="small" />
                             </IconButton>
@@ -428,27 +428,38 @@ function ActivityStart({
                 <Box sx={sectionSx}>
                 {!state.activityDialogOpen && (
                     <>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Typography
-                                variant='caption'
-                                color='#cccccc'
-                                sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <Box
+                                sx={{ cursor: 'pointer', pb: 0.5 }}
                                 onClick={() => dispatch({ type: 'SET_ACTIVITY_OPEN', payload: !state.activityOpen })}
                             >
-                                {t("Activity (Click to start recording)")}
-                                <KeyboardArrowRightIcon
-                                    fontSize='small'
-                                    sx={{
-                                        transition: 'transform 0.15s linear',
-                                        transform: state.activityOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                                        marginLeft: '4px'
-                                    }}
-                                />
-                            </Typography>
+                                <Typography
+                                    variant='caption'
+                                    color="text.sectionLabel"
+                                    sx={{ alignItems: 'center', display: 'flex', minHeight: 28 }}
+                                >
+                                    {t("Activity")}
+                                    <KeyboardArrowRightIcon
+                                        fontSize='small'
+                                        sx={{
+                                            transition: 'transform 0.15s linear',
+                                            transform: state.activityOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                                            marginLeft: '4px'
+                                        }}
+                                    />
+                                </Typography>
+                                <Typography
+                                    component="div"
+                                    variant="caption"
+                                    sx={{ color: 'text.recordingHint', fontSize: '0.65rem', lineHeight: 1.4 }}
+                                >
+                                    {t("Click to start recording")}
+                                </Typography>
+                            </Box>
                             <IconButton
                                 size="small"
                                 onClick={() => dispatch({ type: 'SET_ACTIVITY_DIALOG', payload: true })}
-                                sx={{ color: '#cccccc' }}
+                                sx={{ color: 'text.sectionLabel' }}
                             >
                                 <SettingsIcon fontSize="small" />
                             </IconButton>

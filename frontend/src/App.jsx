@@ -40,7 +40,11 @@ function App() {
         () =>
             createTheme({
                 palette: {
-                    mode: resolvedMode
+                    mode: resolvedMode,
+                    text: {
+                        sectionLabel: resolvedMode === 'dark' ? '#cccccc' : '#888888',
+                        recordingHint: resolvedMode === 'dark' ? '#888888' : '#cccccc',
+                    },
                 },
                 breakpoints: {
                     values: {
