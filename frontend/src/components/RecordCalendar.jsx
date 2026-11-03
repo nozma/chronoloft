@@ -731,7 +731,7 @@ function RecordCalendar() {
         >
             <Typography
                 variant="caption"
-                color="#cccccc"
+                color="text.sectionLabel"
                 sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                 onClick={() =>
                     uiDispatch({ type: 'SET_CALENDAR_OPEN', payload: !uiState.calendarOpen })

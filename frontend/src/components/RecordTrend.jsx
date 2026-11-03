@@ -365,7 +365,7 @@ function RecordTrend() {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Typography
                     variant='caption'
-                    color='#cccccc'
+                    color="text.sectionLabel"
                     sx={{ alignItems: 'center', display: 'flex', cursor: 'pointer' }}
                     onClick={() => uiDispatch({ type: 'SET_TREND_OPEN', payload: !uiState.trendOpen })}
                 >
@@ -382,7 +382,7 @@ function RecordTrend() {
                 <Button
                     size="small"
                     startIcon={<SettingsIcon fontSize="small" />}
-                    sx={{ color: '#cccccc', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
+                    sx={{ color: 'text.sectionLabel', textTransform: 'none', minWidth: 'auto', px: 0.5 }}
                     onClick={() => setSettingsOpen(prev => !prev)}
                 >
                     {settingsOpen ? t("Close") : t("Open")}

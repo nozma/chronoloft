@@ -39,7 +39,7 @@ function RecordingInterface({ showHeading = true }) {
                     </Typography>
                     <Typography
                         variant='caption'
-                        color='#ccc'
+                        color="text.sectionLabel"
                         onClick={() =>
                             dispatch({
                                 type: 'UPDATE_UI',
@@ -56,7 +56,7 @@ function RecordingInterface({ showHeading = true }) {
                     </Typography>
                     <Typography
                         variant='caption'
-                        color='#ccc'
+                        color="text.sectionLabel"
                         onClick={() =>
                             dispatch({
                                 type: 'UPDATE_UI',

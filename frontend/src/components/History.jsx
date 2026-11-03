@@ -32,7 +32,7 @@ function History() {
                 </Typography>
                 <Typography
                     variant='caption'
-                    color='#ccc'
+                    color="text.sectionLabel"
                     onClick={() =>
                         uiDispatch({
                             type: 'UPDATE_UI',
@@ -51,7 +51,7 @@ function History() {
                 </Typography>
                 <Typography
                     variant='caption'
-                    color='#ccc'
+                    color="text.sectionLabel"
                     onClick={() =>
                         uiDispatch({
                             type: 'UPDATE_UI',
