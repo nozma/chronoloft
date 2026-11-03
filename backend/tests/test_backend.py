@@ -1,4 +1,6 @@
 import datetime
+import os
+import sys
 from pathlib import Path
 import tempfile
 import unittest
@@ -13,7 +15,7 @@ from app import discord_presence_manager as rpc_module
 from app.routes import discord_routes
 
 
-TEST_CONFIG = {'TESTING': True, 'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:'}
+TEST_CONFIG = {'TESTING': True, 'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:', 'DISCORD_RPC_ENABLED': True}
 
 
 class DatabaseTestCase(unittest.TestCase):
@@ -64,6 +66,16 @@ class DatabaseTestCase(unittest.TestCase):
 
 
 class AppSafetyTests(unittest.TestCase):
+    def test_discord_policy_for_source_opt_in_and_distribution(self):
+        config = {key: value for key, value in TEST_CONFIG.items() if key != 'DISCORD_RPC_ENABLED'}
+        for frozen, opt_in, expected in [(False, '', False), (False, '0', False),
+                                         (False, '1', True), (True, '', True), (True, '0', True)]:
+            with self.subTest(frozen=frozen, opt_in=opt_in):
+                with patch.object(sys, 'frozen', frozen, create=True), patch.dict(os.environ, CHRONOLOFT_DEV_DISCORD=opt_in):
+                    app = create_app(config)
+                self.addCleanup(app.extensions['lan_auth_db'].close)
+                self.assertEqual(app.config['DISCORD_RPC_ENABLED'], expected)
+
     def test_startup_does_not_write_inside_app_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / 'Chronoloft.app'
@@ -197,6 +209,18 @@ class RecordTests(DatabaseTestCase):
 
 
 class DiscordRouteTests(DatabaseTestCase):
+    def test_disabled_development_blocks_direct_requests_and_manager_connection(self):
+        self.app.config['DISCORD_RPC_ENABLED'] = False
+        with patch.object(rpc_module, 'Presence') as presence:
+            for action in ('start', 'update'):
+                response = self.client.post(f'/api/discord_presence/{action}', json={
+                    'group': '学習', 'activity_name': '読書'})
+                self.assertEqual(response.status_code, 200)
+            rpc_module.DiscordRPCManager('123456789').connect()
+            presence.assert_not_called()
+        self.assertEqual(self.client.get('/api/discord_presence/status').json, {'connected': False})
+        self.assertEqual(discord_routes.DISCORD_MANAGERS, {})
+
     def test_publishes_only_saved_time_within_last_30_days(self):
         now = datetime.datetime(2026, 10, 23, 12, tzinfo=datetime.timezone.utc)
         stamp = now.replace(tzinfo=None)

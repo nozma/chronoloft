@@ -10,8 +10,13 @@ Codex が作業する際の最小限の指針をまとめています。
 - `dist/` と `build/` は生成物（基本的に編集しない）
 
 ## よく使うコマンド
-- 開発起動: `npm run start`（`http://localhost:5173/`）
+- 開発起動: `npm run start:no_webview`（`http://localhost:5173/`、Discord接続なし）
 - ビルド: `npm run build`
+
+## 開発時のDiscord接続
+- ソースからの開発起動は、保存済みのDiscord設定にかかわらず接続を無効にする。配布アプリの接続動作は維持する。
+- Discord上の表示確認など、接続が必須でユーザーが許可した場合だけ `npm run start:no_webview:discord` または `npm run dev:backend:webview:discord` を使う。
+- 接続を許可した開発起動では、現在の計測内容が通常の連携設定に従ってDiscordに公開される。確認後は開発プロセスを終了する。
 
 ## 編集ガイド
 - 既存の構成・ファイル配置を尊重する（新規作成は必要最小限）。

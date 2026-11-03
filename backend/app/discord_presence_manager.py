@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from flask import current_app, has_app_context
 
 from pypresence import Presence as BasePresence
 from pypresence.payloads import Payload
@@ -38,6 +39,9 @@ class DiscordRPCManager:
         self.start_time = None  # 接続開始時刻を管理
 
     def connect(self):
+        # 開発時はAPI以外から呼ばれても、明示的な許可なしで接続しない。
+        if has_app_context() and not current_app.config['DISCORD_RPC_ENABLED']:
+            return
         if not self.rpc:
             try:
                 self.rpc = Presence(self.client_id)

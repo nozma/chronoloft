@@ -47,6 +47,8 @@ def serialized(function):
 @discord_bp.route('/api/discord_presence/start', methods=['POST'])
 @serialized
 def discord_presence_start(data=None):
+    if not current_app.config['DISCORD_RPC_ENABLED']:
+        return jsonify({'message': 'Discord presence disabled for development'}), 200
     data = data if data is not None else request.get_json()
     # 旧画面から詳細が届いても、公開する情報として取得・転送しない。
     group = data.get('group')
@@ -124,6 +126,8 @@ def discord_presence_status():
 @discord_bp.route('/api/discord_presence/update', methods=['POST'])
 @serialized
 def discord_presence_update():
+    if not current_app.config['DISCORD_RPC_ENABLED']:
+        return jsonify({'message': 'Discord presence disabled for development'}), 200
     data = request.get_json()
     group = data.get('group')
     activity_name = data.get('activity_name')

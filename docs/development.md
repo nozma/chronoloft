@@ -30,6 +30,9 @@ Macの記録DBは `~/Library/Application Support/Chronoloft/app.db` に保存さ
 
 ## 起動方法
 
+ソースからの起動ではDiscord接続を標準で無効にします。保存済みのDiscord連携設定や計測の保存は変更しません。
+配布アプリでは従来どおりDiscord連携設定に従って接続します。
+
 ### ブラウザーで開発する
 
 ```sh
@@ -57,6 +60,20 @@ npm run dev:backend:webview
 
 `main.py` がビルド済みの画面を表示します。画面を変更したらフロントエンドを再ビルドしてください。
 配布版のSparkle更新機能は、[リリースガイドの更新テスト](releasing.md#実際の更新と再起動のテスト)で確認します。
+
+### Discord上の表示を確認する
+
+実接続が必要な場合だけ、次のいずれかで起動します。
+
+```sh
+npm run start:no_webview:discord
+npm run dev:backend:webview:discord
+```
+
+これらは `CHRONOLOFT_DEV_DISCORD=1` を指定して接続を許可します（macOS/Linux用）。
+Windowsでは同じ環境変数を `1` に設定して通常の開発コマンドを実行してください。
+連携が有効な起動PCの計測内容が、通常と同じ情報・公開範囲・タイミングでDiscordに送信されます。
+配布アプリとの同時起動は避け、確認後は開発サーバーを終了してください。画面を閉じるだけではサーバーは停止しません。
 
 ## デスクトップアプリのビルド
 

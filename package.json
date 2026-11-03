@@ -6,6 +6,8 @@
         "frontend"
     ],
     "scripts": {
+        "start:no_webview:discord": "CHRONOLOFT_DEV_DISCORD=1 npm run start:no_webview",
+        "dev:backend:webview:discord": "CHRONOLOFT_DEV_DISCORD=1 npm run dev:backend:webview",
         "dev:frontend": "cd frontend && npm run dev",
         "dev:frontend:lan": "cd frontend && npm run dev:lan",
         "dev:backend:webview": "cd backend && venv/bin/python ../main.py",
@@ -30,5 +32,5 @@
         "react-activity-calendar": "^2.7.8",
         "react-tooltip": "^5.28.0"
     },
-    "version": "2.0.0"
+    "version": "2.0.1"
 }
