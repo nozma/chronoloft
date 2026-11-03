@@ -9,6 +9,22 @@ from app.routes import stopwatch_routes
 
 
 class StopwatchTests(DatabaseTestCase):
+    def test_disabled_development_saves_stopwatch_without_discord_connection(self):
+        self.app.config['DISCORD_RPC_ENABLED'] = False
+        self.discord.stop()
+        try:
+            with patch('app.discord_presence_manager.Presence') as presence:
+                item = self.start(discord_enabled=True).json['item']
+                self.assertTrue(item['discord_enabled'])
+                self.assertFalse(item['discord_connected'])
+                self.assertEqual(self.client.get('/api/stopwatches').json['discord_errors'], {})
+                response = self.operate(item, 'cancel')
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json['item']['status'], 'cancelled')
+                presence.assert_not_called()
+        finally:
+            self.discord.start()
+
     def setUp(self):
         super().setUp()
         self.remote = self.app.test_client()

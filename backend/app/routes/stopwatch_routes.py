@@ -101,6 +101,8 @@ def sync_discord(item):
 
 
 def _sync_discord(item):
+    if not current_app.config['DISCORD_RPC_ENABLED']:
+        return None
     # 操作した端末ではなく、計測を所属させた端末で連携対象を判定する。
     device = db.session.get(StopwatchDevice, item.device_id)
     if not device.is_local:

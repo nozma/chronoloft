@@ -75,6 +75,7 @@ def create_app(test_config=None):
     app.config.from_mapping(
         SECRET_KEY=secrets.token_hex(16),
         SQLALCHEMY_DATABASE_URI=database_uri,
+        DISCORD_RPC_ENABLED=bool(getattr(sys, 'frozen', False)) or os.environ.get('CHRONOLOFT_DEV_DISCORD') == '1',
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
 
