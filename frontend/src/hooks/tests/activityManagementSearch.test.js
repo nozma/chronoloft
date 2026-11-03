@@ -9,7 +9,7 @@ const source = transformSync(readFileSync(new URL('../../components/ActivityMana
     loader: 'jsx', jsx: 'automatic', format: 'cjs',
 }).code;
 
-function grid(activityOverrides = {}, runningActivityIds = [], apiOverrides = {}, tagOptions = [], editApi = {}) {
+function grid(activityOverrides = {}, runningActivityIds = [], apiOverrides = {}, tagOptions = [], editApi = {}, sharedItems = []) {
     const jsx = (type, props) => ({ type, props });
     const modules = {
         react: { useMemo: fn => fn(), useRef: value => ({ current: value }), useState: value => [value, () => {}] },
@@ -28,6 +28,7 @@ function grid(activityOverrides = {}, runningActivityIds = [], apiOverrides = {}
         '../contexts/UIContext': { useUI: () => ({ state: {} }) },
         '../hooks/useLocalStorageState': { __esModule: true, default: () => [null, () => {}] },
         '../services/api': apiOverrides,
+        '../services/stopwatches': { useSharedStopwatches: () => ({ items: sharedItems }) },
     };
     const context = vm.createContext({ module: { exports: {} }, require: name => modules[name] ?? { default: name } });
     vm.runInContext(source, context);
@@ -120,4 +121,16 @@ test('セル内のEscは編集だけ取り消し、一覧ダイアログを閉�
     table.dialogProps.onKeyDownCapture({ key: 'Escape', target: { closest: () => null } });
     table.dialogProps.onClose({}, 'escapeKeyDown');
     assert.equal(table.closeCount(), 1);
+});
+
+
+test('別端末とサブ計測のアクティビティも編集禁止にし、終了済みは許可する', () => {
+    const table = grid({}, [], {}, [], {}, [
+        { activity_id: 1, status: 'running', device_id: 'remote', slot: 'main' },
+        { activity_id: 2, status: 'confirming', device_id: 'local', slot: 'sub' },
+        { activity_id: 3, status: 'completed' },
+    ]);
+    assert.equal(table.isCellEditable({ id: 1 }), false);
+    assert.equal(table.isCellEditable({ id: 2 }), false);
+    assert.equal(table.isCellEditable({ id: 3 }), true);
 });

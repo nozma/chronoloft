@@ -164,6 +164,9 @@ def set_activity_tags(activity_id):
     if not activity:
         return jsonify({'error': 'Activity not found'}), 404
 
+    if StopwatchSession.query.filter_by(activity_id=activity_id).filter(StopwatchSession.status.in_(['running', 'confirming'])).first():
+        return jsonify(error='計測中のアクティビティは変更・削除できません。'), 409
+
     # 受け取ったタグIDリストを元にタグを再構築
     new_tag_ids = data['tag_ids']
     new_tags = Tag.query.filter(Tag.id.in_(new_tag_ids)).all()

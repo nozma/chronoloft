@@ -30,6 +30,7 @@ import { useActivities } from '../contexts/ActivityContext';
 import { useFilter } from '../contexts/FilterContext';
 import { useTags } from '../contexts/TagContext';
 import { setActivityTags } from '../services/api';
+import { useSharedStopwatches } from '../services/stopwatches';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
 function ActivityTagsEditCell({ id, field, value, options }) {
@@ -52,6 +53,11 @@ function ActivityTagsEditCell({ id, field, value, options }) {
 
 function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     const { t } = useI18n();
+    const shared = useSharedStopwatches();
+    const protectedActivityIds = [...new Set([
+        ...runningActivityIds,
+        ...shared.items.filter(item => ['running', 'confirming'].includes(item.status)).map(item => item.activity_id),
+    ])];
     const { groups } = useGroups();
     const { tags } = useTags();
     const {
@@ -99,7 +105,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     };
 
     const handleDeleteButtonClick = (activityId) => {
-        if (runningActivityIds.includes(activityId)) return;
+        if (protectedActivityIds.includes(activityId)) return;
         setSelectedActivityId(activityId);
         dispatch({ type: 'SET_CONFIRM_DIALOG', payload: true });
     };
@@ -120,7 +126,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     };
 
     const processRowUpdate = async (newRow, oldRow) => {
-        if (runningActivityIds.includes(newRow.id)) throw new Error(t("This activity is being timed and cannot be edited."));
+        if (protectedActivityIds.includes(newRow.id)) throw new Error(t("This activity is being timed and cannot be edited."));
         const changes = Object.fromEntries(['name', 'reading', 'group_id', 'unit', 'asset_key']
             .filter(key => newRow[key] !== oldRow[key]).map(key => [key, newRow[key]]));
         setSaveError('');
@@ -133,13 +139,13 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
     };
 
     const handleEditActivity = (activity) => {
-        if (runningActivityIds.includes(activity.id)) return;
+        if (protectedActivityIds.includes(activity.id)) return;
         setSelectedActivity(activity);
         dispatch({ type: 'SET_EDIT_DIALOG', payload: true });
     };
 
     const handleStateChange = async (activityId, nextValue) => {
-        if (runningActivityIds.includes(activityId)) return;
+        if (protectedActivityIds.includes(activityId)) return;
         const isActive = nextValue === true || nextValue === 'true';
         try {
             await modifyActivity(activityId, { is_active: isActive });
@@ -183,7 +189,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
             headerName: t("State"),
             width: 125,
             renderCell: (params) => {
-                const disabled = runningActivityIds.includes(params.row.id);
+                const disabled = protectedActivityIds.includes(params.row.id);
                 const value = params.row.is_active ? true : false;
                 return (
                     <Select
@@ -282,7 +288,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
             sortable: false,
             filterable: false,
             renderCell: (params) => {
-                const disabled = runningActivityIds.includes(params.row.id);
+                const disabled = protectedActivityIds.includes(params.row.id);
                 return (
                     <>
                         <IconButton onClick={() => handleEditActivity(params.row)} disabled={disabled}>
@@ -297,7 +303,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
         }
     ];
 
-    const gridKey = runningActivityIds.join('-');
+    const gridKey = protectedActivityIds.join('-');
 
     return (
         <Dialog open={open} onClose={(event, reason) => {
@@ -341,7 +347,7 @@ function ActivityManagementDialog({ open, onClose, runningActivityIds = [] }) {
                                 sortModel: [{ field: 'is_active', sort: 'desc' }],
                             },
                         }}
-                        isCellEditable={params => !runningActivityIds.includes(params.id)}
+                        isCellEditable={params => !protectedActivityIds.includes(params.id)}
                         processRowUpdate={processRowUpdate}
                         onProcessRowUpdateError={() => setSaveError(t("Could not save the activity. Check your input and try again."))}
                         slots={{ toolbar: CustomToolbar }}

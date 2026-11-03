@@ -1,3 +1,4 @@
+import { isValidReading } from '../../utils/activitySearch.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -201,4 +202,21 @@ test('StopwatchViewの開始時刻エラーは元のメッセージを表示し�
     ui.render();
     assert.equal(ui.find('ConfirmDialog').open, false);
     assert.equal(updates, 1);
+});
+
+
+test('よみがなのIME変換中に閉じても、再表示後は保存できる', () => {
+    const ui = dialogHarness('AddActivityDialog', { open: true, onClose() {}, onSubmit() {},
+        initialData: { name: '読書', group_id: 1, reading: 'どくしょ', is_active: true } }, {
+        modules: {
+            '@mui/material/styles': { useTheme: () => ({ palette: { text: { primary: '#000' } } }) },
+            '../utils/activitySearch': { isValidReading },
+        },
+    });
+    ui.find('TextField', field => field.label === 'Reading (optional)').onCompositionStart();
+    ui.render();
+    assert.equal(ui.find('Button', button => button.children === 'Submit').disabled, true);
+    ui.render({ open: false });
+    ui.render({ open: true });
+    assert.equal(ui.find('Button', button => button.children === 'Submit').disabled, false);
 });

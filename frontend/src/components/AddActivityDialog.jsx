@@ -34,6 +34,8 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
 
     // ダイアログが開いたとき、または initialData が更新されたときにフォームフィールドを初期化する
     useEffect(() => {
+        // 変換中に閉じた場合も、再表示時には未確定入力の状態を引き継がない。
+        setReadingComposing(false);
         if (initialData) {
             console.log(initialData);
             setGroupId(initialData.group_id || '');
