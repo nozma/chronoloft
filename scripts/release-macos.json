@@ -1,7 +1,7 @@
 {
   "repository": "nozma/chronoloft",
   "bundle_id": "io.github.nozma.chronoloft",
-  "minimum_macos": "26.0",
+  "minimum_macos": "27.0",
   "architecture": "arm64",
   "keychain_account": "chronoloft",
   "public_key": "5IQWBpD8SNxwsYn5Y0dVeFBYyumTz8UxKkHe+sWA7oA=",

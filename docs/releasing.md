@@ -22,7 +22,7 @@ npm run setup:release:mac
 | 公開先 | `nozma/chronoloft` |
 | Bundle ID | `io.github.nozma.chronoloft` |
 | CPU形式 | `arm64` |
-| 必要OS | 現在はmacOS 26.0以降。同梱ライブラリの条件も公開前に検証 |
+| 必要OS | 現在はmacOS 27.0以降。同梱ライブラリの条件も公開前に検証 |
 | Sparkle | バージョンとSHA-256を固定し、公式配布物を `.cache/sparkle/` に取得 |
 | 署名鍵 | キーチェーンのアカウント `chronoloft` |
 
