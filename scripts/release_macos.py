@@ -171,7 +171,10 @@ def validate_appcast(path, archive, config, app_version):
         raise ValueError('更新ファイルのURLが一致しません。')
     if enclosure.get('length') != str(archive.stat().st_size):
         raise ValueError('更新ファイルのサイズが一致しません。')
-    if item.findtext(ns + 'hardwareRequirements') != 'arm64':
+    hardware = item.findtext(ns + 'hardwareRequirements')
+    # SparkleはmacOS 27以降でarm64条件を省略する。実行ファイルは別途検証する。
+    implicit_arm64 = hardware is None and int(config['minimum_macos'].split('.')[0]) >= 27
+    if hardware != 'arm64' and not implicit_arm64:
         raise ValueError('Apple Silicon用の更新条件がありません。')
     if item.findtext(ns + 'minimumSystemVersion') != config['minimum_macos']:
         raise ValueError('macOSの更新条件が一致しません。')
