@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = {
     autoFilterOnSelect: true,
     themeMode: 'system',
     layoutMode: 'one-column',
+    activitySelectionMode: 'buttons',
     recentDays: '14',
     recentLimit: '15',
     recentMinimum: '1',
@@ -18,6 +19,7 @@ const choices = {
     language: ['ja', 'en'], themeMode: ['system', 'light', 'dark'],
     layoutMode: ['one-column', 'two-column'], recentDays: ['7', '14', '30', 'all'],
     recentLimit: ['5', '15', '30', 'all'], recentMinimum: ['1', '5', '15', '30'],
+    activitySelectionMode: ['buttons', 'autocomplete'],
     recordSaveMode: ['auto', 'confirm'],
 };
 const valid = (key, value) => key === 'deviceName'

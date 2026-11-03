@@ -56,7 +56,7 @@ function SettingsDialog({ open, onClose }) {
         isMobile,
         language: savedLanguage,
         autoFilterOnSelect, themeMode, layoutMode,
-        recentDays, recentLimit, recentMinimum,
+        activitySelectionMode, recentDays, recentLimit, recentMinimum,
         discordEnabled, recordSaveMode, mergeConsecutiveRecords,
         showDockIcon,
         settingsError, saveSettings, setDisplayPreview,
@@ -67,6 +67,7 @@ function SettingsDialog({ open, onClose }) {
     const [tmpAutoFilter, setTmpAutoFilter] = useState(autoFilterOnSelect);
     const [tmpThemeMode, setTmpThemeMode] = useState(themeMode);
     const [tmpLayoutMode, setTmpLayoutMode] = useState(layoutMode);
+    const [tmpActivitySelectionMode, setTmpActivitySelectionMode] = useState(activitySelectionMode);
     const [tmpRecentDays, setTmpRecentDays] = useState(recentDays);
     const [tmpRecentLimit, setTmpRecentLimit] = useState(recentLimit);
     const [tmpRecentMinimum, setTmpRecentMinimum] = useState(recentMinimum);
@@ -80,7 +81,7 @@ function SettingsDialog({ open, onClose }) {
             resetRequested.current = false;
             originalSettings.current = {
                 language: savedLanguage, autoFilterOnSelect, themeMode, layoutMode,
-                recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords,
+                activitySelectionMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords,
                 showDockIcon,
             };
             setSaveError('');
@@ -88,6 +89,7 @@ function SettingsDialog({ open, onClose }) {
             setTmpAutoFilter(autoFilterOnSelect);
             setTmpThemeMode(themeMode);
             setTmpLayoutMode(layoutMode);
+            setTmpActivitySelectionMode(activitySelectionMode);
             setTmpRecentDays(recentDays);
             setTmpRecentLimit(recentLimit);
             setTmpRecentMinimum(recentLimit === 'all' ? recentMinimum : String(Math.min(Number(recentMinimum), Number(recentLimit))));
@@ -97,7 +99,7 @@ function SettingsDialog({ open, onClose }) {
             setTmpMergeConsecutiveRecords(mergeConsecutiveRecords);
         }
         wasOpen.current = open;
-    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords, showDockIcon]);
+    }, [open, savedLanguage, autoFilterOnSelect, themeMode, layoutMode, activitySelectionMode, recentDays, recentLimit, recentMinimum, discordEnabled, recordSaveMode, mergeConsecutiveRecords, showDockIcon]);
 
     // 表示だけをプレビューし、閉じる際やアンマウント時に保存済みの表示へ戻す。
     useEffect(() => {
@@ -113,6 +115,7 @@ function SettingsDialog({ open, onClose }) {
         setTmpAutoFilter(DEFAULT_SETTINGS.autoFilterOnSelect);
         setTmpThemeMode(DEFAULT_SETTINGS.themeMode);
         setTmpLayoutMode(DEFAULT_SETTINGS.layoutMode);
+        setTmpActivitySelectionMode(DEFAULT_SETTINGS.activitySelectionMode);
         setTmpRecentDays(DEFAULT_SETTINGS.recentDays);
         setTmpRecentLimit(DEFAULT_SETTINGS.recentLimit);
         setTmpRecentMinimum(DEFAULT_SETTINGS.recentMinimum);
@@ -162,6 +165,14 @@ function SettingsDialog({ open, onClose }) {
                         </FormControl>
                     </SettingsSection>
                     <SettingsSection title={t("Initial activity display")}>
+                        <FormControl component="fieldset">
+                            <FormLabel component="legend">{t("Activity selection method")}</FormLabel>
+                            <RadioGroup row value={tmpActivitySelectionMode} onChange={e => setTmpActivitySelectionMode(e.target.value)}>
+                                <FormControlLabel value="buttons" label={t("Buttons")} control={<Radio />} />
+                                <FormControlLabel value="autocomplete" label={t("Autocomplete dropdown")} control={<Radio />} />
+                            </RadioGroup>
+                        </FormControl>
+                        {tmpActivitySelectionMode !== 'autocomplete' && <Stack spacing={2}>
                         {/* 最近使用した項目を決めるしきい値の日数設定 */}
                         <FormControl component="fieldset">
                             <FormLabel component="legend">
@@ -231,6 +242,7 @@ function SettingsDialog({ open, onClose }) {
                                 )}
                             </RadioGroup>
                         </FormControl>
+                        </Stack>}
                     </SettingsSection>
                     <SettingsSection title={t("Timing and records")}>
                         {/* アクティビティフィルタの自動切り替え */}
@@ -331,6 +343,7 @@ function SettingsDialog({ open, onClose }) {
                                 const next = {
                                     language: tmpLanguage, autoFilterOnSelect: tmpAutoFilter,
                                     themeMode: tmpThemeMode, layoutMode: tmpLayoutMode,
+                                    activitySelectionMode: tmpActivitySelectionMode,
                                     recentDays: tmpRecentDays, recentLimit: tmpRecentLimit,
                                     recentMinimum: tmpRecentMinimum, discordEnabled: tmpDiscordEnabled,
                                     recordSaveMode: tmpRecordSaveMode,

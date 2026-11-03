@@ -1,5 +1,8 @@
+import { filterActivityOptions } from '../utils/activitySearch';
 import { useI18n } from '../i18n/I18nContext';
 import {
+    Autocomplete,
+    TextField,
     Button,
     Box,
     IconButton,
@@ -97,7 +100,7 @@ function ActivityStart({
     const { state, dispatch } = useUI();
     const { filterState, setFilterState } = useFilter();
     const { groupFilter, tagFilter } = filterState;
-    const { recentDays, recentLimit, recentMinimum, isMobile, isTwoColumnLayout } = useSettings();
+    const { activitySelectionMode, recentDays, recentLimit, recentMinimum, isMobile, isTwoColumnLayout } = useSettings();
 
     const [showRemaining, setShowRemaining] = useState(false);
     const [showArchive, setShowArchive] = useState(false);
@@ -453,7 +456,7 @@ function ActivityStart({
                                     variant="caption"
                                     sx={{ color: 'text.recordingHint', fontSize: '0.65rem', lineHeight: 1.4 }}
                                 >
-                                    {t("Click to start recording")}
+                                    {t(activitySelectionMode === 'autocomplete' ? "Select to start recording" : "Click to start recording")}
                                 </Typography>
                             </Box>
                             <IconButton
@@ -465,7 +468,29 @@ function ActivityStart({
                             </IconButton>
                         </Box>
                         <Collapse in={state.activityOpen}>
-                            <Box>
+                            {activitySelectionMode === 'autocomplete' ? (
+                                <Autocomplete
+                                    fullWidth
+                                    size="small"
+                                    options={[...activeActivities, ...inactiveActivities]}
+                                    filterOptions={filterActivityOptions}
+                                    value={null}
+                                    blurOnSelect
+                                    getOptionLabel={activity => activity.name}
+                                    getOptionKey={activity => activity.id}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    groupBy={activity => t(activity.is_active ? "Activity" : "Archive")}
+                                    onChange={(event, activity) => { if (activity) onStart(activity); }}
+                                    renderOption={(props, activity) => {
+                                        const { key, ...optionProps } = props;
+                                        return <Box component="li" key={key} {...optionProps} sx={{ gap: 1 }}>
+                                            {getIconForGroup(activity.group_name, groups)}
+                                            <Box sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>{activity.name}</Box>
+                                        </Box>;
+                                    }}
+                                    renderInput={params => <TextField {...params} label={t("Activity")} />}
+                                />
+                            ) : <Box>
                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     {recentActivities.map(activity => (
                                         <Button
@@ -609,7 +634,7 @@ function ActivityStart({
                                         </>
                                     )}
                                 </Collapse>
-                            </Box>
+                            </Box>}
                         </Collapse>
                     </>
                 )}

@@ -3,9 +3,23 @@ from ..models import StopwatchSession, Activity, ActivityUnitType, Record, Tag
 from .. import db
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError 
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, inspect
+import re
 
 activity_bp = Blueprint('activity', __name__)
+
+
+def initialize_activity_reading(app):
+    # 開発起動でも既存データを保持したまま、任意のよみがな列を追加する。
+    with app.app_context(), db.engine.begin() as connection:
+        inspector = inspect(connection)
+        if inspector.has_table('activity') and 'reading' not in {c['name'] for c in inspector.get_columns('activity')}:
+            connection.exec_driver_sql("ALTER TABLE activity ADD COLUMN reading VARCHAR(160) NOT NULL DEFAULT ''")
+
+
+def valid_reading(value):
+    return isinstance(value, str) and len(value) <= 160 and re.fullmatch(r'[ぁ-ゖゝゞー]*', value) is not None
+
 
 @activity_bp.route('/api/activities', methods=['GET'])
 def get_activities():
@@ -30,6 +44,7 @@ def get_activities():
             result.append({
                 'id': activity.id,
                 'name': activity.name,
+                'reading': activity.reading,
                 'tags': tag_list,  # ここで付与
                 'is_active': activity.is_active,
                 'group_id': activity.group_id,
@@ -50,6 +65,9 @@ def add_activity():
     if not data or 'name' not in data or 'group_id' not in data:
         return jsonify({'error': '必要な情報が不足しています'}), 400
 
+    if not valid_reading(data.get('reading', '')):
+        return jsonify(error='よみがなは160文字以内のひらがなで入力してください。'), 400
+
     unit = data.get('unit')
     if unit:
         try:
@@ -61,6 +79,7 @@ def add_activity():
 
     new_activity = Activity(
         name=data['name'],
+        reading=data.get('reading', ''),
         group_id=data['group_id'],
         unit=unit,
         asset_key=data.get('asset_key'),
@@ -80,12 +99,16 @@ def update_activity(activity_id):
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No input data provided'}), 400
+    if 'reading' in data and not valid_reading(data['reading']):
+        return jsonify(error='よみがなは160文字以内のひらがなで入力してください。'), 400
     activity = Activity.query.get(activity_id)
     if activity is None:
         return jsonify({'error': 'Activity not found'}), 404
     if StopwatchSession.query.filter_by(activity_id=activity_id).filter(StopwatchSession.status.in_(['running', 'confirming'])).first():
         return jsonify(error='計測中のアクティビティは変更・削除できません。'), 409
 
+    if 'reading' in data:
+        activity.reading = data['reading']
     if 'name' in data:
         activity.name = data['name']
     if 'group_id' in data:

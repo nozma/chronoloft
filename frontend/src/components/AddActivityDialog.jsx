@@ -14,6 +14,7 @@ import { useTheme } from '@mui/material/styles';
 import { useGroups } from '../contexts/GroupContext';
 import { useTags } from '../contexts/TagContext';
 import ConfirmDialog from './ConfirmDialog';
+import { isValidReading } from '../utils/activitySearch';
 
 function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupId, defaultTags }) {
     const { t } = useI18n();
@@ -21,6 +22,8 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
     const { tags } = useTags();
     const theme = useTheme();
     const tagColor = theme.palette.text.primary;
+    const [reading, setReading] = useState('');
+    const [readingComposing, setReadingComposing] = useState(false);
     const [name, setName] = useState('');
     const [groupId, setGroupId] = useState('');
     const [unit, setUnit] = useState('count');
@@ -35,6 +38,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
             console.log(initialData);
             setGroupId(initialData.group_id || '');
             setName(initialData.name || '');
+            setReading(initialData.reading || '');
             setUnit(initialData.unit || '');
             setAssetKey(initialData.asset_key || '');
             setIsActive(String(initialData.is_active) || '');
@@ -43,6 +47,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
             // 新規登録の場合は初期値にリセット
             setGroupId(defaultGroupId || '');
             setName('');
+            setReading('');
             setUnit('minutes');
             setAssetKey('');
             setIsActive(true);
@@ -55,9 +60,11 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
             setAlertMessage(t("Group and name are required."));
             return;
         }
+        if (readingComposing || !isValidReading(reading)) return;
         const tagIds = selectedTags.map(t => t.id);
         onSubmit({
             name: name,
+            reading,
             group_id: groupId,
             unit: unit,
             asset_key: assetKey,
@@ -111,6 +118,17 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
                     onChange={(e) => setName(e.target.value)}
                 />
                 <TextField
+                    margin="dense"
+                    label={t("Reading (optional)")}
+                    fullWidth
+                    value={reading}
+                    onChange={e => setReading(e.target.value)}
+                    onCompositionStart={() => setReadingComposing(true)}
+                    onCompositionEnd={e => { setReadingComposing(false); setReading(e.target.value); }}
+                    error={!readingComposing && !isValidReading(reading)}
+                    helperText={t("Use hiragana only (up to 160 characters).")}
+                />
+                <TextField
                     select
                     margin="dense"
                     label={t("Unit")}
@@ -162,7 +180,7 @@ function AddActivityDialog({ open, onClose, onSubmit, initialData, defaultGroupI
             </DialogContent>
             <DialogActions>
                 <Button onClick={onClose}>{t("Cancel")}</Button>
-                <Button onClick={handleSubmit} variant="contained" color="primary">
+                <Button disabled={readingComposing || !isValidReading(reading)} onClick={handleSubmit} variant="contained" color="primary">
                     {t("Submit")}
                 </Button>
             </DialogActions>

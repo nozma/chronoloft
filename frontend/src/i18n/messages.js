@@ -1,5 +1,15 @@
 export const messages = {
     "en": {
+        "This activity is being timed and cannot be edited.": "This activity is being timed and cannot be edited.",
+        "Could not save the activity. Check your input and try again.": "Could not save the activity. Check your input and try again.",
+        "Reading": "Reading",
+        "Search by name or reading": "Search by name or reading",
+        "Reading (optional)": "Reading (optional)",
+        "Use hiragana only (up to 160 characters).": "Use hiragana only (up to 160 characters).",
+        "Activity selection method": "Activity selection method",
+        "Buttons": "Buttons",
+        "Autocomplete dropdown": "Autocomplete dropdown",
+        "Select to start recording": "Select to start recording",
         "Show icon in Dock": "Show icon in Dock",
         "Recent activities": "Recent activities",
         "Start a stopwatch": "Start a stopwatch",
@@ -199,6 +209,16 @@ export const messages = {
         "{from}–{to} of {count}": "{from}–{to} of {count}"
     },
     "ja": {
+        "This activity is being timed and cannot be edited.": "計測中のアクティビティは編集できません。",
+        "Could not save the activity. Check your input and try again.": "アクティビティを保存できませんでした。入力内容を確認して、もう一度お試しください。",
+        "Reading": "よみがな",
+        "Search by name or reading": "名前・よみがなで検索",
+        "Reading (optional)": "よみがな（任意）",
+        "Use hiragana only (up to 160 characters).": "ひらがなで入力してください（160文字以内）。",
+        "Activity selection method": "アクティビティの選択方法",
+        "Buttons": "ボタン",
+        "Autocomplete dropdown": "補完付きドロップダウン",
+        "Select to start recording": "選択して記録を開始",
         "Show icon in Dock": "Dockにアイコンを表示",
         "Recent activities": "最近のアクティビティ",
         "Start a stopwatch": "計測を開始",
