@@ -92,6 +92,9 @@ def create_app(test_config=None):
     # Flask-Migrate
     migrate = Migrate(app, db)
 
+    from .routes.activity_routes import initialize_activity_reading
+    initialize_activity_reading(app)
+
     # Blueprint登録
     from .routes import register_routes
     register_routes(app)

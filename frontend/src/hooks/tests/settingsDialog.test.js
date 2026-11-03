@@ -9,7 +9,7 @@ const source = transformSync(readFileSync(new URL('../../components/SettingsDial
 }).code;
 const defaults = {
     language: 'en', autoFilterOnSelect: true, themeMode: 'system', layoutMode: 'one-column',
-    recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', mergeConsecutiveRecords: true, showDockIcon: false,
+    activitySelectionMode: 'buttons', recentDays: '14', recentLimit: '15', recentMinimum: '1', discordEnabled: true, recordSaveMode: 'auto', mergeConsecutiveRecords: true, showDockIcon: false,
 };
 
 function dialog(local = true) {
@@ -96,6 +96,18 @@ function dialog(local = true) {
     render();
     return {
         writes,
+        changeSelection(value) {
+            find('RadioGroup', props => ['buttons', 'autocomplete'].includes(props.value)).onChange({ target: { value } });
+            render();
+        },
+        historyOptionsVisible() {
+            try {
+                for (const label of ['Activity lookback period', 'Maximum activities', 'Minimum activities']) {
+                    find('FormLabel', props => props.children === label || props.children?.includes(label));
+                }
+                return true;
+            } catch { return false; }
+        },
         get preview() { return preview; },
         cancel() { find('Button', props => props.children === 'Cancel').onClick(); },
         dismiss() { find('Dialog', () => true).onClose(); },
@@ -223,4 +235,20 @@ test('ダイアログを閉じる操作でもプレビューを解除し、適�
     await applied.apply();
     assert.deepEqual(applied.writes, [{ language: 'ja', themeMode: 'light', layoutMode: 'two-column' }]);
     assert.equal(applied.preview, null);
+});
+
+
+test('補完方式では履歴の3設定を隠し、方式だけ保存して元の条件を維持する', async () => {
+    const ui = dialog();
+    assert.equal(ui.historyOptionsVisible(), true);
+    ui.changeSelection('autocomplete');
+    assert.equal(ui.historyOptionsVisible(), false);
+    await ui.apply();
+    assert.deepEqual(ui.writes, [{ activitySelectionMode: 'autocomplete' }]);
+    assert.equal(ui.settings.recentDays, '14');
+    ui.changeSelection('buttons');
+    assert.equal(ui.historyOptionsVisible(), true);
+    ui.reset();
+    await ui.apply();
+    assert.equal(ui.settings.activitySelectionMode, 'buttons');
 });

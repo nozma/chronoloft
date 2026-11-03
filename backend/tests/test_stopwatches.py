@@ -296,6 +296,22 @@ class StopwatchTests(DatabaseTestCase):
         self.assertEqual(self.remote.put(f'/api/activities/{self.activity_id}', json=dict(unit='count'), **self.options).status_code, 409)
         self.assertEqual(self.operate(item, 'complete').status_code, 200)
 
+    def test_running_and_confirming_activity_tags_cannot_be_changed(self):
+        item = self.start().json['item']
+        activity = db.session.get(Activity, self.activity_id)
+        original_tags = [tag.id for tag in activity.tags]
+        for status in ('running', 'confirming'):
+            db.session.get(StopwatchSession, item['id']).status = status
+            db.session.commit()
+            response = self.remote.put(f'/api/activities/{self.activity_id}/tags', json={'tag_ids': []}, **self.options)
+            self.assertEqual(response.status_code, 409)
+            db.session.refresh(activity)
+            self.assertEqual([tag.id for tag in activity.tags], original_tags)
+        db.session.get(StopwatchSession, item['id']).status = 'cancelled'
+        db.session.commit()
+        self.assertEqual(self.remote.put(f'/api/activities/{self.activity_id}/tags', json={'tag_ids': []}, **self.options).status_code, 200)
+        self.assertEqual(activity.tags, [])
+
     def test_save_failure_rolls_back_record_and_session_together(self):
         from sqlalchemy.exc import SQLAlchemyError
         item = self.start().json['item']

@@ -11,6 +11,7 @@ CHOICES = {
     'language': ('ja', 'en'),
     'themeMode': ('system', 'light', 'dark'),
     'layoutMode': ('one-column', 'two-column'),
+    'activitySelectionMode': ('buttons', 'autocomplete'),
     'recentDays': ('7', '14', '30', 'all'),
     'recentLimit': ('5', '15', '30', 'all'),
     'recentMinimum': ('1', '5', '15', '30'),

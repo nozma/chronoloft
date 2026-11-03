@@ -40,6 +40,13 @@ class LocalSettingsTests(unittest.TestCase):
         response = self.browser.post('/api/settings/local', json={'themeMode': 'light', 'language': 'en'})
         self.assertEqual(response.json['settings'], {'themeMode': 'dark', 'language': 'en'})
 
+    def test_activity_selection_mode_is_saved_and_validated(self):
+        for mode in ('autocomplete', 'buttons'):
+            response = self.app_client.patch('/api/settings/local', json={'activitySelectionMode': mode})
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(self.browser.get('/api/settings/local').json['settings']['activitySelectionMode'], mode)
+        self.assertEqual(self.app_client.patch('/api/settings/local', json={'activitySelectionMode': 'invalid'}).status_code, 400)
+
     def test_invalid_batch_does_not_partially_save(self):
         self.app_client.patch('/api/settings/local', json={'themeMode': 'dark'})
         for data in [[], None, {'themeMode': 'light', 'discordEnabled': 'false'},

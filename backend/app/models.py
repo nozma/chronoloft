@@ -51,6 +51,7 @@ class Activity(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     name = db.Column(db.String(80), nullable=False)
+    reading = db.Column(db.String(160), nullable=False, default='', server_default='')
     unit = db.Column(db.Enum(ActivityUnitType), nullable=True)
     asset_key = db.Column(db.String(80))
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
