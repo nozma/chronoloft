@@ -413,7 +413,7 @@ def run_native_app(result_path, quit_action=None):
         snapshot(panel, 'idle')
         evaluate(panel, "Array.from(document.querySelectorAll('button')).find(b => b.textContent === 'メニューバーテスト').click()")
         wait_for(lambda: read_desktop_state(app, controller.device_id)['session'] is not None)
-        wait_for(lambda: on_main_thread(lambda: str(controller.status.button().title())) == '00:00')
+        wait_for(lambda: on_main_thread(lambda: str(controller.status.button().accessibilityValue())) == '00:00')
         wait_for(lambda: evaluate(panel, "Boolean(document.querySelector('input[role=combobox]'))"))
         evaluate(panel, """(() => {
             const input = document.querySelector('input[role=combobox]');

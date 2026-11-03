@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from backend.app import create_app, db
 from backend.app.models import Activity, ActivityGroup, ActivityUnitType, LocalSetting
 from backend.app.routes import stopwatch_routes
-from backend.desktop_menubar import elapsed_title, prepare_desktop_termination, read_desktop_state
+from backend.desktop_menubar import badge_colors, elapsed_title, prepare_desktop_termination, read_desktop_state
 
 
 class MenuBarTests(unittest.TestCase):
@@ -18,7 +18,7 @@ class MenuBarTests(unittest.TestCase):
         self.addCleanup(self.app.extensions['lan_auth_db'].close)
         with self.app.app_context():
             db.create_all()
-            group = ActivityGroup(name='読書', icon_name='MenuBookIcon')
+            group = ActivityGroup(name='読書', icon_name='MenuBookIcon', icon_color='#123456')
             activity = Activity(name='本', group=group, unit=ActivityUnitType.MINUTES)
             db.session.add(activity)
             db.session.commit()
@@ -54,7 +54,21 @@ class MenuBarTests(unittest.TestCase):
             state = read_desktop_state(self.app, self.device_id)
             self.assertEqual(state['session']['id'], item['id'])
             self.assertEqual(state['session']['icon'], 'MenuBookIcon')
+            self.assertEqual(state['session']['color'], '#123456')
         self.mock_sync.assert_not_called()
+
+    def test_group_color_remains_during_confirmation_and_clears_after_completion(self):
+        item = self.start()
+        item = self.client.post(f"/api/stopwatches/{item['id']}/confirm", json={'revision': item['revision']}).json['item']
+        self.assertEqual(read_desktop_state(self.app, self.device_id)['session']['color'], '#123456')
+        self.client.post(f"/api/stopwatches/{item['id']}/complete", json={'revision': item['revision']})
+        self.assertIsNone(read_desktop_state(self.app, self.device_id)['session'])
+
+    def test_badge_contrast_and_unset_color(self):
+        self.assertEqual(badge_colors('#ffffff'), ((1, 1, 1), 0))
+        self.assertEqual(badge_colors('#000000'), ((0, 0, 0), 1))
+        for value in (None, '', 'invalid', '#zzzzzz'):
+            self.assertEqual(badge_colors(value), ((0.5, 0.5, 0.5), 0))
 
     def test_elapsed_is_truncated_cumulative_and_pauses_during_confirmation(self):
         session = {'started_at': 1000, 'paused_at': None}
