@@ -7,6 +7,7 @@ import { updateRecord as apiUpdateRecord } from '../services/api';
 import { useI18n } from '../i18n/I18nContext';
 import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
 import useLocalStorageState from '../hooks/useLocalStorageState';
+import useLocalDay from '../hooks/useLocalDay';
 import {
     Box,
     Typography,
@@ -203,11 +204,9 @@ function aggregateRecords(records, xAxisUnit, groupBy, aggregationUnit, isCumula
     return dataArray;
 }
 
-function getPeriodRange(period, offset = 0) {
+function getPeriodRange(period, offset, today) {
     // 期間の境界を求める
     // 今日の 00:00 を基準
-    const today = DateTime.now().startOf('day');
-
     if (period in PERIOD_DAYS) {
         const days = PERIOD_DAYS[period];
         const end = today.minus({ days: days * offset });
@@ -254,9 +253,10 @@ function RecordChart() {
     const [chartWidth, setChartWidth] = useState(0);
     const [oneDayLabelHoverIndex, setOneDayLabelHoverIndex] = useState(null);
     const [isChartPointerInside, setIsChartPointerInside] = useState(null);
+    const today = useLocalDay();
     const [periodStart, periodEnd] = useMemo(
-        () => getPeriodRange(selectedPeriod, offset),
-        [selectedPeriod, offset]
+        () => getPeriodRange(selectedPeriod, offset, today),
+        [selectedPeriod, offset, today]
     );
 
     useEffect(() => {
@@ -314,19 +314,19 @@ function RecordChart() {
     }, [visibleRecordsByActivity, groupFilter, tagFilter, activityNameFilter]);
 
     const filteredRecords = useMemo(() => {
-        const [start, end] = getPeriodRange(selectedPeriod, offset);
+        const start = periodStart;
+        const end = periodEnd;
         return recordsMatchingFilters.filter(r => {
             const rd = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
             return rd >= start && rd <= end.endOf('day');
         });
-    }, [recordsMatchingFilters, selectedPeriod, offset]);
+    }, [recordsMatchingFilters, periodStart, periodEnd]);
 
     // 矢印移動時に、現在の条件でチャート表示できるデータがある期間だけを移動候補にする
     const navigableOffsets = useMemo(() => {
         const periodDays = PERIOD_DAYS[selectedPeriod];
         if (!periodDays) return [];
 
-        const today = DateTime.now().startOf('day');
         const offsets = new Set();
         recordsMatchingFilters.forEach(record => {
             const isSupportedUnit = isAggregationManual
@@ -344,7 +344,7 @@ function RecordChart() {
         });
 
         return Array.from(offsets).sort((a, b) => a - b);
-    }, [recordsMatchingFilters, selectedPeriod, isAggregationManual, aggregationUnit]);
+    }, [recordsMatchingFilters, selectedPeriod, isAggregationManual, aggregationUnit, today]);
 
     const previousDataOffset = useMemo(
         () => navigableOffsets.find(candidate => candidate > offset),
