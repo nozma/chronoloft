@@ -38,7 +38,8 @@ jobs:
 
   backend:
     name: Backend tests
-    runs-on: ubuntu-latest
+    # リリース手順のテストでmacOS用ビルド依存も検証する。
+    runs-on: macos-15
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +49,7 @@ jobs:
       - name: テスト環境を作成
         run: |
           python -m venv backend/venv
-          backend/venv/bin/python -m pip install -r backend/requirements.txt platformdirs==4.3.6
+          backend/venv/bin/python -m pip install -r backend/requirements.txt -r scripts/requirements-build.txt
       # GUI結合テストは従来どおり明示指定時だけ実行する。
       - name: バックエンドを検証
         working-directory: backend
