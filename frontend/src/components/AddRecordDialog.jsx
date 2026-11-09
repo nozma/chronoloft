@@ -22,6 +22,7 @@ import { useActivities } from '../contexts/ActivityContext'
 import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import ConfirmDialog from './ConfirmDialog';
+import { getRecordStart, formatPreciseLocalTime } from '../utils/recordTime';
 
 function AddRecordDialog({
     open,
@@ -140,8 +141,8 @@ function AddRecordDialog({
                 };
                 await onSubmit(recordData);
             } else if (selectedActivity?.unit === 'minutes') { // 分（開始時刻と終了時刻）により記録するもの
-                const startLocal = DateTime.fromFormat(startTime, "yyyy-MM-dd'T'HH:mm");
-                const endLocal = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
+                const startLocal = DateTime.fromISO(startTime);
+                const endLocal = DateTime.fromISO(endTime);
 
                 if (!startLocal.isValid || !endLocal.isValid) {
                     await showAlert(t("Invalid start or end time."));
@@ -200,13 +201,13 @@ function AddRecordDialog({
 
     // 時刻を ±n 分ずらす汎用関数
     const adjustTime = (timeStr, delta, setter) => {
-        const dt = DateTime.fromFormat(timeStr, "yyyy-MM-dd'T'HH:mm");
+        const dt = DateTime.fromISO(timeStr);
         if (!dt.isValid) return;
-        setter(dt.plus({ minutes: delta }).toFormat("yyyy-MM-dd'T'HH:mm"));
+        setter(formatPreciseLocalTime(dt.plus({ minutes: delta })));
     };
 
     const isValidTime = (timeStr) => (
-        DateTime.fromFormat(timeStr, "yyyy-MM-dd'T'HH:mm").isValid
+        DateTime.fromISO(timeStr).isValid
     );
 
     // 回数を増減させる
@@ -221,7 +222,7 @@ function AddRecordDialog({
     // 「前のレコードの終了」を開始時刻にセット
     const fillStartWithPrevEnd = () => {
         // ① 終了時刻を基準に
-        const baseline = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
+        const baseline = DateTime.fromISO(endTime);
 
         // ② 全レコードを終了時刻(created_at)降順ソート
         const sorted = [...records].sort(
@@ -238,22 +239,22 @@ function AddRecordDialog({
         const dt = prevRec
             ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
             : baseline;
-        setStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
+        setStartTime(formatPreciseLocalTime(dt));
     };
 
     // 「次のレコードの開始」を終了時刻にセット（無ければ今の時刻）
     const fillEndWithNextStart = () => {
-        const current = DateTime.fromFormat(endTime, "yyyy-MM-dd'T'HH:mm");
+        const current = DateTime.fromISO(endTime);
         // nextRec の開始 = endLocal.minus({ minutes: value })
         const candidates = records
             .map(r => {
                 const endLocal = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
-                return { startLocal: endLocal.minus({ minutes: r.value }) };
+                return { startLocal: getRecordStart(endLocal, r.value) };
             })
             .filter(o => o.startLocal > current)
             .sort((a, b) => a.startLocal.valueOf() - b.startLocal.valueOf());
         if (candidates.length) {
-            setEndTime(candidates[0].startLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
+            setEndTime(formatPreciseLocalTime(candidates[0].startLocal));
         } else {
             setEndTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
         }
@@ -354,6 +355,7 @@ function AddRecordDialog({
                                     label={t("Start time")}
                                     type="datetime-local"
                                     value={startTime}
+                                    inputProps={{ step: 0.001 }}
                                     onChange={(e) => setStartTime(e.target.value)}
                                     sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
@@ -409,6 +411,7 @@ function AddRecordDialog({
                                     label={t("End time")}
                                     type="datetime-local"
                                     value={endTime}
+                                    inputProps={{ step: 0.001 }}
                                     onChange={(e) => setEndTime(e.target.value)}
                                     sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
