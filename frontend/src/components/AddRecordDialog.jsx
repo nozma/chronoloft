@@ -90,12 +90,12 @@ function AddRecordDialog({
             if (initialDate) {
                 // 終了時刻(ローカル)
                 const endLocal = DateTime.fromISO(initialDate, { zone: 'utc' }).toLocal();
-                setEndTime(endLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
+                setEndTime(formatPreciseLocalTime(endLocal));
 
                 // 開始時刻(=終了時刻 - duration)
                 const durationMinutes = initialValue ?? 0;
-                const startLocal = endLocal.minus({ minutes: durationMinutes });
-                setStartTime(startLocal.toFormat("yyyy-MM-dd'T'HH:mm"));
+                const startLocal = getRecordStart(initialDate, durationMinutes);
+                setStartTime(formatPreciseLocalTime(startLocal));
             } else {
                 // 新規の場合は現在日時を設定
                 const nowLocal = DateTime.local();
@@ -162,6 +162,13 @@ function AddRecordDialog({
                     created_at: endLocal.toUTC().toISO(),
                     memo: memo,
                 };
+                // 時刻を編集していなければ、保存済みのマイクロ秒と経過時間もそのまま送る。
+                if (isEdit && initialDate
+                    && startLocal.toMillis() === getRecordStart(initialDate, initialValue ?? 0).toMillis()
+                    && endLocal.toMillis() === DateTime.fromISO(initialDate, { zone: 'utc' }).toMillis()) {
+                    recordData.value = initialValue ?? 0;
+                    recordData.created_at = initialDate;
+                }
                 await onSubmit(recordData);
             }
             onClose();
@@ -245,12 +252,9 @@ function AddRecordDialog({
     // 「次のレコードの開始」を終了時刻にセット（無ければ今の時刻）
     const fillEndWithNextStart = () => {
         const current = DateTime.fromISO(endTime);
-        // nextRec の開始 = endLocal.minus({ minutes: value })
+        // 次の記録の開始時刻は保存時刻のマイクロ秒も考慮して復元する。
         const candidates = records
-            .map(r => {
-                const endLocal = DateTime.fromISO(r.created_at, { zone: 'utc' }).toLocal();
-                return { startLocal: getRecordStart(endLocal, r.value) };
-            })
+            .map(r => ({ startLocal: getRecordStart(r.created_at, r.value) }))
             .filter(o => o.startLocal > current)
             .sort((a, b) => a.startLocal.valueOf() - b.startLocal.valueOf());
         if (candidates.length) {

@@ -406,8 +406,8 @@ function RecordCalendar() {
         return minuteRecords.map((rec) => {
             // `created_at` is the end time (UTC) -> convert to local
             const endDT = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
-            // ミリ秒単位に丸めた経過時間で開始時刻を復元する
-            const startDT = getRecordStart(endDT, rec.value);
+            // 保存された終了時刻のマイクロ秒も使って開始時刻を復元する
+            const startDT = getRecordStart(rec.created_at, rec.value);
 
             // group color
             let groupColor = null;
