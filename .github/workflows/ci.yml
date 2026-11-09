@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Frontend tests
+            command: test:frontend
+          - name: Frontend build
+            command: build:frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: 依存関係をインストール
+        run: npm ci
+      - name: フロントエンドを検証
+        run: npm run ${{ matrix.command }}
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: テスト環境を作成
+        run: |
+          python -m venv backend/venv
+          backend/venv/bin/python -m pip install -r backend/requirements.txt platformdirs==4.3.6
+      # GUI結合テストは従来どおり明示指定時だけ実行する。
+      - name: バックエンドを検証
+        working-directory: backend
+        run: venv/bin/python -m unittest discover -s tests -v
+
+  version:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: バージョン番号の形式と一致を検証
+        run: python -c "from scripts.release_macos import version; print(version())"
