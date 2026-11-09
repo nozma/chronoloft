@@ -50,6 +50,10 @@ jobs:
         run: |
           python -m venv backend/venv
           backend/venv/bin/python -m pip install -r backend/requirements.txt -r scripts/requirements-build.txt
+      # LAN設定のテストがCI端末のホスト名のDNS応答を待たないようにする。
+      - name: CI端末のホスト名をローカルで解決
+        run: |
+          python -c "import socket; print('127.0.0.1', socket.gethostname())" | sudo tee -a /etc/hosts
       # GUI結合テストは従来どおり明示指定時だけ実行する。
       - name: バックエンドを検証
         working-directory: backend
