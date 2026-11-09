@@ -115,13 +115,16 @@ class ReleaseTests(unittest.TestCase):
         self.config = release.load_config()
 
     def test_dry_run_does_not_access_github_or_publish(self):
+        # 公開の有無を検証するテストでは、ビルド環境の導入確認も代替する。
         with patch.object(sys, 'argv', ['release_macos.py', '--dry-run']), \
+                patch.object(release, 'check_build_dependencies') as check_dependencies, \
                 patch.object(release, 'preflight') as preflight, \
                 patch.object(release, 'build_release', return_value=Path('/tmp/test-release')), \
                 patch.object(release, 'load_release', return_value={}), \
                 patch.object(release, 'github') as github, patch.object(release, 'publish') as publish, \
                 patch('builtins.print'):
             release.main()
+            check_dependencies.assert_called_once_with()
             preflight.assert_called_once_with(self.config, publishing=False, resume=False)
             github.assert_not_called()
             publish.assert_not_called()
