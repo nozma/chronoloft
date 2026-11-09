@@ -12,6 +12,7 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
 import { splitEvent } from '../utils/splitEvent';
+import { getRecordStart } from '../utils/recordTime';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
@@ -405,8 +406,8 @@ function RecordCalendar() {
         return minuteRecords.map((rec) => {
             // `created_at` is the end time (UTC) -> convert to local
             const endDT = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
-            // start = end - rec.value( minutes )
-            const startDT = endDT.minus({ minutes: rec.value });
+            // ミリ秒単位に丸めた経過時間で開始時刻を復元する
+            const startDT = getRecordStart(endDT, rec.value);
 
             // group color
             let groupColor = null;
