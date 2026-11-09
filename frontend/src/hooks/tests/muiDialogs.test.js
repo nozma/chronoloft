@@ -7,6 +7,7 @@ import { transformSync } from 'esbuild';
 import { DateTime } from 'luxon';
 import { createStopwatchDraft } from '../../utils/stopwatchDraft.js';
 import { normalizeDetails } from '../../utils/recordDetails.js';
+import { getRecordStart, formatPreciseLocalTime } from '../../utils/recordTime.js';
 
 function dialogHarness(file, props, { exportName = 'default', modules: overrides = {} } = {}) {
     const slots = [];
@@ -53,6 +54,7 @@ function dialogHarness(file, props, { exportName = 'default', modules: overrides
         '../utils/recentMemoOptions': { getRecentMemoOptions: () => [] },
         '../utils/getIconForGroup': { default: () => null, __esModule: true },
         '../utils/recordDetails': { normalizeDetails },
+        '../utils/recordTime': { getRecordStart, formatPreciseLocalTime },
         '../utils/stopwatchDraft': { createStopwatchDraft },
         './Stopwatch': { StopwatchView: 'StopwatchView' },
         './ConfirmDialog': { default: 'ConfirmDialog', __esModule: true },
@@ -98,6 +100,68 @@ function dialogHarness(file, props, { exportName = 'default', modules: overrides
         render();
     } };
 }
+
+test('FILLで保存した秒以下は再編集して詳細だけを変更しても維持する', async () => {
+    const saved = [];
+    const props = {
+        open: true, activity: { id: 1, unit: 'minutes' }, initialValue: 10,
+        initialDate: '2026-11-06T01:30:22.916Z', onClose() {},
+        onSubmit: data => saved.push(data),
+    };
+    const previousEnd = '2026-11-06T01:00:58.027Z';
+    const ui = dialogHarness('AddRecordDialog', props, { modules: {
+        '../contexts/RecordContext': { useRecords: () => ({ records: [
+            { id: 1, created_at: previousEnd, value: 10 },
+        ] }) },
+    } });
+    ui.find('Button', button => button.children === 'FILL').onClick();
+    ui.render();
+    await ui.find('Button', button => button.children === 'Submit').onClick();
+    const original = saved[0];
+    const edit = dialogHarness('AddRecordDialog', { ...props, isEdit: true,
+        initialDate: original.created_at, initialValue: original.value });
+    assert.equal(DateTime.fromISO(edit.find('TextField', field => field.label === 'Start time').value).toUTC().toISO(), previousEnd);
+    edit.find('Autocomplete').onInputChange(null, '詳細だけ変更');
+    edit.render();
+    await edit.find('Button', button => button.children === 'Submit').onClick();
+    assert.equal(saved[1].created_at, original.created_at);
+    assert.equal(saved[1].value, original.value);
+    assert.equal(saved[1].memo, '詳細だけ変更');
+});
+
+test('マイクロ秒を含む記録も詳細だけの編集では保存済みの時刻と時間を維持する', async () => {
+    const initialDate = '2026-11-06T03:01:11.994900Z';
+    const initialValue = 121.199915;
+    const saved = [];
+    const ui = dialogHarness('AddRecordDialog', {
+        open: true, isEdit: true, activity: { id: 1, unit: 'minutes' },
+        initialDate, initialValue, onClose() {}, onSubmit: data => saved.push(data),
+    });
+    assert.equal(DateTime.fromISO(ui.find('TextField', field => field.label === 'Start time').value).toUTC().toISO(), '2026-11-06T01:00:00.000Z');
+    ui.find('Autocomplete').onInputChange(null, '時刻は変更しない');
+    ui.render();
+    await ui.find('Button', button => button.children === 'Submit').onClick();
+    assert.equal(saved[0].created_at, initialDate);
+    assert.equal(saved[0].value, initialValue);
+    ui.change('Start time', formatPreciseLocalTime(DateTime.fromISO('2026-11-06T01:01:00Z').toLocal()));
+    await ui.find('Button', button => button.children === 'Submit').onClick();
+    assert.equal(saved[1].created_at, '2026-11-06T03:01:11.994Z');
+    assert.equal(saved[1].value, 120.1999);
+});
+
+test('終了FILLは次の記録のマイクロ秒を考慮して開始時刻を復元する', () => {
+    const ui = dialogHarness('AddRecordDialog', {
+        open: true, activity: { id: 1, unit: 'minutes' }, initialValue: 10,
+        initialDate: '2026-11-06T00:45:00Z', onClose() {}, onSubmit() {},
+    }, { modules: {
+        '../contexts/RecordContext': { useRecords: () => ({ records: [
+            { id: 1, created_at: '2026-11-06T03:01:11.994900Z', value: 121.199915 },
+        ] }) },
+    } });
+    ui.findAll('Button').filter(button => button.children === 'FILL')[1].onClick();
+    ui.render();
+    assert.equal(DateTime.fromISO(ui.find('TextField', field => field.label === 'End time').value).toUTC().toISO(), '2026-11-06T01:00:00.000Z');
+});
 
 test('既存の削除確認はタイトル・確認・キャンセルを維持し、通知はOKだけで閉じる', () => {
     const calls = [];
