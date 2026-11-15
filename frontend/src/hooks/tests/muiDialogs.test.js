@@ -5,9 +5,12 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { transformSync } from 'esbuild';
 import { DateTime } from 'luxon';
+import { luxonLocalizer } from 'react-big-calendar';
+import timeSlots from 'react-big-calendar/lib/utils/TimeSlots.js';
+import { calendarDayLayout } from '../../utils/calendarDayLayout.js';
 import { createStopwatchDraft } from '../../utils/stopwatchDraft.js';
 import { normalizeDetails } from '../../utils/recordDetails.js';
-import { getRecordStart, formatPreciseLocalTime } from '../../utils/recordTime.js';
+import { getRecordStart, formatMinuteInput } from '../../utils/recordTime.js';
 
 function dialogHarness(file, props, { exportName = 'default', modules: overrides = {} } = {}) {
     const slots = [];
@@ -54,7 +57,7 @@ function dialogHarness(file, props, { exportName = 'default', modules: overrides
         '../utils/recentMemoOptions': { getRecentMemoOptions: () => [] },
         '../utils/getIconForGroup': { default: () => null, __esModule: true },
         '../utils/recordDetails': { normalizeDetails },
-        '../utils/recordTime': { getRecordStart, formatPreciseLocalTime },
+        '../utils/recordTime': { getRecordStart, formatMinuteInput },
         '../utils/stopwatchDraft': { createStopwatchDraft },
         './Stopwatch': { StopwatchView: 'StopwatchView' },
         './ConfirmDialog': { default: 'ConfirmDialog', __esModule: true },
@@ -101,7 +104,7 @@ function dialogHarness(file, props, { exportName = 'default', modules: overrides
     } };
 }
 
-test('FILLで保存した秒以下は再編集して詳細だけを変更しても維持する', async () => {
+test('FILLで分単位に保存し、カレンダーで連続記録が横並びにならない', async () => {
     const saved = [];
     const props = {
         open: true, activity: { id: 1, unit: 'minutes' }, initialValue: 10,
@@ -118,9 +121,36 @@ test('FILLで保存した秒以下は再編集して詳細だけを変更して�
     ui.render();
     await ui.find('Button', button => button.children === 'Submit').onClick();
     const original = saved[0];
+    const nextStart = getRecordStart(original.created_at, original.value);
+    assert.equal(nextStart.toUTC().toISO(), '2026-11-06T01:00:00.000Z');
+    assert.equal(original.created_at, '2026-11-06T01:30:00.000Z');
+    assert.equal(original.value, 30);
+    const previous = DateTime.fromISO(previousEnd).toLocal().startOf('minute');
+    const nextEnd = DateTime.fromISO(original.created_at).toLocal();
+    const slotMetrics = timeSlots.getSlotMetrics({
+        min: previous.startOf('day').toJSDate(), max: previous.endOf('day').toJSDate(),
+        step: 60, timeslots: 1, localizer: luxonLocalizer(DateTime),
+    });
+    const layout = start => calendarDayLayout({
+        events: [
+            { start: previous.minus({ minutes: 10 }).toJSDate(), end: previous.toJSDate() },
+            { start: start.toJSDate(), end: nextEnd.toJSDate() },
+        ],
+        minimumStartDifference: 30, slotMetrics,
+        accessors: { start: event => event.start, end: event => event.end },
+    });
+    assert.ok(layout(nextStart).every(event => event.style.left === 0));
+    assert.ok(layout(nextStart.startOf('minute').minus({ milliseconds: 1 })).some(event => event.style.left > 0));
     const edit = dialogHarness('AddRecordDialog', { ...props, isEdit: true,
         initialDate: original.created_at, initialValue: original.value });
-    assert.equal(DateTime.fromISO(edit.find('TextField', field => field.label === 'Start time').value).toUTC().toISO(), previousEnd);
+    for (const [label, time] of [['Start time', previousEnd], ['End time', original.created_at]]) {
+        const expected = DateTime.fromISO(time).toLocal().toFormat("yyyy-MM-dd'T'HH:mm");
+        for (const dialog of [ui, edit]) {
+            const field = dialog.find('TextField', input => input.label === label);
+            assert.equal(field.value, expected);
+            assert.equal(field.inputProps.step, 60);
+        }
+    }
     edit.find('Autocomplete').onInputChange(null, '詳細だけ変更');
     edit.render();
     await edit.find('Button', button => button.children === 'Submit').onClick();
@@ -143,10 +173,10 @@ test('マイクロ秒を含む記録も詳細だけの編集では保存済み�
     await ui.find('Button', button => button.children === 'Submit').onClick();
     assert.equal(saved[0].created_at, initialDate);
     assert.equal(saved[0].value, initialValue);
-    ui.change('Start time', formatPreciseLocalTime(DateTime.fromISO('2026-11-06T01:01:00Z').toLocal()));
+    ui.change('Start time', formatMinuteInput(DateTime.fromISO('2026-11-06T01:01:00Z').toLocal()));
     await ui.find('Button', button => button.children === 'Submit').onClick();
-    assert.equal(saved[1].created_at, '2026-11-06T03:01:11.994Z');
-    assert.equal(saved[1].value, 120.1999);
+    assert.equal(saved[1].created_at, '2026-11-06T03:01:00.000Z');
+    assert.equal(saved[1].value, 120);
 });
 
 test('終了FILLは次の記録のマイクロ秒を考慮して開始時刻を復元する', () => {

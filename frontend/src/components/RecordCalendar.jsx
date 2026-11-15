@@ -13,6 +13,7 @@ import { luxonLocalizer } from 'react-big-calendar';
 import { DateTime } from 'luxon';
 import { splitEvent } from '../utils/splitEvent';
 import { getRecordStart } from '../utils/recordTime';
+import { calendarDayLayout } from '../utils/calendarDayLayout';
 import '../styles/calendarOverrides.css';
 
 import { useGroups } from '../contexts/GroupContext';
@@ -446,8 +447,18 @@ function RecordCalendar() {
     }, [visibleRecordsByActivity, groups]);
 
     const minuteEvents = useMemo(
-        () => baseMinuteEvents.flatMap((event) => splitEvent(event)),
-        [baseMinuteEvents]
+        () => baseMinuteEvents.flatMap((event) => {
+            if (event.is_live || (currentView !== Views.DAY && currentView !== Views.WEEK)) {
+                return splitEvent(event);
+            }
+            // 過去の記録も日・週表示ではFILLと同じ分の境界に揃える。
+            return splitEvent({
+                ...event,
+                start: DateTime.fromJSDate(event.start).startOf('minute').toJSDate(),
+                end: DateTime.fromJSDate(event.end).startOf('minute').toJSDate(),
+            });
+        }),
+        [baseMinuteEvents, currentView]
     );
 
     const events = useMemo(() => {
@@ -562,8 +573,8 @@ function RecordCalendar() {
     const handleEventDrop = async ({ event, start, end }) => {
         if (event.is_live) return;
         try {
-            const startDT = DateTime.fromJSDate(start);
-            const endDT = DateTime.fromJSDate(end);
+            const startDT = DateTime.fromJSDate(start).startOf('minute');
+            const endDT = DateTime.fromJSDate(end).startOf('minute');
 
             const newDuration = endDT.diff(startDT, 'minutes').minutes;
             const newCreatedAt = endDT.toUTC().toISO();
@@ -581,8 +592,8 @@ function RecordCalendar() {
     const handleEventResize = async ({ event, start, end }) => {
         if (event.is_live) return;
         try {
-            const startDT = DateTime.fromJSDate(start);
-            const endDT = DateTime.fromJSDate(end);
+            const startDT = DateTime.fromJSDate(start).startOf('minute');
+            const endDT = DateTime.fromJSDate(end).startOf('minute');
 
             const newDuration = endDT.diff(startDT, 'minutes').minutes;
             const newCreatedAt = endDT.toUTC().toISO();
@@ -799,7 +810,7 @@ function RecordCalendar() {
                                 />
                             )
                         }}
-                        dayLayoutAlgorithm="no-overlap"
+                        dayLayoutAlgorithm={calendarDayLayout}
                         showAllEvents
                         culture={language}
 

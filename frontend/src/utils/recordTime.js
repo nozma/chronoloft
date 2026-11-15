@@ -14,9 +14,6 @@ export function getRecordStart(endTime, minutes) {
     return end.minus({ milliseconds: durationMilliseconds });
 }
 
-// FILLと時刻調整では秒以下を保持し、分ちょうどなら従来の表示にする。
-export function formatPreciseLocalTime(dateTime) {
-    return dateTime.toFormat(dateTime.second || dateTime.millisecond
-        ? "yyyy-MM-dd'T'HH:mm:ss.SSS"
-        : "yyyy-MM-dd'T'HH:mm");
+export function formatMinuteInput(dateTime) {
+    return dateTime.toFormat("yyyy-MM-dd'T'HH:mm");
 }

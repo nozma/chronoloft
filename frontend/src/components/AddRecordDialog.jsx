@@ -22,7 +22,7 @@ import { useActivities } from '../contexts/ActivityContext'
 import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import ConfirmDialog from './ConfirmDialog';
-import { getRecordStart, formatPreciseLocalTime } from '../utils/recordTime';
+import { getRecordStart, formatMinuteInput } from '../utils/recordTime';
 
 function AddRecordDialog({
     open,
@@ -90,12 +90,12 @@ function AddRecordDialog({
             if (initialDate) {
                 // 終了時刻(ローカル)
                 const endLocal = DateTime.fromISO(initialDate, { zone: 'utc' }).toLocal();
-                setEndTime(formatPreciseLocalTime(endLocal));
+                setEndTime(formatMinuteInput(endLocal));
 
                 // 開始時刻(=終了時刻 - duration)
                 const durationMinutes = initialValue ?? 0;
                 const startLocal = getRecordStart(initialDate, durationMinutes);
-                setStartTime(formatPreciseLocalTime(startLocal));
+                setStartTime(formatMinuteInput(startLocal));
             } else {
                 // 新規の場合は現在日時を設定
                 const nowLocal = DateTime.local();
@@ -164,8 +164,8 @@ function AddRecordDialog({
                 };
                 // 時刻を編集していなければ、保存済みのマイクロ秒と経過時間もそのまま送る。
                 if (isEdit && initialDate
-                    && startLocal.toMillis() === getRecordStart(initialDate, initialValue ?? 0).toMillis()
-                    && endLocal.toMillis() === DateTime.fromISO(initialDate, { zone: 'utc' }).toMillis()) {
+                    && startTime === formatMinuteInput(getRecordStart(initialDate, initialValue ?? 0))
+                    && endTime === formatMinuteInput(DateTime.fromISO(initialDate, { zone: 'utc' }).toLocal())) {
                     recordData.value = initialValue ?? 0;
                     recordData.created_at = initialDate;
                 }
@@ -210,7 +210,7 @@ function AddRecordDialog({
     const adjustTime = (timeStr, delta, setter) => {
         const dt = DateTime.fromISO(timeStr);
         if (!dt.isValid) return;
-        setter(formatPreciseLocalTime(dt.plus({ minutes: delta })));
+        setter(formatMinuteInput(dt.plus({ minutes: delta })));
     };
 
     const isValidTime = (timeStr) => (
@@ -239,14 +239,14 @@ function AddRecordDialog({
         // ③ baseline より前のレコードを探す
         const prevRec = sorted.find(rec => {
             const endLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
-            return endLocal < baseline;
+            return endLocal.startOf('minute') < baseline;
         });
 
         // ④ 見つかったらその終了時刻、無ければ baseline をセット
         const dt = prevRec
             ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
             : baseline;
-        setStartTime(formatPreciseLocalTime(dt));
+        setStartTime(formatMinuteInput(dt));
     };
 
     // 「次のレコードの開始」を終了時刻にセット（無ければ今の時刻）
@@ -254,11 +254,11 @@ function AddRecordDialog({
         const current = DateTime.fromISO(endTime);
         // 次の記録の開始時刻は保存時刻のマイクロ秒も考慮して復元する。
         const candidates = records
-            .map(r => ({ startLocal: getRecordStart(r.created_at, r.value) }))
+            .map(r => ({ startLocal: getRecordStart(r.created_at, r.value).startOf('minute') }))
             .filter(o => o.startLocal > current)
             .sort((a, b) => a.startLocal.valueOf() - b.startLocal.valueOf());
         if (candidates.length) {
-            setEndTime(formatPreciseLocalTime(candidates[0].startLocal));
+            setEndTime(formatMinuteInput(candidates[0].startLocal));
         } else {
             setEndTime(DateTime.local().toFormat("yyyy-MM-dd'T'HH:mm"));
         }
@@ -359,8 +359,8 @@ function AddRecordDialog({
                                     label={t("Start time")}
                                     type="datetime-local"
                                     value={startTime}
-                                    inputProps={{ step: 0.001 }}
-                                    onChange={(e) => setStartTime(e.target.value)}
+                                    inputProps={{ step: 60 }}
+                                    onChange={(e) => setStartTime(e.target.value.slice(0, 16))}
                                     sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
                                 />
@@ -415,8 +415,8 @@ function AddRecordDialog({
                                     label={t("End time")}
                                     type="datetime-local"
                                     value={endTime}
-                                    inputProps={{ step: 0.001 }}
-                                    onChange={(e) => setEndTime(e.target.value)}
+                                    inputProps={{ step: 60 }}
+                                    onChange={(e) => setEndTime(e.target.value.slice(0, 16))}
                                     sx={{ flex: { xs: '1 0 100%', sm: 1 }, minWidth: 0 }}
                                     margin="dense"
                                 />

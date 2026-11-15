@@ -4,19 +4,8 @@ import { DateTime } from 'luxon';
 import { luxonLocalizer } from 'react-big-calendar';
 import timeSlots from 'react-big-calendar/lib/utils/TimeSlots.js';
 import noOverlap from 'react-big-calendar/lib/utils/layout-algorithms/no-overlap.js';
-import { getRecordStart, formatPreciseLocalTime } from './recordTime.js';
-
-test('FILLの時刻は秒以下を保持して保存・再計算できる', () => {
-    const previousEnd = DateTime.fromISO('2026-11-06T08:13:58.027');
-    const filled = formatPreciseLocalTime(previousEnd);
-    assert.equal(filled, '2026-11-06T08:13:58.027');
-    const start = DateTime.fromISO(filled);
-    const end = DateTime.fromISO('2026-11-06T09:00');
-    const duration = end.diff(start, 'minutes').minutes;
-    assert.equal(getRecordStart(end, duration).toMillis(), previousEnd.toMillis());
-    assert.equal(formatPreciseLocalTime(start.plus({ minutes: 5 })), '2026-11-06T08:18:58.027');
-    assert.equal(formatPreciseLocalTime(end), '2026-11-06T09:00');
-});
+import { getRecordStart } from './recordTime.js';
+import { calendarDayLayout } from './calendarDayLayout.js';
 
 test('分の小数誤差で連続する記録が横並びにならず、実際の重なりは維持する', () => {
     const end = DateTime.fromISO('2026-11-06T12:01:11.994');
@@ -74,4 +63,27 @@ test('ゼロ時間とミリ秒未満の記録の開始時刻が表示上の終�
     for (const minutes of [0, 0.000001]) {
         assert.equal(getRecordStart(rawEnd, minutes).toMillis(), end.toMillis());
     }
+});
+
+test('同じ分で接する記録は割合の加算誤差で横にずれず、0分の記録も列を占有しない', () => {
+    const day = DateTime.local(2026, 11, 6, 4);
+    const slotMetrics = timeSlots.getSlotMetrics({
+        min: day.toJSDate(), max: day.endOf('day').toJSDate(),
+        step: 60, timeslots: 1, localizer: luxonLocalizer(DateTime),
+    });
+    const event = (start, end) => ({
+        start: day.plus({ minutes: start }).toJSDate(),
+        end: day.plus({ minutes: end }).toJSDate(),
+    });
+    const options = {
+        minimumStartDifference: 30, slotMetrics,
+        accessors: { start: item => item.start, end: item => item.end },
+    };
+    const adjacent = [event(1, 5), event(5, 15)];
+    assert.ok(noOverlap.default({ ...options, events: adjacent }).some(item => item.style.left > 0));
+    const layout = calendarDayLayout({ ...options, events: [...adjacent, event(5, 5)] });
+    assert.equal(layout.length, 2);
+    assert.ok(layout.every(item => item.style.left === 0));
+    assert.ok(calendarDayLayout({ ...options, events: [event(1, 6), event(5, 15)] })
+        .some(item => item.style.left > 0));
 });

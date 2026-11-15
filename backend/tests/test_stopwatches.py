@@ -53,6 +53,22 @@ class StopwatchTests(DatabaseTestCase):
             f"/api/stopwatches/{item['id']}/{action}", json=dict(revision=item['revision'], **kwargs),
             **(self.options if remote else {}))
 
+    def test_completed_records_use_minute_boundaries(self):
+        minute = 1700000040
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 10):
+            first = self.start().json['item']
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 58.027):
+            self.assertEqual(self.operate(first, 'complete', merge_consecutive_records=False).status_code, 200)
+            second = self.start().json['item']
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 125):
+            self.assertEqual(self.operate(second, 'complete', merge_consecutive_records=False).status_code, 200)
+        before, after = Record.query.order_by(Record.created_at).all()
+        self.assertEqual(before.value, 0)
+        self.assertEqual(after.value, 2)
+        self.assertEqual(before.created_at.second, 0)
+        self.assertEqual(before.created_at.microsecond, 0)
+        self.assertEqual(after.created_at - datetime.timedelta(minutes=after.value), before.created_at)
+
     def test_independent_devices_and_remote_control(self):
         local = self.start().json['item']
         remote = self.start(True).json['item']
@@ -119,7 +135,7 @@ class StopwatchTests(DatabaseTestCase):
         with patch('app.routes.stopwatch_routes.time.time', return_value=1700000180):
             self.operate(item, 'complete', memo='確認済み', value=2.5, created_at='2026-10-21T10:00:00+09:00')
         record = Record.query.one()
-        self.assertEqual((record.value, record.memo, record.created_at.hour), (2.5, '確認済み', 1))
+        self.assertEqual((record.value, record.memo, record.created_at.hour), (3, '確認済み', 1))
 
     def test_cancel_is_idempotent_and_frees_slot(self):
         item = self.start().json['item']
@@ -272,6 +288,33 @@ class StopwatchTests(DatabaseTestCase):
                 with patch('app.routes.stopwatch_routes.time.time', return_value=1700000180):
                     self.assertEqual(self.operate(second, 'complete').status_code, 200)
                 self.assertEqual(Record.query.count(), 3)
+
+    def test_legacy_record_in_completion_minute_prevents_merge(self):
+        boundary = datetime.datetime(2026, 11, 15, 10)
+        timestamp = boundary.replace(tzinfo=datetime.timezone.utc).timestamp()
+        for confirm in (False, True):
+            with self.subTest(confirm=confirm):
+                Record.query.delete()
+                prior_end = boundary - datetime.timedelta(minutes=10)
+                other_end = boundary + datetime.timedelta(seconds=30)
+                prior = Record(activity_id=self.activity_id, memo='読書', value=10, created_at=prior_end)
+                other = Record(activity_id=self.activity_id, memo='別の詳細', value=1, created_at=other_end)
+                db.session.add_all([prior, other])
+                db.session.commit()
+                with patch('app.routes.stopwatch_routes.time.time', return_value=timestamp - 360):
+                    item = self.start(memo='読書').json['item']
+                with patch('app.routes.stopwatch_routes.time.time', return_value=timestamp + 58):
+                    payload = {}
+                    if confirm:
+                        item = self.operate(item, 'confirm').json['item']
+                        payload = dict(value=6, created_at=boundary.isoformat() + 'Z')
+                    response = self.operate(item, 'complete', merge_consecutive_records=True, **payload)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(Record.query.count(), 3)
+                self.assertEqual((prior.created_at, prior.value), (prior_end, 10))
+                self.assertEqual((other.created_at, other.value), (other_end, 1))
+                saved = db.session.get(Record, response.json['item']['record_id'])
+                self.assertEqual((saved.created_at, saved.value), (boundary, 6))
 
     def test_parallel_finishes_save_once(self):
         from concurrent.futures import ThreadPoolExecutor
