@@ -289,6 +289,33 @@ class StopwatchTests(DatabaseTestCase):
                     self.assertEqual(self.operate(second, 'complete').status_code, 200)
                 self.assertEqual(Record.query.count(), 3)
 
+    def test_legacy_record_in_completion_minute_prevents_merge(self):
+        boundary = datetime.datetime(2026, 11, 15, 10)
+        timestamp = boundary.replace(tzinfo=datetime.timezone.utc).timestamp()
+        for confirm in (False, True):
+            with self.subTest(confirm=confirm):
+                Record.query.delete()
+                prior_end = boundary - datetime.timedelta(minutes=10)
+                other_end = boundary + datetime.timedelta(seconds=30)
+                prior = Record(activity_id=self.activity_id, memo='読書', value=10, created_at=prior_end)
+                other = Record(activity_id=self.activity_id, memo='別の詳細', value=1, created_at=other_end)
+                db.session.add_all([prior, other])
+                db.session.commit()
+                with patch('app.routes.stopwatch_routes.time.time', return_value=timestamp - 360):
+                    item = self.start(memo='読書').json['item']
+                with patch('app.routes.stopwatch_routes.time.time', return_value=timestamp + 58):
+                    payload = {}
+                    if confirm:
+                        item = self.operate(item, 'confirm').json['item']
+                        payload = dict(value=6, created_at=boundary.isoformat() + 'Z')
+                    response = self.operate(item, 'complete', merge_consecutive_records=True, **payload)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(Record.query.count(), 3)
+                self.assertEqual((prior.created_at, prior.value), (prior_end, 10))
+                self.assertEqual((other.created_at, other.value), (other_end, 1))
+                saved = db.session.get(Record, response.json['item']['record_id'])
+                self.assertEqual((saved.created_at, saved.value), (boundary, 6))
+
     def test_parallel_finishes_save_once(self):
         from concurrent.futures import ThreadPoolExecutor
         from threading import Barrier
