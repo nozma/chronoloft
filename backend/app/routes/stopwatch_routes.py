@@ -284,7 +284,10 @@ def operate_stopwatch(session_id, action):
                 return jsonify(error='終了時刻が不正です。'), 400
             memo = re.sub(r'[\r\n\u2028\u2029]+', ' ', memo)
             try:
-                new_start = created_at - datetime.timedelta(minutes=value)
+                # 計測中の時刻はそのまま使い、記録の開始と終了だけを分に切り捨てる。
+                new_start = (created_at - datetime.timedelta(minutes=value)).replace(second=0, microsecond=0)
+                created_at = created_at.replace(second=0, microsecond=0)
+                value = (created_at - new_start).total_seconds() / 60
             except (OverflowError, ValueError):
                 return jsonify(error='計測時間が不正です。'), 400
             # 既存と同じく、同一項目・同一メモで5分以内に続く記録はまとめる。
@@ -304,7 +307,7 @@ def operate_stopwatch(session_id, action):
                                               Record.created_at <= created_at).first():
                 record = None
             if record and merge_enabled:
-                merged_start = min(new_start, record.created_at - datetime.timedelta(minutes=record.value))
+                merged_start = min(new_start, (record.created_at - datetime.timedelta(minutes=record.value)).replace(second=0, microsecond=0))
                 record.value = (created_at - merged_start).total_seconds() / 60
                 record.created_at = created_at
                 record.memo = memo

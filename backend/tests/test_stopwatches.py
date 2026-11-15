@@ -53,6 +53,22 @@ class StopwatchTests(DatabaseTestCase):
             f"/api/stopwatches/{item['id']}/{action}", json=dict(revision=item['revision'], **kwargs),
             **(self.options if remote else {}))
 
+    def test_completed_records_use_minute_boundaries(self):
+        minute = 1700000040
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 10):
+            first = self.start().json['item']
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 58.027):
+            self.assertEqual(self.operate(first, 'complete', merge_consecutive_records=False).status_code, 200)
+            second = self.start().json['item']
+        with patch('app.routes.stopwatch_routes.time.time', return_value=minute + 125):
+            self.assertEqual(self.operate(second, 'complete', merge_consecutive_records=False).status_code, 200)
+        before, after = Record.query.order_by(Record.created_at).all()
+        self.assertEqual(before.value, 0)
+        self.assertEqual(after.value, 2)
+        self.assertEqual(before.created_at.second, 0)
+        self.assertEqual(before.created_at.microsecond, 0)
+        self.assertEqual(after.created_at - datetime.timedelta(minutes=after.value), before.created_at)
+
     def test_independent_devices_and_remote_control(self):
         local = self.start().json['item']
         remote = self.start(True).json['item']
@@ -119,7 +135,7 @@ class StopwatchTests(DatabaseTestCase):
         with patch('app.routes.stopwatch_routes.time.time', return_value=1700000180):
             self.operate(item, 'complete', memo='確認済み', value=2.5, created_at='2026-10-21T10:00:00+09:00')
         record = Record.query.one()
-        self.assertEqual((record.value, record.memo, record.created_at.hour), (2.5, '確認済み', 1))
+        self.assertEqual((record.value, record.memo, record.created_at.hour), (3, '確認済み', 1))
 
     def test_cancel_is_idempotent_and_frees_slot(self):
         item = self.start().json['item']

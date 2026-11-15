@@ -102,7 +102,7 @@ export function RecordProvider({ children }) {
                     && parseIsoToMs(record.created_at) <= newEndMs)) {
                     const candidateValue = Number(candidate.value);
                     const candidateStartMs = candidateEndMs - candidateValue * MILLIS_PER_MINUTE;
-                    const mergedStartMs = Math.min(candidateStartMs, newStartMs);
+                    const mergedStartMs = Math.floor(Math.min(candidateStartMs, newStartMs) / MILLIS_PER_MINUTE) * MILLIS_PER_MINUTE;
                     const mergedEndMs = Math.max(candidateEndMs, newEndMs);
                     const mergedValue = (mergedEndMs - mergedStartMs) / MILLIS_PER_MINUTE;
                     const updatePayload = {

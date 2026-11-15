@@ -116,7 +116,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
     };
     const elapsed = Math.floor(elapsedMilliseconds(item, now) / 1000);
     const formattedTime = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor(elapsed / 60) % 60).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
-    const startValue = timestamp => DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd'T'HH:mm:ss");
+    const startValue = timestamp => DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd'T'HH:mm");
     const closeEditor = () => { setShowEditor(false); setEditing(false); setMemo(item.memo); };
     return <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', ...(!own && { backgroundImage: theme => `linear-gradient(${alpha(theme.palette.text.primary, 0.035)}, ${alpha(theme.palette.text.primary, 0.035)})` }) }}>
         {own ? <>
@@ -181,7 +181,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
                             fullWidth
                         />}
                     />
-                    <TextField label="開始時刻" type="datetime-local" size="small" value={start} InputLabelProps={{ shrink: true }} inputProps={{ step: 1 }} disabled={busy} onChange={e => setStart(e.target.value)} />
+                    <TextField label="開始時刻" type="datetime-local" size="small" value={start} InputLabelProps={{ shrink: true }} inputProps={{ step: 60 }} disabled={busy} onChange={e => setStart(e.target.value)} />
                     <Stack direction="row" spacing={1}>
                         <Button size="small" variant="outlined" disabled={busy || !start} onClick={() => run(async () => {
                             const data = { memo };
