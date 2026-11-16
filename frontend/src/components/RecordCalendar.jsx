@@ -407,8 +407,7 @@ function RecordCalendar() {
         return minuteRecords.map((rec) => {
             // `created_at` is the end time (UTC) -> convert to local
             const endDT = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
-            // 保存された終了時刻のマイクロ秒も使って開始時刻を復元する
-            const startDT = getRecordStart(rec.created_at, rec.value);
+            const startDT = getRecordStart(rec.created_at, rec.value, rec.server_session?.started_at);
 
             // group color
             let groupColor = null;
@@ -431,7 +430,7 @@ function RecordCalendar() {
                 activityGroup: rec.activity_group,
                 value: rec.value,
                 title: `${formattedTime} ${rec.activity_name}`,
-                start: startDT.toJSDate(),
+                start: (rec.is_live ? startDT.startOf('minute') : startDT).toJSDate(),
                 end: endDT.toJSDate(),
                 allDay: false,
                 groupColor,

@@ -179,6 +179,21 @@ test('マイクロ秒を含む記録も詳細だけの編集では保存済み�
     assert.equal(saved[1].value, 120);
 });
 
+test('計測の保存確認は終了時刻と経過時間の端数で開始を1分前にしない', async () => {
+    const start = DateTime.fromISO('2026-11-16T01:00:00Z');
+    const pausedAt = start.toMillis() + 123456.75;
+    const saved = [];
+    const ui = dialogHarness('AddRecordDialog', {
+        open: true, activity: { id: 1, unit: 'minutes' },
+        initialStartedAt: start.toMillis(), initialDate: new Date(pausedAt).toISOString(),
+        initialValue: (pausedAt - start.toMillis()) / 60000,
+        onClose() {}, onSubmit: data => saved.push(data),
+    });
+    await ui.find('Button', button => button.children === 'Submit').onClick();
+    assert.equal(saved[0].created_at, '2026-11-16T01:02:00.000Z');
+    assert.equal(saved[0].value, 2);
+});
+
 test('終了FILLは次の記録のマイクロ秒を考慮して開始時刻を復元する', () => {
     const ui = dialogHarness('AddRecordDialog', {
         open: true, activity: { id: 1, unit: 'minutes' }, initialValue: 10,

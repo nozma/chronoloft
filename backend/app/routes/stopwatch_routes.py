@@ -287,7 +287,12 @@ def operate_stopwatch(session_id, action):
             try:
                 merge_check_end = created_at
                 # 計測中の時刻はそのまま使い、記録の開始と終了だけを分に切り捨てる。
-                new_start = (created_at - datetime.timedelta(minutes=value)).replace(second=0, microsecond=0)
+                if 'value' not in data and 'created_at' not in data:
+                    new_start = datetime.datetime.fromtimestamp(
+                        math.floor(item.started_at / 60000) * 60, datetime.timezone.utc
+                    ).replace(tzinfo=None)
+                else:
+                    new_start = (created_at - datetime.timedelta(minutes=value)).replace(second=0, microsecond=0)
                 created_at = created_at.replace(second=0, microsecond=0)
                 value = (created_at - new_start).total_seconds() / 60
                 # 確認画面では同じ分の終了時刻が分単位で届くため、元の計測終了も考慮する。

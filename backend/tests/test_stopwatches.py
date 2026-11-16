@@ -69,6 +69,20 @@ class StopwatchTests(DatabaseTestCase):
         self.assertEqual(before.created_at.microsecond, 0)
         self.assertEqual(after.created_at - datetime.timedelta(minutes=after.value), before.created_at)
 
+    def test_completion_keeps_start_set_to_previous_end(self):
+        boundary = datetime.datetime(2026, 11, 15, 22)
+        started_at = 1794780000000
+        previous = Record(activity_id=self.activity_id, value=10, created_at=boundary)
+        db.session.add(previous)
+        db.session.commit()
+        with patch('app.routes.stopwatch_routes.time.time', return_value=1794780024.0632476):
+            item = self.start(memo='次の記録').json['item']
+            edited = self.operate(item, 'edit', started_at=started_at).json['item']
+            result = self.operate(edited, 'complete', merge_consecutive_records=False)
+        self.assertEqual(result.status_code, 200)
+        saved = db.session.get(Record, result.json['item']['record_id'])
+        self.assertEqual((saved.created_at, saved.value), (previous.created_at, 0))
+
     def test_independent_devices_and_remote_control(self):
         local = self.start().json['item']
         remote = self.start(True).json['item']

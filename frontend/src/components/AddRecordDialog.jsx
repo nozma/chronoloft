@@ -31,6 +31,7 @@ function AddRecordDialog({
     activity,
     initialValue,
     initialDate,
+    initialStartedAt,
     initialMemo = '',
     isEdit = false,
     onDelete,
@@ -94,7 +95,7 @@ function AddRecordDialog({
 
                 // 開始時刻(=終了時刻 - duration)
                 const durationMinutes = initialValue ?? 0;
-                const startLocal = getRecordStart(initialDate, durationMinutes);
+                const startLocal = getRecordStart(initialDate, durationMinutes, initialStartedAt);
                 setStartTime(formatMinuteInput(startLocal));
             } else {
                 // 新規の場合は現在日時を設定
@@ -104,7 +105,7 @@ function AddRecordDialog({
             }
         }
         setMemo(normalizeDetails(initialMemo));
-    }, [activity, initialValue, initialDate, initialMemo]);
+    }, [activity, initialValue, initialDate, initialStartedAt, initialMemo]);
 
     useEffect(() => {
         if (open && autoFocusMemo && memoRef.current) {
