@@ -7,6 +7,28 @@ import noOverlap from 'react-big-calendar/lib/utils/layout-algorithms/no-overlap
 import { getRecordStart } from './recordTime.js';
 import { calendarDayLayout } from './calendarDayLayout.js';
 
+test('計測中の時計にミリ秒未満の端数があっても、FILLで接した記録は横にずれない', () => {
+    const boundary = DateTime.local(2026, 11, 16, 10);
+    const startedAt = boundary.toMillis();
+    const accessors = { start: item => item.start, end: item => item.end };
+    const slotMetrics = timeSlots.getSlotMetrics({
+        min: boundary.set({ hour: 4 }).toJSDate(), max: boundary.endOf('day').toJSDate(),
+        step: 60, timeslots: 1, localizer: luxonLocalizer(DateTime),
+    });
+    for (const fraction of [0.75, 0.25, 0.75]) {
+        const now = startedAt + 123456 + fraction;
+        const end = new Date(now);
+        const start = getRecordStart(end.toISOString(), (now - startedAt) / 60000, startedAt);
+        assert.equal(start.toMillis(), startedAt);
+        const layout = calendarDayLayout({ accessors, slotMetrics, minimumStartDifference: 30, events: [
+            { start: boundary.minus({ minutes: 10 }).toJSDate(), end: boundary.toJSDate() },
+            { start: start.startOf('minute').toJSDate(), end },
+        ] });
+        assert.equal(layout.length, 2);
+        assert.ok(layout.every(item => item.style.left === 0));
+    }
+});
+
 test('分の小数誤差で連続する記録が横並びにならず、実際の重なりは維持する', () => {
     const end = DateTime.fromISO('2026-11-06T12:01:11.994');
     const boundary = DateTime.fromISO('2026-11-06T10:00');

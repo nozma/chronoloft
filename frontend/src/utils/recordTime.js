@@ -1,7 +1,9 @@
 import { DateTime } from 'luxon';
 
 // 保存時刻は文字列のまま受け取り、Luxonで失われるミリ秒未満も復元に使う。
-export function getRecordStart(endTime, minutes) {
+export function getRecordStart(endTime, minutes, startedAt) {
+    // 計測中や保存確認では、経過時間から復元せず計測の開始時刻を使う。
+    if (Number.isFinite(startedAt)) return DateTime.fromMillis(startedAt);
     const end = typeof endTime === 'string'
         ? DateTime.fromISO(endTime, { zone: 'utc' }).toLocal()
         : endTime;

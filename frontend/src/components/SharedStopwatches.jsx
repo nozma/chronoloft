@@ -368,7 +368,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         {pending && <AddRecordDialog open title={`${pending.item.device_name}：${pending.item.activity_name}`}
             submitRef={pendingSubmit}
             activity={pending.activity}
-            initialValue={elapsedMilliseconds(pending.item, now + state.offset) / 60000}
+            initialStartedAt={pending.item.started_at}
             initialMemo={pending.item.memo} initialDate={new Date(pending.item.paused_at).toISOString()}
             autoFocusMemo onClose={() => {
                 if (submitted.current) { submitted.current = false; return; }
