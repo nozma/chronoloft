@@ -11,6 +11,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import ConfirmDialog from './ConfirmDialog';
+import { formatStopwatchTime as formatTime } from '../utils/stopwatchTime';
 
 export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const { t } = useI18n();
@@ -91,15 +92,6 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
     const formattedStartTime = displayStartTime
         ? DateTime.fromMillis(displayStartTime).toFormat("HH:mm")
         : t("Undefined");
-
-    // 時間をフォーマットする関数
-    const formatTime = (ms) => {
-        const totalSeconds = Math.floor(ms / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    };
 
     const handleCompleteClick = async () => {
         if (props.recordSaveMode === 'confirm' && props.onConfirmComplete) {

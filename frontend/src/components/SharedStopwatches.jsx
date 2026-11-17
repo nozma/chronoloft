@@ -19,12 +19,13 @@ import { useFilter } from '../contexts/FilterContext';
 import { useRecords } from '../contexts/RecordContext';
 import { getRecentMemoOptions, filterRecentMemoOptions } from '../utils/recentMemoOptions';
 import { createStopwatchDraft } from '../utils/stopwatchDraft';
+import { formatStopwatchTime } from '../utils/stopwatchTime';
 import { normalizeDetails, pasteDetails } from '../utils/recordDetails';
 import { currentStopwatch, elapsedMilliseconds, newStopwatchId, operateStopwatch, refreshStopwatches, stopwatchRequest, useSharedStopwatches } from '../services/stopwatches';
 import { desktopCommand, desktopDiscordEnabled } from '../utils/desktop';
 import useLocalStorageState from '../hooks/useLocalStorageState';
 
-function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
+function SessionCard({ item, own, now, busy, openConfirm, needsConfirmation, run, drafts }) {
     const { t } = useI18n();
     const { records } = useRecords();
     const detailOptions = useMemo(() => getRecentMemoOptions(records, item.activity_id), [records, item.activity_id]);
@@ -87,7 +88,6 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         return () => { delete registry[item.id]; };
     });
     useEffect(() => { if (!editing) setMemo(item.memo); }, [item.memo, editing]);
-    const { recordSaveMode } = useSettings();
     const { groups } = useGroups();
     const canDiscord = own && item.is_local && item.discord_enabled && groups.some(group => group.name === item.activity_group && group.client_id);
     const displayedItem = own ? { ...item, ...changes } : item;
@@ -98,7 +98,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         discordConnected: item.discord_connected,
         complete: () => run(async () => {
             const current = await savedItem();
-            return recordSaveMode === 'confirm' ? openConfirm(current) : operateStopwatch(current, 'complete');
+            return needsConfirmation(current) ? openConfirm(current) : operateStopwatch(current, 'complete');
         }),
         cancel: () => {
             // 確認中は自動保存を止め、既に始まった保存だけ完了を待つ。
@@ -110,12 +110,10 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
         },
         pause: () => openConfirm(item),
         updateStartTime: value => {
-            if (!Number.isFinite(value) || value > Date.now()) throw new Error(t("Start time cannot be in the future"));
+            if (!Number.isFinite(value)) return;
             localDraft.current.update(item, { started_at: value });
         },
     };
-    const elapsed = Math.floor(elapsedMilliseconds(item, now) / 1000);
-    const formattedTime = `${String(Math.floor(elapsed / 3600)).padStart(2, '0')}:${String(Math.floor(elapsed / 60) % 60).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
     const startValue = timestamp => DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd'T'HH:mm");
     const closeEditor = () => { setShowEditor(false); setEditing(false); setMemo(item.memo); };
     return <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', ...(!own && { backgroundImage: theme => `linear-gradient(${alpha(theme.palette.text.primary, 0.035)}, ${alpha(theme.palette.text.primary, 0.035)})` }) }}>
@@ -137,7 +135,7 @@ function SessionCard({ item, own, now, busy, openConfirm, run, drafts }) {
                     </Box>
                 </Box>
                 <Stack spacing={0} alignItems="flex-end" sx={{ gridColumn: 2, gridRow: '1 / span 2' }}>
-                    <Typography sx={{ fontSize: '1.5rem', fontVariantNumeric: 'tabular-nums', lineHeight: 1.5, whiteSpace: 'nowrap', textAlign: 'right' }}>{formattedTime}</Typography>
+                    <Typography sx={{ fontSize: '1.5rem', fontVariantNumeric: 'tabular-nums', lineHeight: 1.5, whiteSpace: 'nowrap', textAlign: 'right' }}>{formatStopwatchTime(elapsedMilliseconds(item, now))}</Typography>
                     <Stack direction="row" spacing={0} sx={{ justifyContent: 'flex-end' }}>
                         <IconButton size="small" color="primary" aria-label="終了・保存" title="終了・保存" disabled={busy || showEditor || item.status === 'confirming'} onClick={controller.complete}>
                             <CheckCircleIcon fontSize="medium" />
@@ -222,6 +220,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     const { setFilterState } = useFilter();
     const { discordEnabled, recordSaveMode, autoFilterOnSelect } = useSettings();
     const [now, setNow] = useState(Date.now());
+    const displayNow = Math.max(now, Date.now()) + state.offset;
     const [othersOpen, setOthersOpen] = useLocalStorageState('stopwatch.othersOpen', true);
     const [pending, setPending] = useState(null);
     const [error, setError] = useState('');
@@ -261,9 +260,10 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
     useEffect(() => {
         setActiveActivity(activities.find(activity => activity.id === main?.activity_id) || null);
         if (!main) { document.title = 'Chronoloft'; return; }
-        const minutes = Math.floor(elapsedMilliseconds(main, now + state.offset) / 60000);
-        document.title = `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')} ${main.activity_name}${main.memo ? `｜${main.memo}` : ''} - Chronoloft`;
-    }, [main, activities, now, state.offset, setActiveActivity]);
+        const elapsed = elapsedMilliseconds(main, displayNow);
+        const minutes = elapsed < 0 ? Math.ceil(-elapsed / 60000) : Math.floor(elapsed / 60000);
+        document.title = `${elapsed < 0 ? '-' : ''}${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')} ${main.activity_name}${main.memo ? `｜${main.memo}` : ''} - Chronoloft`;
+    }, [main, activities, displayNow, setActiveActivity]);
     // Discord設定の反映は、起動PC自身のメイン計測に限る。
     useEffect(() => {
         if (props.desktopPanel || !main || !state.device?.is_local || busy || main.discord_enabled === discordEnabled) return;
@@ -278,12 +278,14 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
             discord_enabled: state.device.is_local && publishToDiscord,
         });
     };
-    const openConfirm = async (item, next = null) => {
+    const startsInFuture = item => item.started_at > Date.now() + (state.offset ?? 0);
+    const needsConfirmation = item => recordSaveMode === 'confirm' || startsInFuture(item);
+    const openConfirm = async (item, next = null, quit = false) => {
         const result = item.status === 'confirming' ? { item } : await operateStopwatch(item, 'confirm');
         // 一覧の再取得で項目オブジェクトが変わっても、確認中の入力を初期化しない。
         const activity = activities.find(value => value.id === result.item.activity_id)
             || { id: result.item.activity_id, name: result.item.activity_name, unit: 'minutes' };
-        setPending({ item: result.item, next, activity });
+        setPending({ item: result.item, next, activity, quit });
         return null;
     };
     const desktopAction = command => run(async () => {
@@ -316,6 +318,10 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
                     return;
                 }
             } finally { quittingAfterSave.current = false; }
+        } else if (action === 'complete' && startsInFuture(quitItem)) {
+            await openConfirm(quitItem, null, true);
+            setQuitItem(null);
+            return;
         } else {
             await operateStopwatch(quitItem, action);
             if (pending?.item.id === quitItem.id) setPending(null);
@@ -330,7 +336,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
             if (main?.activity_id === activity.id) return;
             if (main) {
                 const current = await drafts.current[main.id]?.() || main;
-                if (recordSaveMode === 'confirm') return openConfirm(current, activity);
+                if (needsConfirmation(current)) return openConfirm(current, activity);
                 await operateStopwatch(current, 'complete');
             }
             await start(activity);
@@ -343,13 +349,13 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
         {state.migrationWarning && <Alert severity="warning">{state.migrationWarning}</Alert>}
         {state.warning && <Alert severity="warning">{state.warning}</Alert>}
         {!state.ready && <Typography variant="body2" color="text.secondary">計測状態を取得しています…</Typography>}
-        {own.map(item => <SessionCard key={item.id} item={item} own now={now + state.offset} busy={busy} openConfirm={openConfirm} run={run} drafts={drafts} />)}
+        {own.map(item => <SessionCard key={item.id} item={item} own now={displayNow} busy={busy} openConfirm={openConfirm} needsConfirmation={needsConfirmation} run={run} drafts={drafts} />)}
         {!props.desktopPanel && other.length > 0 && <Box>
             <Button color="inherit" size="small" fullWidth onClick={() => setOthersOpen(value => !value)} aria-expanded={othersOpen} sx={{ justifyContent: 'space-between', color: 'text.secondary', px: 0.5, mb: othersOpen ? 1 : 0 }} endIcon={<ExpandMoreIcon sx={{ transform: othersOpen ? 'rotate(180deg)' : 'none' }} />}>
                 ほかの端末
             </Button>
             <Collapse in={othersOpen}>
-                <Stack spacing={1.5}>{other.map(item => <SessionCard key={item.id} item={item} now={now + state.offset} busy={busy} openConfirm={openConfirm} run={run} drafts={drafts} />)}</Stack>
+                <Stack spacing={1.5}>{other.map(item => <SessionCard key={item.id} item={item} now={displayNow} busy={busy} openConfirm={openConfirm} needsConfirmation={needsConfirmation} run={run} drafts={drafts} />)}</Stack>
             </Collapse>
         </Box>}
         <Dialog open={Boolean(quitItem)} onClose={() => { if (!state.busy) setQuitItem(null); }} fullWidth maxWidth="xs">
@@ -369,7 +375,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
             submitRef={pendingSubmit}
             activity={pending.activity}
             initialStartedAt={pending.item.started_at}
-            initialMemo={pending.item.memo} initialDate={new Date(pending.item.paused_at).toISOString()}
+            initialMemo={pending.item.memo} initialDate={new Date(Math.max(pending.item.started_at, pending.item.paused_at)).toISOString()}
             autoFocusMemo onClose={() => {
                 if (submitted.current) { submitted.current = false; return; }
                 setPending(null);
@@ -380,6 +386,7 @@ const SharedStopwatches = forwardRef(function SharedStopwatches(props, ref) {
                 submitted.current = true;
                 setPending(null);
                 await refreshActivities();
+                if (pending.quit && !quittingAfterSave.current) await desktopCommand('quit-ready');
                 if (pending.next && !quittingAfterSave.current) await run(() => start(pending.next));
             }} />}
     </Stack>;

@@ -83,6 +83,26 @@ class StopwatchTests(DatabaseTestCase):
         saved = db.session.get(Record, result.json['item']['record_id'])
         self.assertEqual((saved.created_at, saved.value), (previous.created_at, 0))
 
+    def test_future_start_can_be_confirmed_resumed_and_saved_before_start(self):
+        now = 1700000040
+        started_at = (now + 120) * 1000
+        with patch('app.routes.stopwatch_routes.time.time', return_value=now):
+            item = self.start().json['item']
+            edited = self.operate(item, 'edit', started_at=started_at)
+            self.assertEqual(edited.status_code, 200)
+            confirming = self.operate(edited.json['item'], 'confirm').json['item']
+            self.assertEqual(confirming['started_at'], started_at)
+            self.assertEqual(confirming['paused_at'], now * 1000)
+            resumed = self.operate(confirming, 'resume').json['item']
+            self.assertEqual(resumed['started_at'], started_at)
+            self.assertIsNone(resumed['paused_at'])
+            result = self.operate(resumed, 'complete', merge_consecutive_records=False)
+
+        self.assertEqual(result.status_code, 200)
+        saved = db.session.get(Record, result.json['item']['record_id'])
+        expected_end = datetime.datetime.fromtimestamp(started_at / 1000, datetime.timezone.utc).replace(tzinfo=None)
+        self.assertEqual((saved.created_at, saved.value), (expected_end, 0))
+
     def test_independent_devices_and_remote_control(self):
         local = self.start().json['item']
         remote = self.start(True).json['item']
@@ -203,6 +223,35 @@ class StopwatchTests(DatabaseTestCase):
             self.assertEqual(edited['memo'], 'PCを遠隔操作')
             self.assertNotIn('details', start.call_args.args[0])
         self.discord.start()
+
+    def test_moving_start_into_future_clears_discord_until_scheduled_start(self):
+        self.discord.stop()
+        now = 1700000040
+        scheduled = now + 120
+        with patch('app.discord_presence_manager.Presence') as presence, \
+             patch.object(stopwatch_routes.time, 'time', return_value=now) as clock:
+            item = self.start().json['item']
+            self.assertTrue(item['discord_connected'])
+
+            edited = self.operate(item, 'edit', started_at=scheduled * 1000)
+            self.assertEqual(edited.status_code, 200)
+            self.assertFalse(edited.json['item']['discord_connected'])
+            presence.return_value.close.assert_called_once()
+            presence.return_value.update.reset_mock()
+
+            clock.return_value = scheduled - 1
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            before = self.client.get('/api/stopwatches').json['items'][0]
+            self.assertFalse(before['discord_connected'])
+            presence.return_value.update.assert_not_called()
+
+            clock.return_value = scheduled
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            at_start = self.client.get('/api/stopwatches').json['items'][0]
+            self.assertTrue(at_start['discord_connected'])
+            presence.return_value.update.assert_called_once()
+            activity = presence.return_value.update.call_args.kwargs['payload_override']['args']['activity']
+            self.assertEqual(activity['timestamps']['start'], scheduled * 1000)
 
     def test_memo_is_saved_but_never_published_on_start_poll_edit_or_resume(self):
         self.discord.stop()

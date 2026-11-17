@@ -9,6 +9,7 @@ import { luxonLocalizer } from 'react-big-calendar';
 import timeSlots from 'react-big-calendar/lib/utils/TimeSlots.js';
 import { calendarDayLayout } from '../../utils/calendarDayLayout.js';
 import { createStopwatchDraft } from '../../utils/stopwatchDraft.js';
+import { formatStopwatchTime } from '../../utils/stopwatchTime.js';
 import { normalizeDetails } from '../../utils/recordDetails.js';
 import { getRecordStart, formatMinuteInput } from '../../utils/recordTime.js';
 
@@ -59,6 +60,7 @@ function dialogHarness(file, props, { exportName = 'default', modules: overrides
         '../utils/recordDetails': { normalizeDetails },
         '../utils/recordTime': { getRecordStart, formatMinuteInput },
         '../utils/stopwatchDraft': { createStopwatchDraft },
+        '../utils/stopwatchTime': { formatStopwatchTime },
         './Stopwatch': { StopwatchView: 'StopwatchView' },
         './ConfirmDialog': { default: 'ConfirmDialog', __esModule: true },
         ...overrides,
