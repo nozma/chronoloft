@@ -83,6 +83,26 @@ class StopwatchTests(DatabaseTestCase):
         saved = db.session.get(Record, result.json['item']['record_id'])
         self.assertEqual((saved.created_at, saved.value), (previous.created_at, 0))
 
+    def test_future_start_can_be_confirmed_resumed_and_saved_before_start(self):
+        now = 1700000040
+        started_at = (now + 120) * 1000
+        with patch('app.routes.stopwatch_routes.time.time', return_value=now):
+            item = self.start().json['item']
+            edited = self.operate(item, 'edit', started_at=started_at)
+            self.assertEqual(edited.status_code, 200)
+            confirming = self.operate(edited.json['item'], 'confirm').json['item']
+            self.assertEqual(confirming['started_at'], started_at)
+            self.assertEqual(confirming['paused_at'], now * 1000)
+            resumed = self.operate(confirming, 'resume').json['item']
+            self.assertEqual(resumed['started_at'], started_at)
+            self.assertIsNone(resumed['paused_at'])
+            result = self.operate(resumed, 'complete', merge_consecutive_records=False)
+
+        self.assertEqual(result.status_code, 200)
+        saved = db.session.get(Record, result.json['item']['record_id'])
+        expected_end = datetime.datetime.fromtimestamp(started_at / 1000, datetime.timezone.utc).replace(tzinfo=None)
+        self.assertEqual((saved.created_at, saved.value), (expected_end, 0))
+
     def test_independent_devices_and_remote_control(self):
         local = self.start().json['item']
         remote = self.start(True).json['item']

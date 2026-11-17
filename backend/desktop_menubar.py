@@ -1,6 +1,7 @@
 """メニューバーの表示、共有Webパネル、Dockと終了操作を管理する。"""
 import json
 import logging
+import math
 from pathlib import Path
 import sys
 import threading
@@ -37,9 +38,14 @@ def read_desktop_state(app, device_id):
 def elapsed_title(session, now=None):
     if session is None:
         return ''
-    end = session['paused_at'] if session['paused_at'] is not None else (time.time() * 1000 if now is None else now)
-    minutes = max(0, int((end - session['started_at']) // 60000))
-    return f'{minutes // 60:02}:{minutes % 60:02}'
+    paused_at = session['paused_at']
+    end = paused_at if paused_at is not None else (time.time() * 1000 if now is None else now)
+    elapsed = end - session['started_at']
+    if paused_at is not None:
+        elapsed = max(0, elapsed)
+    minutes = math.ceil(-elapsed / 60000) if elapsed < 0 else math.floor(elapsed / 60000)
+    sign = '-' if elapsed < 0 else ''
+    return f'{sign}{minutes // 60:02}:{minutes % 60:02}'
 
 
 def badge_colors(value):

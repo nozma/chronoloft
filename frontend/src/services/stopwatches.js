@@ -221,12 +221,12 @@ export async function saveDeviceAndLanSettings({ name, settings, enabled, passwo
 }
 
 export function elapsedMilliseconds(item, now) {
-    return Math.max(0, (item.paused_at ?? now) - item.started_at);
+    return item.paused_at == null ? now - item.started_at : Math.max(0, item.paused_at - item.started_at);
 }
 
 export function sharedLiveRecords(items, now) {
     return items.filter(item => item.slot === 'main').map(item => ({
-        id: `live-${item.id}`, activity_id: item.activity_id, value: elapsedMilliseconds(item, now) / 60000,
+        id: `live-${item.id}`, activity_id: item.activity_id, value: Math.max(0, elapsedMilliseconds(item, now)) / 60000,
         created_at: new Date(item.paused_at ?? now).toISOString().replace('Z', ''),
         unit: 'minutes', activity_name: item.activity_name, activity_group: item.activity_group,
         activity_group_id: item.activity_group_id, tags: item.tags, memo: item.memo,

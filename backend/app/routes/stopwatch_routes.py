@@ -68,8 +68,10 @@ def valid_id(value):
         return False
 
 
-def milliseconds(value):
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) and 0 < value <= time.time() * 1000
+def milliseconds(value, *, allow_future=False):
+    # 記録日時へ変換できるUTCの上限を使う。
+    latest = 253402300799999 if allow_future else time.time() * 1000
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and 0 < value <= latest
 
 
 def serialize(item):
@@ -112,6 +114,9 @@ def _sync_discord(item):
             for group, session in list(discord_routes.DISCORD_SESSIONS.items()):
                 if session == item.id:
                     discord_routes.discord_presence_stop(dict(group=group, session_id=item.id))
+            return None
+        # 開始予定の時刻をDiscordへ送信しない。
+        if item.started_at > time.time() * 1000:
             return None
         activity = db.session.get(Activity, item.activity_id)
         if not activity or not activity.group or not activity.group.client_id:
@@ -202,7 +207,7 @@ def start_stopwatch():
             return jsonify(error='この端末では既に計測中です。画面を更新してください。'), 409
         started_at = data.get('started_at', time.time() * 1000)
         memo = data.get('memo', '')
-        if not milliseconds(started_at) or not isinstance(memo, str) or len(memo) > 10000:
+        if not milliseconds(started_at, allow_future=True) or not isinstance(memo, str) or len(memo) > 10000:
             return jsonify(error='開始時刻またはメモが不正です。'), 400
         item = StopwatchSession(id=data['id'], device_id=device.id, slot=data.get('slot', 'main'),
                                 activity_id=activity.id, started_at=started_at,
@@ -247,7 +252,7 @@ def operate_stopwatch(session_id, action):
                     return jsonify(error='メモが不正です。'), 400
                 item.memo = re.sub(r'[\r\n\u2028\u2029]+', ' ', data['memo'])
             if 'started_at' in data:
-                if not milliseconds(data['started_at']) or (item.paused_at and data['started_at'] > item.paused_at):
+                if not milliseconds(data['started_at'], allow_future=True) or (item.paused_at and data['started_at'] > item.paused_at):
                     return jsonify(error='開始時刻が不正です。'), 400
                 item.started_at = data['started_at']
             if 'discord_enabled' in data:
@@ -265,7 +270,7 @@ def operate_stopwatch(session_id, action):
         elif action == 'cancel':
             item.status = 'cancelled'
         elif action == 'complete':
-            end = item.paused_at or time.time() * 1000
+            end = max(item.started_at, item.paused_at or time.time() * 1000)
             value = data.get('value', (end - item.started_at) / 60000)
             activity_id = data.get('activity_id', item.activity_id)
             if type(activity_id) is not int:
