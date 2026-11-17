@@ -224,6 +224,35 @@ class StopwatchTests(DatabaseTestCase):
             self.assertNotIn('details', start.call_args.args[0])
         self.discord.start()
 
+    def test_moving_start_into_future_clears_discord_until_scheduled_start(self):
+        self.discord.stop()
+        now = 1700000040
+        scheduled = now + 120
+        with patch('app.discord_presence_manager.Presence') as presence, \
+             patch.object(stopwatch_routes.time, 'time', return_value=now) as clock:
+            item = self.start().json['item']
+            self.assertTrue(item['discord_connected'])
+
+            edited = self.operate(item, 'edit', started_at=scheduled * 1000)
+            self.assertEqual(edited.status_code, 200)
+            self.assertFalse(edited.json['item']['discord_connected'])
+            presence.return_value.close.assert_called_once()
+            presence.return_value.update.reset_mock()
+
+            clock.return_value = scheduled - 1
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            before = self.client.get('/api/stopwatches').json['items'][0]
+            self.assertFalse(before['discord_connected'])
+            presence.return_value.update.assert_not_called()
+
+            clock.return_value = scheduled
+            self.app.extensions['stopwatch_discord_sync'] = 0
+            at_start = self.client.get('/api/stopwatches').json['items'][0]
+            self.assertTrue(at_start['discord_connected'])
+            presence.return_value.update.assert_called_once()
+            activity = presence.return_value.update.call_args.kwargs['payload_override']['args']['activity']
+            self.assertEqual(activity['timestamps']['start'], scheduled * 1000)
+
     def test_memo_is_saved_but_never_published_on_start_poll_edit_or_resume(self):
         self.discord.stop()
         with patch('app.discord_presence_manager.Presence') as presence:

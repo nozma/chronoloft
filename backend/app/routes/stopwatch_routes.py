@@ -110,13 +110,10 @@ def _sync_discord(item):
     if not device.is_local:
         return None
     try:
-        if item.status != 'running' or not item.discord_enabled:
+        if item.status != 'running' or not item.discord_enabled or item.started_at > time.time() * 1000:
             for group, session in list(discord_routes.DISCORD_SESSIONS.items()):
                 if session == item.id:
                     discord_routes.discord_presence_stop(dict(group=group, session_id=item.id))
-            return None
-        # 開始予定の時刻をDiscordへ送信しない。
-        if item.started_at > time.time() * 1000:
             return None
         activity = db.session.get(Activity, item.activity_id)
         if not activity or not activity.group or not activity.group.client_id:
