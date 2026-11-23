@@ -111,7 +111,7 @@ function SessionCard({ item, own, now, busy, openConfirm, needsConfirmation, run
         pause: () => openConfirm(item),
         updateStartTime: value => {
             if (!Number.isFinite(value)) return;
-            localDraft.current.update(item, { started_at: value });
+            localDraft.current.update(item, { started_at: Math.floor(value / 60000) * 60000 });
         },
     };
     const startValue = timestamp => DateTime.fromMillis(timestamp).toFormat("yyyy-MM-dd'T'HH:mm");
@@ -183,7 +183,7 @@ function SessionCard({ item, own, now, busy, openConfirm, needsConfirmation, run
                     <Stack direction="row" spacing={1}>
                         <Button size="small" variant="outlined" disabled={busy || !start} onClick={() => run(async () => {
                             const data = { memo };
-                            if (start !== startValue(draftBase.current.started_at)) data.started_at = DateTime.fromISO(start).toMillis();
+                            if (start !== startValue(draftBase.current.started_at)) data.started_at = DateTime.fromISO(start).startOf('minute').toMillis();
                             await operateStopwatch(draftBase.current, 'edit', data);
                             closeEditor();
                         })}>変更を保存</Button>
