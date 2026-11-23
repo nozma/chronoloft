@@ -69,7 +69,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
         const dt = DateTime.fromFormat(value, "yyyy-MM-dd'T'HH:mm");
         if (dt.isValid) {
             try {
-                updateStartTime(dt.toMillis());
+                updateStartTime(dt.startOf('minute').toMillis());
             } catch (error) {
                 setAlertMessage(error.message);
             }
@@ -78,7 +78,7 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
 
     const adjustStartTime = (delta) => {
         if (startTimeRef.current == null) return;
-        const newDt = DateTime.fromMillis(startTimeRef.current).plus({ minutes: delta });
+        const newDt = DateTime.fromMillis(startTimeRef.current).plus({ minutes: delta }).startOf('minute');
         try {
             updateStartTime(newDt.toMillis());
             startTimeRef.current = newDt.toMillis();
@@ -125,27 +125,21 @@ export const StopwatchView = forwardRef(function StopwatchView(props, ref) {
 
     // 直近のレコード終了時刻を取得して editedStartTime にセット
     const handleFillPrevEnd = () => {
-        // ① 終了時刻がまだ無い＝ストップウォッチ動作中なので「現在時刻」を基準に
         const baseline = DateTime.local();
 
-        // ② 全レコードを終了時刻(created_at)降順ソート
+        // 未来の記録も含め、終了時刻が最も新しい記録を選ぶ。
         const sorted = [...records].sort(
             (a, b) => new Date(b.created_at) - new Date(a.created_at)
         );
+        const prevRec = sorted[0];
 
-        // ③ baseline より前のレコードを探す
-        const prevRec = sorted.find(rec => {
-            const endLocal = DateTime.fromISO(rec.created_at, { zone: 'utc' }).toLocal();
-            return endLocal < baseline;
-        });
-
-        // ④ 見つかったらその終了時刻、無ければ baseline をセット
+        // 記録がなければ現在時刻を使う。
         const dt = prevRec
             ? DateTime.fromISO(prevRec.created_at, { zone: 'utc' }).toLocal()
             : baseline;
         setEditedStartTime(dt.toFormat("yyyy-MM-dd'T'HH:mm"));
         try {
-            updateStartTime(dt.toMillis());
+            updateStartTime(dt.startOf('minute').toMillis());
         } catch (error) {
             setAlertMessage(error.message);
         }
